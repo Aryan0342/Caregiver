@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../config/test_credentials.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -70,6 +71,82 @@ class _LoginScreenState extends State<LoginScreen> {
     // If successful, navigation will be handled by the auth state listener in main.dart
   }
 
+  /// Handle test login - creates account if needed, then logs in
+  Future<void> _handleTestLogin() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    // Fill in test credentials
+    _emailController.text = TestCredentials.testEmail;
+    _passwordController.text = TestCredentials.testPassword;
+
+    // First, try to create the test account (if it doesn't exist)
+    var createResult = await _authService.createUserWithEmailAndPassword(
+      email: TestCredentials.testEmail,
+      password: TestCredentials.testPassword,
+    );
+
+    // If account already exists, that's fine - just proceed to login
+    if (!createResult.success && 
+        createResult.errorMessage?.contains('al een account') != true) {
+      // If it's not an "already exists" error, show it
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(createResult.errorMessage ?? 'Fout bij aanmaken test account'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Now try to log in
+    final loginResult = await _authService.signInWithEmailAndPassword(
+      email: TestCredentials.testEmail,
+      password: TestCredentials.testPassword,
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (!loginResult.success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loginResult.errorMessage ?? 'Fout bij inloggen met test account'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } else if (mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Succesvol ingelogd met test account!'),
+          backgroundColor: AppTheme.accentGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+    // Navigation will be handled by the auth state listener in main.dart
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Title
                   Text(
-                    'Caregiver',
+                    'Dag in beeld',
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                           color: AppTheme.primaryBlue,
                           fontWeight: FontWeight.bold,
@@ -105,9 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Subtitle
                   Text(
-                    'Inloggen',
+                    'pictoreeksen',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.accentOrange,
+                          fontWeight: FontWeight.w600,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -202,6 +280,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Test Login button - For development/testing
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _handleTestLogin,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      minimumSize: const Size(double.infinity, 56),
+                      side: BorderSide(color: AppTheme.accentGreen, width: 2),
+                    ),
+                    icon: Icon(
+                      Icons.bug_report_outlined,
+                      color: AppTheme.accentGreen,
+                    ),
+                    label: Text(
+                      'Test Inloggen',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.accentGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Test account: ${TestCredentials.testEmail}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

@@ -1,9 +1,8 @@
 class AppRoutes {
+  static const String splash = '/';
   static const String login = '/login';
   static const String home = '/home';
-  
-  // Add more routes as needed
-  // static const String createSeries = '/create-series';
-  // static const String seriesList = '/series-list';
-  // static const String settings = '/settings';
+  static const String createSet = '/create-set';
+  static const String mySets = '/my-sets';
+  static const String settings = '/settings';
 }

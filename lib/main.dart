@@ -4,8 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'theme.dart';
 import 'routes/app_routes.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/create_set_screen.dart';
+import 'screens/my_sets_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,14 +28,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Caregiver',
+      title: 'Dag in beeld',
       theme: AppTheme.lightTheme,
       darkTheme: null, // No dark mode as requested
       // Use named routes
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.splash,
       routes: {
+        AppRoutes.splash: (context) => const SplashScreen(),
         AppRoutes.login: (context) => const AuthWrapper(),
         AppRoutes.home: (context) => const HomeScreen(),
+        AppRoutes.createSet: (context) => const CreateSetScreen(),
+        AppRoutes.mySets: (context) => const MySetsScreen(),
+        AppRoutes.settings: (context) => const SettingsScreen(),
       },
       // Fallback for unknown routes
       onUnknownRoute: (settings) {

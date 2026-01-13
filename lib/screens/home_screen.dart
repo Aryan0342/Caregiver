@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
+import '../routes/app_routes.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,9 +13,13 @@ class HomeScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error signing out. Please try again.'),
+          SnackBar(
+            content: const Text('Fout bij uitloggen. Probeer het opnieuw.'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -23,126 +28,77 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
+      backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Caregiver'),
+        title: const Text('Dag in beeld'),
+        backgroundColor: AppTheme.primaryBlueLight,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Sign Out',
+            tooltip: 'Uitloggen',
             onPressed: () => _signOut(context),
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome!',
-                        style: Theme.of(context).textTheme.displaySmall,
-                      ),
-                      const SizedBox(height: 8),
-                      if (user?.email != null)
-                        Text(
-                          user!.email!,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
-                        ),
-                    ],
-                  ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Add some top spacing
+                const SizedBox(height: 16),
+                
+                // Three large rounded buttons
+                _buildLargeButton(
+                  context,
+                  icon: Icons.add_circle_outline,
+                  title: 'Nieuwe pictoreeks',
+                  subtitle: 'Maak een nieuwe pictogramreeks',
+                  color: AppTheme.primaryBlue,
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.createSet);
+                  },
                 ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Main content
-              Text(
-                'Pictogram Series',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 16),
-              
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _buildActionCard(
-                      context,
-                      icon: Icons.add_circle_outline,
-                      title: 'New Series',
-                      subtitle: 'Create a new pictogram series',
-                      color: AppTheme.primaryBlue,
-                      onTap: () {
-                        // TODO: Navigate to create series screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Coming soon!')),
-                        );
-                      },
-                    ),
-                    _buildActionCard(
-                      context,
-                      icon: Icons.folder_outlined,
-                      title: 'My Series',
-                      subtitle: 'View your pictogram series',
-                      color: AppTheme.accentOrange,
-                      onTap: () {
-                        // TODO: Navigate to series list screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Coming soon!')),
-                        );
-                      },
-                    ),
-                    _buildActionCard(
-                      context,
-                      icon: Icons.settings_outlined,
-                      title: 'Settings',
-                      subtitle: 'App settings and preferences',
-                      color: AppTheme.primaryBlue,
-                      onTap: () {
-                        // TODO: Navigate to settings screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Coming soon!')),
-                        );
-                      },
-                    ),
-                    _buildActionCard(
-                      context,
-                      icon: Icons.help_outline,
-                      title: 'Help',
-                      subtitle: 'Get help and support',
-                      color: AppTheme.accentGreen,
-                      onTap: () {
-                        // TODO: Navigate to help screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Coming soon!')),
-                        );
-                      },
-                    ),
-                  ],
+                const SizedBox(height: 20),
+                
+                _buildLargeButton(
+                  context,
+                  icon: Icons.folder_outlined,
+                  title: 'Mijn pictoreeksen',
+                  subtitle: 'Bekijk uw pictogramreeksen',
+                  color: AppTheme.accentOrange,
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.mySets);
+                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                
+                _buildLargeButton(
+                  context,
+                  icon: Icons.settings_outlined,
+                  title: 'Instellingen',
+                  subtitle: 'App-instellingen en voorkeuren',
+                  color: AppTheme.primaryBlue,
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.settings);
+                  },
+                ),
+                
+                // Add bottom spacing
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActionCard(
+  Widget _buildLargeButton(
     BuildContext context, {
     required IconData icon,
     required String title,
@@ -151,34 +107,61 @@ class HomeScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Row(
             children: [
-              Icon(
-                icon,
-                size: 48,
-                color: color,
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  icon,
+                  size: 48,
+                  color: color,
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+              const SizedBox(width: 24),
+              
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
                     ),
-                textAlign: TextAlign.center,
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              
+              // Arrow icon
+              Icon(
+                Icons.chevron_right,
+                size: 32,
+                color: AppTheme.textSecondary,
               ),
             ],
           ),
