@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'theme.dart';
 import 'routes/app_routes.dart';
-import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/create_set_screen.dart';
@@ -19,6 +19,18 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Enable Firestore offline persistence
+  try {
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  } catch (e) {
+    // Offline persistence may already be enabled or not supported on this platform
+    // This is fine - Firestore will use default settings
+    debugPrint('Firestore offline persistence: $e');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -32,9 +44,8 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: null, // No dark mode as requested
       // Use named routes
-      initialRoute: AppRoutes.splash,
+      initialRoute: AppRoutes.login,
       routes: {
-        AppRoutes.splash: (context) => const SplashScreen(),
         AppRoutes.login: (context) => const AuthWrapper(),
         AppRoutes.home: (context) => const HomeScreen(),
         AppRoutes.createSet: (context) => const CreateSetScreen(),

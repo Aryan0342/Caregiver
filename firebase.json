@@ -1,1 +1,28 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"caregiver-cba18","appId":"1:929615381650:android:049fef3cfaec642bbe124b","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"caregiver-cba18","configurations":{"android":"1:929615381650:android:049fef3cfaec642bbe124b","ios":"1:929615381650:ios:e814e977cbca7ee0be124b","macos":"1:929615381650:ios:e814e977cbca7ee0be124b","web":"1:929615381650:web:2b8dd8de8bbf1689be124b","windows":"1:929615381650:web:277478030da6f986be124b"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "caregiver-cba18",
+          "appId": "1:929615381650:android:049fef3cfaec642bbe124b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "caregiver-cba18",
+          "configurations": {
+            "android": "1:929615381650:android:049fef3cfaec642bbe124b",
+            "ios": "1:929615381650:ios:e814e977cbca7ee0be124b",
+            "macos": "1:929615381650:ios:e814e977cbca7ee0be124b",
+            "web": "1:929615381650:web:2b8dd8de8bbf1689be124b",
+            "windows": "1:929615381650:web:277478030da6f986be124b"
+          }
+        }
+      }
+    }
+  }
+}}

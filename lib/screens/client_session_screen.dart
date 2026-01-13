@@ -28,20 +28,12 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
     }
   }
 
-  void _previousStep() {
-    if (_currentStepIndex > 0) {
-      setState(() {
-        _currentStepIndex--;
-      });
-    }
-  }
-
   void _markAsDone() {
-    // Move to next step after marking as done
-    _nextStep();
-    
-    // Show completion message if at the end
-    if (_currentStepIndex >= widget.set.pictograms.length - 1) {
+    // If not on last step, move to next step
+    if (_currentStepIndex < widget.set.pictograms.length - 1) {
+      _nextStep();
+    } else {
+      // If on last step, show completion message and go back
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Alle stappen voltooid!'),
@@ -52,183 +44,184 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
           ),
         ),
       );
+      // Optionally navigate back after a delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.set.pictograms.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundLight,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: AppTheme.textSecondary),
+              const SizedBox(height: 16),
+              Text(
+                'Geen pictogrammen in deze reeks',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Terug'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final currentPictogram = widget.set.pictograms[_currentStepIndex];
-    final isFirstStep = _currentStepIndex == 0;
     final isLastStep = _currentStepIndex == widget.set.pictograms.length - 1;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        title: Text(widget.set.name),
-        backgroundColor: AppTheme.primaryBlueLight,
-      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Progress indicator
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: AppTheme.primaryBlueLight.withOpacity(0.3),
-              child: Row(
-                children: [
-                  Text(
-                    'Stap ${_currentStepIndex + 1} van ${widget.set.pictograms.length}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const Spacer(),
-                  // Progress dots
-                  Row(
-                    children: List.generate(
-                      widget.set.pictograms.length,
-                      (index) => Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(left: 4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: index <= _currentStepIndex
-                              ? AppTheme.primaryBlue
-                              : AppTheme.textSecondary.withOpacity(0.3),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Main pictogram display
+            // Fullscreen pictogram display
             Expanded(
               child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Large pictogram image
-                      Container(
-                        width: 200,
-                        height: 200,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Fullscreen pictogram image
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceWhite,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: CachedNetworkImage(
-                            imageUrl: _arasaacService.getImageUrl(currentPictogram.id),
-                            fit: BoxFit.contain,
-                            placeholder: (context, url) => Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppTheme.primaryBlue,
+                          borderRadius: BorderRadius.circular(24),
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: CachedNetworkImage(
+                              imageUrl: _arasaacService.getStaticImageUrl(currentPictogram.id),
+                              fit: BoxFit.contain,
+                              placeholder: (context, url) => Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryBlue,
+                                  ),
+                                  strokeWidth: 4,
                                 ),
                               ),
-                            ),
-                            errorWidget: (context, url, error) => Icon(
-                              Icons.image_not_supported,
-                              size: 80,
-                              color: AppTheme.textSecondary,
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 120,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                    ),
 
-                      // Pictogram label
-                      Container(
+                    const SizedBox(height: 32),
+
+                    // Large label in Dutch
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                          horizontal: 32,
+                          vertical: 20,
                         ),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryBlueLight,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           currentPictogram.keyword,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
                                 color: AppTheme.textPrimary,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 36,
                               ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 48),
+                  ],
                 ),
               ),
             ),
 
-            // Action buttons
+            // Action buttons - only "Klaar" and "Volgende stap"
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceWhite,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
+                    blurRadius: 8,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
               child: SafeArea(
                 child: Row(
                   children: [
-                    // Previous button
-                    if (!isFirstStep)
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _previousStep,
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text('Vorige'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: AppTheme.primaryBlue, width: 2),
-                          ),
-                        ),
-                      ),
-                    if (!isFirstStep) const SizedBox(width: 12),
-
-                    // Done button
+                    // "Klaar" button
                     Expanded(
-                      flex: isFirstStep ? 1 : 1,
                       child: ElevatedButton.icon(
                         onPressed: _markAsDone,
-                        icon: const Icon(Icons.check),
-                        label: const Text('Klaar'),
+                        icon: const Icon(Icons.check, size: 28),
+                        label: const Text(
+                          'Klaar',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 20),
                           backgroundColor: AppTheme.accentGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                       ),
                     ),
 
-                    // Next button
-                    if (!isLastStep) const SizedBox(width: 12),
+                    const SizedBox(width: 16),
+
+                    // "Volgende stap" button (only show if not last step)
                     if (!isLastStep)
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _nextStep,
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('Volgende stap'),
+                          icon: const Icon(Icons.arrow_forward, size: 28),
+                          label: const Text(
+                            'Volgende stap',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                          ),
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 20),
                             backgroundColor: AppTheme.primaryBlue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                         ),
                       ),

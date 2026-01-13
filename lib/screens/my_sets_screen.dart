@@ -32,29 +32,43 @@ class MySetsScreen extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
+            final errorMessage = snapshot.error.toString();
+            final isOffline = errorMessage.toLowerCase().contains('offline') ||
+                             errorMessage.toLowerCase().contains('network') ||
+                             errorMessage.toLowerCase().contains('unavailable');
+            
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppTheme.textSecondary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Fout bij laden van pictoreeksen',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isOffline ? Icons.cloud_off : Icons.error_outline,
+                      size: 64,
+                      color: isOffline ? Colors.orange : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      isOffline 
+                        ? 'Offline modus'
+                        : 'Fout bij laden van pictoreeksen',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isOffline
+                        ? 'U bent offline. Toon gecachte gegevens of probeer later opnieuw.'
+                        : errorMessage.length > 200 
+                          ? errorMessage.substring(0, 200) + "..."
+                          : errorMessage,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -272,7 +286,7 @@ class MySetsScreen extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
               child: CachedNetworkImage(
-                imageUrl: arasaacService.getImageUrl(pictogram.id),
+                imageUrl: arasaacService.getStaticImageUrl(pictogram.id),
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Center(
                   child: CircularProgressIndicator(
@@ -281,9 +295,9 @@ class MySetsScreen extends StatelessWidget {
                   ),
                 ),
                 errorWidget: (context, url, error) => Icon(
-                  Icons.image_not_supported,
+                  _getIconForKeyword(pictogram.keyword),
                   size: 24,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.primaryBlue,
                 ),
               ),
             ),
@@ -308,5 +322,21 @@ class MySetsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  IconData _getIconForKeyword(String keyword) {
+    final lowerKeyword = keyword.toLowerCase();
+    if (lowerKeyword.contains('wakker') || lowerKeyword.contains('opstaan')) {
+      return Icons.access_time;
+    } else if (lowerKeyword.contains('aankleden')) {
+      return Icons.checkroom;
+    } else if (lowerKeyword.contains('ontbijt') || lowerKeyword.contains('eten')) {
+      return Icons.restaurant;
+    } else if (lowerKeyword.contains('tanden') || lowerKeyword.contains('poets')) {
+      return Icons.cleaning_services;
+    } else if (lowerKeyword.contains('school')) {
+      return Icons.school;
+    }
+    return Icons.image_outlined;
   }
 }

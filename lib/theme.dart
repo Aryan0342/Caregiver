@@ -28,12 +28,10 @@ class AppTheme {
         secondary: accentOrange,
         secondaryContainer: Color(0xFFFFE4D1),
         surface: surfaceWhite,
-        background: backgroundLight,
         error: Color(0xFFE74C3C),
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: textPrimary,
-        onBackground: textPrimary,
         onError: Colors.white,
       ),
 
@@ -124,25 +122,25 @@ class AppTheme {
           height: 1.4,
         ),
         bodyLarge: TextStyle(
-          fontSize: 16,
+          fontSize: 18, // Increased from 16 to 18
           fontWeight: FontWeight.normal,
           color: textPrimary,
           letterSpacing: 0.2,
-          height: 1.5,
+          height: 1.6, // Increased line height for readability
         ),
         bodyMedium: TextStyle(
-          fontSize: 14,
+          fontSize: 16, // Increased from 14 to 16
           fontWeight: FontWeight.normal,
           color: textPrimary,
           letterSpacing: 0.1,
-          height: 1.5,
+          height: 1.6, // Increased line height
         ),
         bodySmall: TextStyle(
-          fontSize: 12,
+          fontSize: 14, // Increased from 12 to 14
           fontWeight: FontWeight.normal,
           color: textSecondary,
           letterSpacing: 0.1,
-          height: 1.5,
+          height: 1.6, // Increased line height
         ),
         labelLarge: TextStyle(
           fontSize: 14,
@@ -167,29 +165,29 @@ class AppTheme {
         ),
       ),
 
-      // Elevated Button theme - large with rounded corners
+      // Elevated Button theme - large with rounded corners (accessibility optimized)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryBlue,
           foregroundColor: Colors.white,
           elevation: 2,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          minimumSize: const Size(120, 56), // Large buttons for accessibility
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          minimumSize: const Size(120, 64), // Increased from 56 to 64 for better accessibility
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), // Rounded corners
           ),
           textStyle: const TextStyle(
-            fontSize: 18,
+            fontSize: 20, // Increased from 18 to 20
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
         ).copyWith(
-          elevation: MaterialStateProperty.resolveWith<double>(
-            (Set<MaterialState> states) {
-              if (states.contains(MaterialState.pressed)) {
+          elevation: WidgetStateProperty.resolveWith<double>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.pressed)) {
                 return 1;
               }
-              if (states.contains(MaterialState.disabled)) {
+              if (states.contains(WidgetState.disabled)) {
                 return 0;
               }
               return 2;
@@ -203,13 +201,13 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: primaryBlue,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          minimumSize: const Size(120, 56),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          minimumSize: const Size(120, 64), // Increased from 56 to 64
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(
-            fontSize: 18,
+            fontSize: 20, // Increased from 18 to 20
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
@@ -220,14 +218,14 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryBlue,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          minimumSize: const Size(120, 56),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          minimumSize: const Size(120, 64), // Increased from 56 to 64
           side: const BorderSide(color: primaryBlue, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           textStyle: const TextStyle(
-            fontSize: 18,
+            fontSize: 20, // Increased from 18 to 20
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
           ),
@@ -238,13 +236,13 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryBlue,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          minimumSize: const Size(88, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          minimumSize: const Size(88, 56), // Increased from 48 to 56
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
-            fontSize: 16,
+            fontSize: 18, // Increased from 16 to 18
             fontWeight: FontWeight.w600,
             letterSpacing: 0.3,
           ),
@@ -259,7 +257,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Increased vertical spacing
       ),
 
       // Input decoration theme
@@ -286,14 +284,14 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFE74C3C), width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20), // Increased padding
         hintStyle: const TextStyle(
           color: textSecondary,
-          fontSize: 16,
+          fontSize: 18, // Increased from 16 to 18
         ),
         labelStyle: const TextStyle(
           color: textPrimary,
-          fontSize: 16,
+          fontSize: 18, // Increased from 16 to 18
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -401,13 +399,13 @@ class AppTheme {
       backgroundColor: accentOrange,
       foregroundColor: Colors.white,
       elevation: 2,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      minimumSize: const Size(120, 56),
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      minimumSize: const Size(120, 64), // Increased from 56 to 64
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       textStyle: const TextStyle(
-        fontSize: 18,
+        fontSize: 20, // Increased from 18 to 20
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),
@@ -420,13 +418,13 @@ class AppTheme {
       backgroundColor: accentGreen,
       foregroundColor: Colors.white,
       elevation: 2,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      minimumSize: const Size(120, 56),
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      minimumSize: const Size(120, 64), // Increased from 56 to 64
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       textStyle: const TextStyle(
-        fontSize: 18,
+        fontSize: 20, // Increased from 18 to 20
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),

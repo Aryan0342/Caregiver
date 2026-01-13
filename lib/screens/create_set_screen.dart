@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../theme.dart';
 import '../models/pictogram_model.dart';
 import '../models/set_model.dart';
 import '../services/set_service.dart';
+import '../services/arasaac_service.dart';
 import 'pictogram_picker_screen.dart';
 
 class CreateSetScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class CreateSetScreen extends StatefulWidget {
 
 class _CreateSetScreenState extends State<CreateSetScreen> {
   final _setService = SetService();
+  final _arasaacService = ArasaacService();
   final _nameController = TextEditingController();
   List<Pictogram> _selectedPictograms = [];
   int _currentStep = 1; // 1 = Name input, 2 = Pictogram selection/reorder
@@ -130,16 +133,29 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = e.toString();
+        final isOffline = errorMessage.toLowerCase().contains('offline');
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fout bij opslaan: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              isOffline 
+                ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
+                : 'Fout bij opslaan: ${errorMessage.length > 100 ? errorMessage.substring(0, 100) + "..." : errorMessage}',
+            ),
+            backgroundColor: isOffline ? Colors.orange : Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            duration: const Duration(seconds: 5),
           ),
         );
+        
+        // If offline, still allow navigation back (data will sync when online)
+        if (isOffline) {
+          Navigator.pop(context, true);
+        }
       }
     } finally {
       if (mounted) {
@@ -371,7 +387,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               size: 18,
             ),
             const SizedBox(height: 6),
-            // Pictogram image placeholder
+            // Pictogram image
             Container(
               width: 70,
               height: 70,
@@ -379,10 +395,23 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                 color: AppTheme.primaryBlueLight.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.image,
-                size: 36,
-                color: AppTheme.primaryBlue,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: CachedNetworkImage(
+                  imageUrl: _arasaacService.getStaticImageUrl(pictogram.id),
+                  placeholder: (context, url) => Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Icon(
+                    _getIconForKeyword(pictogram.keyword),
+                    size: 32,
+                    color: AppTheme.primaryBlue,
+                  ),
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(height: 6),
@@ -420,5 +449,19 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
         ),
       ),
     );
+  }
+
+  IconData _getIconForKeyword(String keyword) {
+    final lowerKeyword = keyword.toLowerCase();
+    if (lowerKeyword.contains('wakker') || lowerKeyword.contains('opstaan')) {
+      return Icons.access_time;
+    } else if (lowerKeyword.contains('aankleden')) {
+      return Icons.checkroom;
+    } else if (lowerKeyword.contains('ontbijt') || lowerKeyword.contains('eten')) {
+      return Icons.restaurant;
+    } else if (lowerKeyword.contains('tanden') || lowerKeyword.contains('poets')) {
+      return Icons.cleaning_services;
+    }
+    return Icons.image_outlined;
   }
 }

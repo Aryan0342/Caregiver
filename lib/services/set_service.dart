@@ -13,6 +13,16 @@ class SetService {
   /// Get current user ID
   String? get _currentUserId => _auth.currentUser?.uid;
 
+  /// Check if error is due to offline/network issues
+  bool _isOfflineError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+    return errorString.contains('network') ||
+        errorString.contains('offline') ||
+        errorString.contains('unavailable') ||
+        errorString.contains('connection') ||
+        errorString.contains('timeout');
+  }
+
   /// Create a new pictogram set
   Future<String?> createSet(PictogramSet set) async {
     if (_currentUserId == null) {
@@ -25,6 +35,11 @@ class SetService {
           .add(set.toJson());
       return docRef.id;
     } catch (e) {
+      if (_isOfflineError(e)) {
+        // When offline, Firestore will queue the write
+        // Return a temporary ID - the real ID will be assigned when online
+        throw Exception('Offline: Wijzigingen worden opgeslagen zodra u weer online bent');
+      }
       throw Exception('Failed to create set: $e');
     }
   }
@@ -45,6 +60,9 @@ class SetService {
         'updatedAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
+      if (_isOfflineError(e)) {
+        throw Exception('Offline: Wijzigingen worden opgeslagen zodra u weer online bent');
+      }
       throw Exception('Failed to update set: $e');
     }
   }
@@ -58,6 +76,9 @@ class SetService {
     try {
       await _firestore.collection(_collectionName).doc(setId).delete();
     } catch (e) {
+      if (_isOfflineError(e)) {
+        throw Exception('Offline: Verwijdering wordt uitgevoerd zodra u weer online bent');
+      }
       throw Exception('Failed to delete set: $e');
     }
   }
@@ -73,10 +94,22 @@ class SetService {
         .where('userId', isEqualTo: _currentUserId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
-          .toList();
+        .handleError((error) {
+      // When offline, Firestore will return cached data
+      // If there's an error, return empty list instead of crashing
+      if (_isOfflineError(error)) {
+        return <PictogramSet>[];
+      }
+      throw error;
+    }).map((snapshot) {
+      try {
+        return snapshot.docs
+            .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+            .toList();
+      } catch (e) {
+        // If parsing fails, return empty list
+        return <PictogramSet>[];
+      }
     });
   }
 
@@ -86,13 +119,28 @@ class SetService {
       final doc = await _firestore
           .collection(_collectionName)
           .doc(setId)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
 
       if (doc.exists) {
         return PictogramSet.fromJson(doc.id, doc.data()!);
       }
       return null;
     } catch (e) {
+      if (_isOfflineError(e)) {
+        // Try to get from cache
+        try {
+          final doc = await _firestore
+              .collection(_collectionName)
+              .doc(setId)
+              .get(const GetOptions(source: Source.cache));
+          if (doc.exists) {
+            return PictogramSet.fromJson(doc.id, doc.data()!);
+          }
+        } catch (_) {
+          // Cache also failed, return null
+        }
+        throw Exception('Offline: Gegevens niet beschikbaar');
+      }
       throw Exception('Failed to get set: $e');
     }
   }

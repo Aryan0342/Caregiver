@@ -9,6 +9,7 @@ import '../models/pictogram_model.dart';
 class ArasaacService {
   static const String _baseUrl = 'https://api.arasaac.org/api';
   static const String _imageBaseUrl = 'https://static.arasaac.org/pictograms';
+  // ARASAAC image URL format: https://static.arasaac.org/pictograms/{id}/{id}_5000.png
   
   // Cache directory
   Directory? _cacheDir;
@@ -60,15 +61,15 @@ class ArasaacService {
     int limit = 50,
   }) async {
     try {
-      // Build search query
+      // Build search query - ARASAAC uses URL encoding
       final searchTerms = [category.searchTerm];
       if (keyword != null && keyword.isNotEmpty) {
         searchTerms.add(keyword.toLowerCase());
       }
       
-      final query = searchTerms.join(' ');
+      final query = Uri.encodeComponent(searchTerms.join(' '));
       
-      // ARASAAC API endpoint for searching
+      // ARASAAC API endpoint for searching (Dutch language)
       final url = Uri.parse('$_baseUrl/pictograms/nl/search/$query');
       
       final response = await http.get(url);
@@ -76,24 +77,29 @@ class ArasaacService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         
+        if (data.isEmpty) {
+          // If no results, return sample pictograms
+          return _getSamplePictograms(category);
+        }
+        
         // Limit results
         final limitedData = data.take(limit).toList();
         
         return limitedData.map((item) {
           final id = item['_id'] as int;
-          final keyword = item['keywords']?[0]?['keyword'] as String? ?? 
-                         item['keywords']?[0]?['keyword'] as String? ?? 
-                         'Unknown';
-          
-          // Build image URL
-          final imageUrl = '$_imageBaseUrl/$id/${id}_5000.png';
+          // Get keyword from Dutch keywords array
+          final keywords = item['keywords'] as List<dynamic>?;
+          final dutchKeyword = keywords?.firstWhere(
+            (k) => k['keyword'] != null,
+            orElse: () => {'keyword': 'Unknown'},
+          )?['keyword'] as String? ?? 'Unknown';
           
           return Pictogram(
             id: id,
-            keyword: keyword,
+            keyword: dutchKeyword,
             category: category.displayName,
-            imageUrl: imageUrl,
-            description: item['keywords']?[0]?['meaning'] as String?,
+            imageUrl: getStaticImageUrl(id), // Use static URL format
+            description: keywords?.first?['meaning'] as String?,
           );
         }).toList();
       } else {
@@ -107,36 +113,38 @@ class ArasaacService {
   }
 
   /// Get sample pictograms for a category (fallback)
+  /// Using common ARASAAC pictogram IDs - these are example IDs
+  /// In production, these should be replaced with actual ARASAAC IDs from the API
   List<Pictogram> _getSamplePictograms(PictogramCategory category) {
-    // Sample ARASAAC pictogram IDs for each category
+    // Common ARASAAC pictogram IDs (these are examples - replace with real IDs from API)
     final Map<PictogramCategory, List<Map<String, dynamic>>> samples = {
       PictogramCategory.dagelijks: [
-        {'id': 1, 'keyword': 'Wakker worden', 'term': 'wake'},
-        {'id': 2, 'keyword': 'Aankleden', 'term': 'dress'},
-        {'id': 3, 'keyword': 'Ontbijten', 'term': 'breakfast'},
-        {'id': 4, 'keyword': 'Tanden poetsen', 'term': 'brush'},
-        {'id': 5, 'keyword': 'Naar school', 'term': 'school'},
+        {'id': 1, 'keyword': 'Wakker worden'}, // Wake up
+        {'id': 2, 'keyword': 'Aankleden'}, // Get dressed
+        {'id': 3, 'keyword': 'Ontbijten'}, // Breakfast
+        {'id': 4, 'keyword': 'Tanden poetsen'}, // Brush teeth
+        {'id': 5, 'keyword': 'Naar school'}, // School
       ],
       PictogramCategory.eten: [
-        {'id': 100, 'keyword': 'Brood', 'term': 'bread'},
-        {'id': 101, 'keyword': 'Melk', 'term': 'milk'},
-        {'id': 102, 'keyword': 'Fruit', 'term': 'fruit'},
-        {'id': 103, 'keyword': 'Groente', 'term': 'vegetable'},
-        {'id': 104, 'keyword': 'Water', 'term': 'water'},
+        {'id': 100, 'keyword': 'Brood'}, // Bread
+        {'id': 101, 'keyword': 'Melk'}, // Milk
+        {'id': 102, 'keyword': 'Fruit'}, // Fruit
+        {'id': 103, 'keyword': 'Groente'}, // Vegetables
+        {'id': 104, 'keyword': 'Water'}, // Water
       ],
       PictogramCategory.verzorging: [
-        {'id': 200, 'keyword': 'Wassen', 'term': 'wash'},
-        {'id': 201, 'keyword': 'Douchen', 'term': 'shower'},
-        {'id': 202, 'keyword': 'Handen wassen', 'term': 'hand'},
-        {'id': 203, 'keyword': 'Haar kammen', 'term': 'comb'},
-        {'id': 204, 'keyword': 'Medicijn', 'term': 'medicine'},
+        {'id': 200, 'keyword': 'Wassen'}, // Washing
+        {'id': 201, 'keyword': 'Douchen'}, // Shower
+        {'id': 202, 'keyword': 'Handen wassen'}, // Wash hands
+        {'id': 203, 'keyword': 'Haar kammen'}, // Comb hair
+        {'id': 204, 'keyword': 'Medicijn'}, // Medicine
       ],
       PictogramCategory.gevoelens: [
-        {'id': 300, 'keyword': 'Blij', 'term': 'happy'},
-        {'id': 301, 'keyword': 'Verdrietig', 'term': 'sad'},
-        {'id': 302, 'keyword': 'Boos', 'term': 'angry'},
-        {'id': 303, 'keyword': 'Bang', 'term': 'afraid'},
-        {'id': 304, 'keyword': 'Vermoeid', 'term': 'tired'},
+        {'id': 300, 'keyword': 'Blij'}, // Happy
+        {'id': 301, 'keyword': 'Verdrietig'}, // Sad
+        {'id': 302, 'keyword': 'Boos'}, // Angry
+        {'id': 303, 'keyword': 'Bang'}, // Afraid
+        {'id': 304, 'keyword': 'Vermoeid'}, // Tired
       ],
     };
 
@@ -148,7 +156,7 @@ class ArasaacService {
         id: id,
         keyword: sample['keyword'] as String,
         category: category.displayName,
-        imageUrl: '$_imageBaseUrl/$id/${id}_5000.png',
+        imageUrl: '$_baseUrl/pictograms/$id?download=false&url=true',
       );
     }).toList();
   }
@@ -178,8 +186,28 @@ class ArasaacService {
   }
 
   /// Get image URL for a pictogram (for network display)
+  /// ARASAAC API endpoint that returns the image URL
   String getImageUrl(int pictogramId) {
+    // Use ARASAAC API endpoint which returns the image URL
+    // This is more reliable than constructing the URL manually
+    return '$_baseUrl/pictograms/$pictogramId?download=false&url=true';
+  }
+  
+  /// Get direct static image URL (fallback)
+  /// ARASAAC static URL format: https://static.arasaac.org/pictograms/{id}/{id}_5000.png
+  String getStaticImageUrl(int pictogramId) {
+    // Direct static URL format - this is the most reliable format
+    // Format: https://static.arasaac.org/pictograms/{id}/{id}_5000.png
     return '$_imageBaseUrl/$pictogramId/${pictogramId}_5000.png';
+  }
+  
+  /// Try to get image URL with alternative formats
+  List<String> getImageUrlAlternatives(int pictogramId) {
+    return [
+      '$_imageBaseUrl/$pictogramId/${pictogramId}_5000.png', // Standard format
+      '$_imageBaseUrl/$pictogramId/${pictogramId}.png', // Without size suffix
+      '$_baseUrl/pictograms/$pictogramId?download=false&url=true', // API endpoint
+    ];
   }
 
   /// Clear cache

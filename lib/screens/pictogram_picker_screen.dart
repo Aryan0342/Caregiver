@@ -230,24 +230,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: CachedNetworkImage(
-                      imageUrl: _arasaacService.getImageUrl(pictogram.id),
-                      placeholder: (context, url) => Container(
-                        color: AppTheme.primaryBlueLight.withOpacity(0.1),
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: AppTheme.primaryBlueLight.withOpacity(0.1),
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: AppTheme.textSecondary,
-                          size: 40,
-                        ),
-                      ),
-                      fit: BoxFit.contain,
-                    ),
+                    child: _buildPictogramImage(pictogram),
                   ),
                   const SizedBox(height: 4),
                   // Keyword label
@@ -287,5 +270,83 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildPictogramImage(Pictogram pictogram) {
+    // Use static URL format which is more reliable for ARASAAC
+    final imageUrl = _arasaacService.getStaticImageUrl(pictogram.id);
+    
+    // Get a meaningful icon based on keyword for fallback
+    final fallbackIcon = _getIconForKeyword(pictogram.keyword);
+    
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      placeholder: (context, url) => Container(
+        color: AppTheme.primaryBlueLight.withOpacity(0.1),
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      errorWidget: (context, url, error) {
+        // Show a meaningful icon based on keyword if image fails to load
+        return Container(
+          color: AppTheme.primaryBlueLight.withOpacity(0.2),
+          child: Icon(
+            fallbackIcon,
+            color: AppTheme.primaryBlue,
+            size: 50,
+          ),
+        );
+      },
+      fit: BoxFit.contain,
+    );
+  }
+
+  IconData _getIconForKeyword(String keyword) {
+    final lowerKeyword = keyword.toLowerCase();
+    
+    // Map keywords to Material icons
+    if (lowerKeyword.contains('wakker') || lowerKeyword.contains('opstaan')) {
+      return Icons.access_time;
+    } else if (lowerKeyword.contains('aankleden') || lowerKeyword.contains('kleren')) {
+      return Icons.checkroom;
+    } else if (lowerKeyword.contains('ontbijt') || lowerKeyword.contains('eten')) {
+      return Icons.restaurant;
+    } else if (lowerKeyword.contains('tanden') || lowerKeyword.contains('poets')) {
+      return Icons.cleaning_services;
+    } else if (lowerKeyword.contains('school')) {
+      return Icons.school;
+    } else if (lowerKeyword.contains('brood')) {
+      return Icons.breakfast_dining;
+    } else if (lowerKeyword.contains('melk')) {
+      return Icons.local_drink;
+    } else if (lowerKeyword.contains('fruit')) {
+      return Icons.apple;
+    } else if (lowerKeyword.contains('groente')) {
+      return Icons.eco;
+    } else if (lowerKeyword.contains('water')) {
+      return Icons.water_drop;
+    } else if (lowerKeyword.contains('wassen') || lowerKeyword.contains('douche')) {
+      return Icons.shower;
+    } else if (lowerKeyword.contains('handen')) {
+      return Icons.wash;
+    } else if (lowerKeyword.contains('haar') || lowerKeyword.contains('kammen')) {
+      return Icons.content_cut;
+    } else if (lowerKeyword.contains('medicijn')) {
+      return Icons.medication;
+    } else if (lowerKeyword.contains('blij') || lowerKeyword.contains('gelukkig')) {
+      return Icons.sentiment_very_satisfied;
+    } else if (lowerKeyword.contains('verdriet') || lowerKeyword.contains('droevig')) {
+      return Icons.sentiment_very_dissatisfied;
+    } else if (lowerKeyword.contains('boos')) {
+      return Icons.sentiment_dissatisfied;
+    } else if (lowerKeyword.contains('bang') || lowerKeyword.contains('angst')) {
+      return Icons.sentiment_very_dissatisfied;
+    } else if (lowerKeyword.contains('vermoeid') || lowerKeyword.contains('moe')) {
+      return Icons.bedtime;
+    }
+    
+    // Default icon
+    return Icons.image_outlined;
   }
 }
