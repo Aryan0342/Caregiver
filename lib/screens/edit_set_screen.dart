@@ -5,6 +5,7 @@ import '../models/pictogram_model.dart';
 import '../models/set_model.dart';
 import '../services/set_service.dart';
 import '../services/arasaac_service.dart';
+import '../providers/language_provider.dart';
 import 'pictogram_picker_screen.dart';
 
 class EditSetScreen extends StatefulWidget {
@@ -68,10 +69,12 @@ class _EditSetScreenState extends State<EditSetScreen> {
   }
 
   Future<void> _saveSet() async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Voer een naam in'),
+          content: Text(localizations.enterName),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -85,7 +88,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
     if (_selectedPictograms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Selecteer minimaal één pictogram'),
+          content: Text(localizations.selectAtLeastOne),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -112,7 +115,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Pictoreeks bijgewerkt!'),
+            content: Text(localizations.setUpdated),
             backgroundColor: AppTheme.accentGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -159,10 +162,12 @@ class _EditSetScreenState extends State<EditSetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Pictoreeks bewerken'),
+        title: Text(localizations.editPictogramSet),
         backgroundColor: AppTheme.primaryBlueLight,
       ),
       body: SafeArea(
@@ -170,13 +175,13 @@ class _EditSetScreenState extends State<EditSetScreen> {
           children: [
             // Name input
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: TextFormField(
                 controller: _nameController,
                 style: const TextStyle(fontSize: 18),
                 decoration: InputDecoration(
-                  labelText: 'Naam',
-                  hintText: 'Geef een naam…',
+                  labelText: localizations.name,
+                  hintText: localizations.giveAName,
                   prefixIcon: const Icon(Icons.label_outline, size: 28),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -187,13 +192,13 @@ class _EditSetScreenState extends State<EditSetScreen> {
 
             // Selected pictograms count
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               color: AppTheme.primaryBlueLight.withOpacity(0.3),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      '${_selectedPictograms.length} pictogrammen geselecteerd',
+                      '${_selectedPictograms.length} ${localizations.pictogramsSelected}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -205,7 +210,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
                     child: TextButton.icon(
                       onPressed: _openPictogramPicker,
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Toevoegen'),
+                      label: Text(localizations.addPictograms),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: const Size(0, 36),
@@ -221,17 +226,20 @@ class _EditSetScreenState extends State<EditSetScreen> {
             Expanded(
               child: _selectedPictograms.isEmpty
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_outlined,
-                            size: 80,
-                            color: AppTheme.textSecondary,
-                          ),
-                          const SizedBox(height: 16),
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_outlined,
+                                size: 80,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(height: 16),
                           Text(
-                            'Geen pictogrammen geselecteerd',
+                            localizations.noPictogramsSelected,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   color: AppTheme.textSecondary,
                                 ),
@@ -240,9 +248,11 @@ class _EditSetScreenState extends State<EditSetScreen> {
                           ElevatedButton.icon(
                             onPressed: _openPictogramPicker,
                             icon: const Icon(Icons.add),
-                            label: const Text('Pictogrammen kiezen'),
+                            label: Text(localizations.choosePictograms),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     )
                   : ReorderableListView.builder(
@@ -259,7 +269,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
 
             // Save button
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceWhite,
                 boxShadow: [
@@ -270,32 +280,30 @@ class _EditSetScreenState extends State<EditSetScreen> {
                   ),
                 ],
               ),
-              child: SafeArea(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _saveSet,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      minimumSize: const Size(double.infinity, 64),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _saveSet,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    minimumSize: const Size(double.infinity, 56),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
                         : Text(
-                            'Opslaan',
+                            localizations.save,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
-                  ),
                 ),
               ),
             ),
@@ -335,30 +343,68 @@ class _EditSetScreenState extends State<EditSetScreen> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlueLight.withOpacity(0.2),
+                color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(11),
                 child: CachedNetworkImage(
-                  imageUrl: _arasaacService.getStaticImageUrl(pictogram.id),
+                  // Use thumbnail URL (500px) for small cards - optimized for performance
+                  imageUrl: _arasaacService.getThumbnailUrl(pictogram.id),
+                  maxWidthDiskCache: 500,
+                  maxHeightDiskCache: 500,
+                  memCacheWidth: 300,
+                  memCacheHeight: 300,
+                  httpHeaders: const {
+                    'Accept': 'image/png,image/*;q=0.8',
+                    'User-Agent': 'Flutter-App',
+                  },
                   placeholder: (context, url) => Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
                     ),
                   ),
-                  errorWidget: (context, url, error) => Icon(
-                    _getIconForKeyword(pictogram.keyword),
-                    size: 32,
-                    color: AppTheme.primaryBlue,
-                  ),
+                  errorWidget: (context, url, error) {
+                    // Try preview URL (1000px) as fallback
+                    final previewUrl = _arasaacService.getPreviewUrl(pictogram.id);
+                    if (previewUrl != _arasaacService.getThumbnailUrl(pictogram.id)) {
+                      return CachedNetworkImage(
+                        imageUrl: previewUrl,
+                        maxWidthDiskCache: 1000,
+                        maxHeightDiskCache: 1000,
+                        memCacheWidth: 300,
+                        memCacheHeight: 300,
+                        httpHeaders: const {
+                          'Accept': 'image/png,image/*;q=0.8',
+                          'User-Agent': 'Flutter-App',
+                        },
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Icon(
+                          _getIconForKeyword(pictogram.keyword),
+                          size: 32,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      );
+                    }
+                    return Icon(
+                      _getIconForKeyword(pictogram.keyword),
+                      size: 32,
+                      color: AppTheme.primaryBlue,
+                    );
+                  },
                   fit: BoxFit.contain,
                 ),
               ),
             ),
             const SizedBox(height: 6),
-            // Keyword
+            // Keyword - displays localized Dutch keyword from model
             Flexible(
               child: Text(
                 pictogram.keyword,

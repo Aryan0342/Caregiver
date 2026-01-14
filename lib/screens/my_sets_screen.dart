@@ -7,6 +7,7 @@ import '../services/set_service.dart';
 import '../services/arasaac_service.dart';
 import 'edit_set_screen.dart';
 import 'client_session_screen.dart';
+import '../providers/language_provider.dart';
 
 class MySetsScreen extends StatelessWidget {
   const MySetsScreen({super.key});
@@ -15,12 +16,17 @@ class MySetsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final setService = SetService();
     final arasaacService = ArasaacService();
+    final localizations = LanguageProvider.localizationsOf(context);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Mijn pictoreeksen'),
+        title: Text(localizations.myPictogramSets),
         backgroundColor: AppTheme.primaryBlueLight,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: StreamBuilder<List<PictogramSet>>(
         stream: setService.getUserSets(),
@@ -36,6 +42,9 @@ class MySetsScreen extends StatelessWidget {
             final isOffline = errorMessage.toLowerCase().contains('offline') ||
                              errorMessage.toLowerCase().contains('network') ||
                              errorMessage.toLowerCase().contains('unavailable');
+            final isIndexBuilding = errorMessage.toLowerCase().contains('index') &&
+                                   (errorMessage.toLowerCase().contains('building') ||
+                                    errorMessage.toLowerCase().contains('failed-precondition'));
             
             return Center(
               child: Padding(
@@ -44,28 +53,49 @@ class MySetsScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      isOffline ? Icons.cloud_off : Icons.error_outline,
+                      isOffline 
+                        ? Icons.cloud_off 
+                        : isIndexBuilding 
+                          ? Icons.hourglass_empty 
+                          : Icons.error_outline,
                       size: 64,
-                      color: isOffline ? Colors.orange : AppTheme.textSecondary,
+                      color: isOffline 
+                        ? Colors.orange 
+                        : isIndexBuilding 
+                          ? Colors.blue 
+                          : AppTheme.textSecondary,
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      isOffline 
-                        ? 'Offline modus'
-                        : 'Fout bij laden van pictoreeksen',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isOffline
-                        ? 'U bent offline. Toon gecachte gegevens of probeer later opnieuw.'
-                        : errorMessage.length > 200 
-                          ? errorMessage.substring(0, 200) + "..."
-                          : errorMessage,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                      textAlign: TextAlign.center,
+                    Builder(
+                      builder: (context) {
+                        final localizations = LanguageProvider.localizationsOf(context);
+                        return Column(
+                          children: [
+                            Text(
+                              isOffline 
+                                ? localizations.offlineModeMessage
+                                : isIndexBuilding
+                                  ? localizations.indexBuilding
+                                  : localizations.errorLoadingSets,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              isOffline
+                                ? localizations.offlineMessage
+                                : isIndexBuilding
+                                  ? localizations.indexBuildingMessage
+                                  : errorMessage.length > 200 
+                                    ? errorMessage.substring(0, 200) + "..."
+                                    : errorMessage,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -86,16 +116,25 @@ class MySetsScreen extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'Geen pictoreeksen',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Maak uw eerste pictoreeks aan',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
+                  Builder(
+                    builder: (context) {
+                      final localizations = LanguageProvider.localizationsOf(context);
+                      return Column(
+                        children: [
+                          Text(
+                            localizations.noSets,
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            localizations.createFirstSet,
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -129,6 +168,7 @@ class MySetsScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Set name and step count
@@ -137,31 +177,39 @@ class MySetsScreen extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         set.name,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${set.stepCount} stappen',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
+                      Builder(
+                        builder: (context) {
+                          final localizations = LanguageProvider.localizationsOf(context);
+                          return Text(
+                            '${set.stepCount} ${localizations.steps}',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Pictogram preview (horizontal scroll)
             if (set.pictograms.isNotEmpty)
               SizedBox(
-                height: 80,
+                height: 68,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: set.pictograms.length,
@@ -178,22 +226,27 @@ class MySetsScreen extends StatelessWidget {
               )
             else
               Container(
-                height: 80,
+                height: 72,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlueLight.withOpacity(0.1),
+                  color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Text(
-                    'Geen pictogrammen',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
+                  child: Builder(
+                    builder: (context) {
+                      final localizations = LanguageProvider.localizationsOf(context);
+                      return Text(
+                        localizations.noPictograms,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                      );
+                    },
                   ),
                 ),
               ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Action buttons
             Row(
@@ -211,7 +264,9 @@ class MySetsScreen extends StatelessWidget {
                         if (saved == true) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Text('Pictoreeks bijgewerkt'),
+                              content: Builder(
+                                builder: (context) => Text(LanguageProvider.localizationsOf(context).setUpdated),
+                              ),
                               backgroundColor: AppTheme.accentGreen,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
@@ -222,11 +277,17 @@ class MySetsScreen extends StatelessWidget {
                         }
                       });
                     },
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Bewerken'),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Builder(
+                      builder: (context) => Text(
+                        LanguageProvider.localizationsOf(context).edit,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       side: BorderSide(color: AppTheme.primaryBlue, width: 2),
+                      minimumSize: const Size(0, 40),
                     ),
                   ),
                 ),
@@ -243,11 +304,17 @@ class MySetsScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start met cliënt'),
+                    icon: const Icon(Icons.play_arrow, size: 18),
+                    label: Builder(
+                      builder: (context) => Text(
+                        LanguageProvider.localizationsOf(context).startWithClient,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       backgroundColor: AppTheme.accentGreen,
+                      minimumSize: const Size(0, 40),
                     ),
                   ),
                 ),
@@ -266,27 +333,33 @@ class MySetsScreen extends StatelessWidget {
     ArasaacService arasaacService,
   ) {
     return Container(
-      width: 70,
+      width: 64,
       margin: const EdgeInsets.only(right: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Pictogram image
           Container(
-            width: 60,
-            height: 60,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlueLight.withOpacity(0.2),
+              color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppTheme.primaryBlue.withOpacity(0.3),
+                color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
               child: CachedNetworkImage(
-                imageUrl: arasaacService.getStaticImageUrl(pictogram.id),
+                imageUrl: arasaacService.getThumbnailUrl(pictogram.id),
+                maxWidthDiskCache: 300,
+                maxHeightDiskCache: 300,
+                memCacheWidth: 300,
+                memCacheHeight: 300,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Center(
                   child: CircularProgressIndicator(
@@ -296,26 +369,34 @@ class MySetsScreen extends StatelessWidget {
                 ),
                 errorWidget: (context, url, error) => Icon(
                   _getIconForKeyword(pictogram.keyword),
-                  size: 24,
+                  size: 22,
                   color: AppTheme.primaryBlue,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           // Step number
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+            constraints: const BoxConstraints(
+              minHeight: 12,
+              maxHeight: 14,
+            ),
             decoration: BoxDecoration(
               color: AppTheme.primaryBlue,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(
-              '${index + 1}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+            child: Center(
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  height: 1.0,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),

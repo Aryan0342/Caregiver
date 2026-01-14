@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/pictogram_model.dart';
 import '../services/arasaac_service.dart';
 import '../theme.dart';
+import '../providers/language_provider.dart';
 
 class PictogramPickerScreen extends StatefulWidget {
   final List<Pictogram>? initialSelection;
@@ -22,9 +23,12 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   final ArasaacService _arasaacService = ArasaacService();
   final Map<PictogramCategory, List<Pictogram>> _pictogramsByCategory = {};
   final Set<Pictogram> _selectedPictograms = {};
-  PictogramCategory _selectedCategory = PictogramCategory.dagelijks;
+  PictogramCategory _selectedCategory = PictogramCategory.eten; // Start with Feeding category
   bool _isLoading = false;
   String? _errorMessage;
+  final TextEditingController _searchController = TextEditingController();
+  List<Pictogram> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -33,6 +37,46 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       _selectedPictograms.addAll(widget.initialSelection!);
     }
     _loadPictograms(_selectedCategory);
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _searchResults = [];
+      });
+    } else {
+      _performSearch(query);
+    }
+  }
+
+  Future<void> _performSearch(String query) async {
+    setState(() {
+      _isSearching = true;
+      _isLoading = true;
+    });
+
+    try {
+      final results = await _arasaacService.searchByKeyword(query, limit: 100);
+      setState(() {
+        _searchResults = results;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Fout bij zoeken. Probeer het opnieuw.';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadPictograms(PictogramCategory category) async {
@@ -49,18 +93,26 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     try {
       final pictograms = await _arasaacService.searchPictograms(
         category: category,
-        limit: 50,
+        limit: 100, // Increased to get more pictograms from ARASAAC
       );
 
-      setState(() {
-        _pictogramsByCategory[category] = pictograms;
-        _isLoading = false;
-      });
+      if (pictograms.isEmpty) {
+        setState(() {
+          _errorMessage = 'Geen pictogrammen gevonden voor deze categorie.';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _pictogramsByCategory[category] = pictograms;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Fout bij laden van pictogrammen. Probeer het opnieuw.';
+        _errorMessage = 'Fout bij laden van pictogrammen: ${e.toString()}';
         _isLoading = false;
       });
+      debugPrint('Error loading pictograms: $e');
     }
   }
 
@@ -102,12 +154,16 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentPictograms = _pictogramsByCategory[_selectedCategory] ?? [];
+    final localizations = LanguageProvider.localizationsOf(context);
+    // Show search results if searching, otherwise show category pictograms
+    final currentPictograms = _isSearching 
+        ? _searchResults 
+        : (_pictogramsByCategory[_selectedCategory] ?? []);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Pictogrammen kiezen'),
+        title: Text(localizations.choosePictograms),
         backgroundColor: AppTheme.primaryBlueLight,
         actions: [
           if (_selectedPictograms.isNotEmpty)
@@ -115,7 +171,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
               onPressed: _confirmSelection,
               icon: const Icon(Icons.check, color: Colors.white),
               label: Text(
-                'Klaar (${_selectedPictograms.length})',
+                '${localizations.done} (${_selectedPictograms.length})',
                 style: const TextStyle(color: Colors.white),
               ),
             ),
@@ -123,6 +179,34 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       ),
       body: Column(
         children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: localizations.searchPictograms,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _isSearching = false;
+                            _searchResults = [];
+                          });
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+          ),
           // Category tabs
           Container(
             height: 60,
@@ -134,7 +218,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: FilterChip(
-                    label: Text(category.displayName),
+                    label: Text(localizations.getCategoryName(category.key)),
                     selected: isSelected,
                     onSelected: (_) => _onCategoryChanged(category),
                     selectedColor: AppTheme.primaryBlue,
@@ -233,7 +317,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                     child: _buildPictogramImage(pictogram),
                   ),
                   const SizedBox(height: 4),
-                  // Keyword label
+                  // Keyword label - always displays localized Dutch keyword from model
+                  // (not the search query entered by user)
                   Text(
                     pictogram.keyword,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -273,32 +358,99 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   }
 
   Widget _buildPictogramImage(Pictogram pictogram) {
-    // Use static URL format which is more reliable for ARASAAC
-    final imageUrl = _arasaacService.getStaticImageUrl(pictogram.id);
-    
-    // Get a meaningful icon based on keyword for fallback
+    // Use thumbnail URL (500px) for grid displays - optimized for performance
+    final imageUrl = _arasaacService.getThumbnailUrl(pictogram.id);
     final fallbackIcon = _getIconForKeyword(pictogram.keyword);
     
     return CachedNetworkImage(
       imageUrl: imageUrl,
+      // Optimize cache for grid thumbnails (500px)
+      maxWidthDiskCache: 500,
+      maxHeightDiskCache: 500,
+      memCacheWidth: 300,
+      memCacheHeight: 300,
+      httpHeaders: const {
+        'Accept': 'image/png,image/*;q=0.8',
+        'User-Agent': 'Flutter-App',
+      },
+      fit: BoxFit.contain,
       placeholder: (context, url) => Container(
-        color: AppTheme.primaryBlueLight.withOpacity(0.1),
+        color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
         child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+          ),
         ),
       ),
       errorWidget: (context, url, error) {
-        // Show a meaningful icon based on keyword if image fails to load
-        return Container(
-          color: AppTheme.primaryBlueLight.withOpacity(0.2),
-          child: Icon(
-            fallbackIcon,
-            color: AppTheme.primaryBlue,
-            size: 50,
-          ),
-        );
+        // Try preview URL (1000px) as first fallback
+        final previewUrl = _arasaacService.getPreviewUrl(pictogram.id);
+        if (previewUrl != imageUrl) {
+          return CachedNetworkImage(
+            imageUrl: previewUrl,
+            maxWidthDiskCache: 1000,
+            maxHeightDiskCache: 1000,
+            memCacheWidth: 500,
+            memCacheHeight: 500,
+            httpHeaders: const {
+              'Accept': 'image/png,image/*;q=0.8',
+              'User-Agent': 'Flutter-App',
+            },
+            fit: BoxFit.contain,
+            placeholder: (context, url) => Container(
+              color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) {
+              // Try best quality as second fallback
+              final bestUrl = _arasaacService.getBestQualityImageUrl(pictogram.id);
+              if (bestUrl != previewUrl) {
+                return CachedNetworkImage(
+                  imageUrl: bestUrl,
+                  maxWidthDiskCache: 5000,
+                  maxHeightDiskCache: 5000,
+                  memCacheWidth: 500,
+                  memCacheHeight: 500,
+                  httpHeaders: const {
+                    'Accept': 'image/png,image/*;q=0.8',
+                    'User-Agent': 'Flutter-App',
+                  },
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => Container(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => _buildFallbackIcon(fallbackIcon),
+                );
+              }
+              return _buildFallbackIcon(fallbackIcon);
+            },
+          );
+        }
+        return _buildFallbackIcon(fallbackIcon);
       },
-      fit: BoxFit.contain,
+    );
+  }
+
+  Widget _buildFallbackIcon(IconData icon) {
+    return Container(
+      color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
+      child: Icon(
+        icon,
+        color: AppTheme.primaryBlue,
+        size: 50,
+      ),
     );
   }
 

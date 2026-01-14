@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
 import '../config/test_credentials.dart';
+import '../providers/language_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -57,9 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       
       // Show error message
+      final localizations = LanguageProvider.localizationsOf(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.errorMessage ?? 'Er is een fout opgetreden'),
+          content: Text(result.errorMessage ?? localizations.errorOccurred),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -96,9 +98,10 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           _isLoading = false;
         });
+        final localizations = LanguageProvider.localizationsOf(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(createResult.errorMessage ?? 'Fout bij aanmaken test account'),
+            content: Text(createResult.errorMessage ?? localizations.errorCreatingTestAccount),
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -120,10 +123,11 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
+    final localizations = LanguageProvider.localizationsOf(context);
     if (!loginResult.success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(loginResult.errorMessage ?? 'Fout bij inloggen met test account'),
+          content: Text(loginResult.errorMessage ?? localizations.errorTestLogin),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -135,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Succesvol ingelogd met test account!'),
+          content: Text(localizations.successTestLogin),
           backgroundColor: AppTheme.accentGreen,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -149,6 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
@@ -171,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Title
                   Text(
-                    'Dag in beeld',
+                    localizations.appName,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                           color: AppTheme.primaryBlue,
                           fontWeight: FontWeight.bold,
@@ -182,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Subtitle
                   Text(
-                    'pictoreeksen',
+                    localizations.appSubtitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: AppTheme.accentOrange,
                           fontWeight: FontWeight.w600,
@@ -198,8 +204,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     style: const TextStyle(fontSize: 18),
                     decoration: InputDecoration(
-                      labelText: 'E-mailadres',
-                      hintText: 'Voer uw e-mailadres in',
+                      labelText: localizations.emailAddress,
+                      hintText: localizations.enterEmail,
                       prefixIcon: const Icon(Icons.email_outlined, size: 28),
                       errorText: _errorMessage?.contains('e-mail') == true 
                           ? _errorMessage 
@@ -207,10 +213,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Voer uw e-mailadres in';
+                        return localizations.enterEmail;
                       }
                       if (!value.contains('@') || !value.contains('.')) {
-                        return 'Voer een geldig e-mailadres in';
+                        return localizations.enterValidEmail;
                       }
                       return null;
                     },
@@ -224,8 +230,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     style: const TextStyle(fontSize: 18),
                     decoration: InputDecoration(
-                      labelText: 'Wachtwoord',
-                      hintText: 'Voer uw wachtwoord in',
+                      labelText: localizations.password,
+                      hintText: localizations.enterPassword,
                       prefixIcon: const Icon(Icons.lock_outlined, size: 28),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -246,10 +252,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Voer uw wachtwoord in';
+                        return localizations.enterPassword;
                       }
                       if (value.length < 6) {
-                        return 'Wachtwoord moet minimaal 6 tekens lang zijn';
+                        return localizations.passwordMinLength;
                       }
                       return null;
                     },
@@ -274,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : Text(
-                            'Inloggen',
+                            localizations.login,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -296,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: AppTheme.accentGreen,
                     ),
                     label: Text(
-                      'Test Inloggen',
+                      localizations.testLogin,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: AppTheme.accentGreen,
                             fontWeight: FontWeight.w600,
@@ -305,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Test account: ${TestCredentials.testEmail}',
+                    '${localizations.testAccountLabel}: ${TestCredentials.testEmail}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
                           fontStyle: FontStyle.italic,

@@ -2,19 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../routes/app_routes.dart';
+import '../providers/language_provider.dart';
 
+/// Modern HomeScreen for the AAC pictogram routine app.
+/// 
+/// Matches the reference design with:
+/// - Large header title and subtitle
+/// - Two prominent action buttons (New Series, My Series)
+/// - Settings button at the bottom
+/// - Clean, caregiver-friendly, child-safe UI
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  /// Handle user logout with error handling.
   void _signOut(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
       // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
       if (context.mounted) {
+        final localizations = LanguageProvider.localizationsOf(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Fout bij uitloggen. Probeer het opnieuw.'),
+            content: Text(localizations.logoutError),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -28,143 +38,217 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        title: const Text('Dag in beeld'),
-        backgroundColor: AppTheme.primaryBlueLight,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Uitloggen',
-            onPressed: () => _signOut(context),
-          ),
-        ],
-      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Add some top spacing
-                const SizedBox(height: 16),
-                
-                // Three large rounded buttons
-                _buildLargeButton(
-                  context,
-                  icon: Icons.add_circle_outline,
-                  title: 'Nieuwe pictoreeks',
-                  subtitle: 'Maak een nieuwe pictogramreeks',
-                  color: AppTheme.primaryBlue,
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.createSet);
-                  },
-                ),
-                const SizedBox(height: 20),
-                
-                _buildLargeButton(
-                  context,
-                  icon: Icons.folder_outlined,
-                  title: 'Mijn pictoreeksen',
-                  subtitle: 'Bekijk uw pictogramreeksen',
-                  color: AppTheme.accentOrange,
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.mySets);
-                  },
-                ),
-                const SizedBox(height: 20),
-                
-                _buildLargeButton(
-                  context,
-                  icon: Icons.settings_outlined,
-                  title: 'Instellingen',
-                  subtitle: 'App-instellingen en voorkeuren',
-                  color: AppTheme.primaryBlue,
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.settings);
-                  },
-                ),
-                
-                // Add bottom spacing
-                const SizedBox(height: 16),
-              ],
+        child: Column(
+          children: [
+            // Top section: Header with logout button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Logout button in top right (subtle, not prominent)
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    tooltip: localizations.logout,
+                    color: AppTheme.textSecondary,
+                    onPressed: () => _signOut(context),
+                  ),
+                ],
+              ),
             ),
+            
+            // Main heading section: Title and subtitle
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 48.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Main title: "Pictoreeks Maken"
+                  Text(
+                    localizations.createPictogramSeries,
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                          fontSize: 32,
+                          height: 1.2,
+                          letterSpacing: 0.5,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Subtitle: "Samen stap voor stap"
+                  Text(
+                    localizations.togetherStepByStep,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.normal,
+                          height: 1.4,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Main action buttons section - centered vertically
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Primary action: "Nieuwe pictoreeks" (Blue button)
+                    _buildMainActionButton(
+                      context,
+                      icon: Icons.add_rounded,
+                      title: localizations.newPictogramSet,
+                      color: AppTheme.primaryBlue,
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.createSet);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Secondary action: "Mijn pictoreeksen" (Orange button)
+                    _buildMainActionButton(
+                      context,
+                      icon: Icons.folder_rounded,
+                      title: localizations.myPictogramSets,
+                      color: AppTheme.accentOrange,
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.mySets);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Bottom section: Settings button
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 24.0),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceWhite,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Center(
+                  child: _buildSettingsButton(context, localizations),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build a large, prominent action button for primary actions.
+  /// 
+  /// Features:
+  /// - Full-width button with large touch target
+  /// - Rounded corners (20px radius)
+  /// - Subtle shadow for depth
+  /// - Icon + text layout
+  /// - Accessible size (minimum 64px height)
+  Widget _buildMainActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 4,
+      shadowColor: color.withValues(alpha: 0.4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        splashColor: Colors.white.withValues(alpha: 0.2),
+        highlightColor: Colors.white.withValues(alpha: 0.1),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+          constraints: const BoxConstraints(
+            minHeight: 80, // Large touch target for accessibility
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon (rounded Material icon)
+              Icon(
+                icon,
+                color: Colors.white,
+                size: 40,
+              ),
+              const SizedBox(width: 20),
+              // Button text
+              Flexible(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 22,
+                        letterSpacing: 0.5,
+                        height: 1.3,
+                      ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLargeButton(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Row(
-            children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  size: 48,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 24),
-              
-              // Text content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Arrow icon
-              Icon(
-                Icons.chevron_right,
-                size: 32,
-                color: AppTheme.textSecondary,
-              ),
-            ],
-          ),
+  /// Build the settings button at the bottom of the screen.
+  /// 
+  /// Smaller and less prominent than main action buttons.
+  /// Uses a subtle, tappable design with gear icon.
+  Widget _buildSettingsButton(BuildContext context, dynamic localizations) {
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(context, AppRoutes.settings);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.settings_rounded,
+              color: AppTheme.primaryBlue,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              localizations.settings,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.primaryBlue,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 17,
+                    letterSpacing: 0.2,
+                  ),
+            ),
+          ],
         ),
       ),
     );

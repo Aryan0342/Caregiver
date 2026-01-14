@@ -1,10 +1,61 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/language_service.dart';
+import '../providers/language_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  void _showLanguageSelector(BuildContext context) {
+    final languageService = LanguageProvider.of(context)?.languageService ?? LanguageService();
+    final localizations = LanguageProvider.localizationsOf(context);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.language, color: AppTheme.primaryBlue),
+            const SizedBox(width: 12),
+            Text(localizations.languageLabel),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: AppLanguage.values.map((language) {
+            return RadioListTile<AppLanguage>(
+              title: Text(language.displayName),
+              value: language,
+              groupValue: languageService.currentLanguage,
+              onChanged: (value) {
+                if (value != null) {
+                  languageService.setLanguage(value);
+                  Navigator.of(context).pop();
+                }
+              },
+              activeColor: AppTheme.primaryBlue,
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              localizations.close,
+              style: TextStyle(color: AppTheme.primaryBlue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showOfflineModeInfo(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -15,18 +66,15 @@ class SettingsScreen extends StatelessWidget {
           children: [
             Icon(Icons.cloud_off, color: AppTheme.primaryBlue),
             const SizedBox(width: 12),
-            const Text('Offline modus'),
+            Text(localizations.offlineModeLabel),
           ],
         ),
-        content: const Text(
-          'Pictogrammen worden automatisch opgeslagen voor offline gebruik. '
-          'U kunt de app gebruiken zonder internetverbinding zodra de pictogrammen zijn geladen.',
-        ),
+        content: Text(localizations.offlineModeInfo),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Sluiten',
+              localizations.close,
               style: TextStyle(color: AppTheme.primaryBlue),
             ),
           ),
@@ -36,6 +84,8 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showAboutDialog(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -46,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
           children: [
             Icon(Icons.info_outline, color: AppTheme.primaryBlue),
             const SizedBox(width: 12),
-            const Text('Over de app'),
+            Text(localizations.aboutApp),
           ],
         ),
         content: Column(
@@ -54,28 +104,25 @@ class SettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Dag in beeld',
+              localizations.appName,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
-            const Text('Pictoreeksen'),
+            Text(localizations.appSubtitle),
             const SizedBox(height: 16),
-            const Text(
-              'Een app voor het maken en gebruiken van pictogramreeksen '
-              'voor dagelijkse routines en zorgcommunicatie.',
-            ),
+            Text(localizations.appDescription),
             const SizedBox(height: 16),
             Text(
-              'Versie 1.0.0',
+              '${localizations.version} 1.0.0',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.textSecondary,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Pictogrammen van ARASAAC',
+              localizations.pictogramsFrom,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.textSecondary,
                   ),
@@ -86,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Sluiten',
+              localizations.close,
               style: TextStyle(color: AppTheme.primaryBlue),
             ),
           ),
@@ -96,6 +143,8 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showPrivacyDialog(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -106,7 +155,7 @@ class SettingsScreen extends StatelessWidget {
           children: [
             Icon(Icons.privacy_tip_outlined, color: AppTheme.primaryBlue),
             const SizedBox(width: 12),
-            const Text('Privacy'),
+            Text(localizations.privacy),
           ],
         ),
         content: SingleChildScrollView(
@@ -114,31 +163,29 @@ class SettingsScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Privacybeleid',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                localizations.privacyPolicy,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Uw gegevens worden veilig opgeslagen en alleen gebruikt voor de functionaliteit van de app.',
-              ),
+              Text(localizations.privacyInfo1),
               const SizedBox(height: 16),
-              const Text(
-                'Gegevensopslag:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                localizations.dataStorage,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text('• Pictogramreeksen worden opgeslagen in Firebase'),
-              const Text('• Alleen u heeft toegang tot uw eigen reeksen'),
-              const Text('• Geen gegevens worden gedeeld met derden'),
+              Text(localizations.privacyInfo2),
+              Text(localizations.privacyInfo3),
+              Text(localizations.privacyInfo4),
               const SizedBox(height: 16),
-              const Text(
-                'Offline gebruik:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                localizations.offlineUse,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text('• Pictogrammen worden lokaal opgeslagen voor snelle toegang'),
-              const Text('• U kunt de app offline gebruiken'),
+              Text(localizations.privacyInfo5),
+              Text(localizations.privacyInfo6),
             ],
           ),
         ),
@@ -146,7 +193,7 @@ class SettingsScreen extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
-              'Sluiten',
+              localizations.close,
               style: TextStyle(color: AppTheme.primaryBlue),
             ),
           ),
@@ -157,17 +204,20 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final languageService = LanguageProvider.of(context)?.languageService ?? LanguageService();
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Instellingen'),
+        title: Text(localizations.settings),
         backgroundColor: AppTheme.primaryBlueLight,
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
-            // Taal (Language) - locked to Dutch
+            // Language selector
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
@@ -185,39 +235,16 @@ class SettingsScreen extends StatelessWidget {
                     color: AppTheme.primaryBlue,
                   ),
                 ),
-                title: const Text(
-                  'Taal',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                title: Text(
+                  localizations.languageLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Nederlands'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.lock_outline,
-                      color: AppTheme.textSecondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ],
+                subtitle: Text(languageService.currentLanguage.displayName),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
                 ),
-                onTap: () {
-                  // Show info that language is locked
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Taal is ingesteld op Nederlands'),
-                      backgroundColor: AppTheme.primaryBlue,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  );
-                },
+                onTap: () => _showLanguageSelector(context),
               ),
             ),
 
@@ -239,11 +266,11 @@ class SettingsScreen extends StatelessWidget {
                     color: AppTheme.primaryBlue,
                   ),
                 ),
-                title: const Text(
-                  'Offline modus',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                title: Text(
+                  localizations.offlineModeLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Pictogrammen worden automatisch opgeslagen'),
+                subtitle: Text(localizations.autoSaved),
                 trailing: Icon(
                   Icons.chevron_right,
                   color: AppTheme.textSecondary,
@@ -270,11 +297,11 @@ class SettingsScreen extends StatelessWidget {
                     color: AppTheme.primaryBlue,
                   ),
                 ),
-                title: const Text(
-                  'Over de app',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                title: Text(
+                  localizations.aboutApp,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Versie en informatie'),
+                subtitle: Text(localizations.versionInfo),
                 trailing: Icon(
                   Icons.chevron_right,
                   color: AppTheme.textSecondary,
@@ -301,11 +328,11 @@ class SettingsScreen extends StatelessWidget {
                     color: AppTheme.primaryBlue,
                   ),
                 ),
-                title: const Text(
-                  'Privacy',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                title: Text(
+                  localizations.privacy,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text('Privacybeleid en gegevens'),
+                subtitle: Text(localizations.privacyInfo),
                 trailing: Icon(
                   Icons.chevron_right,
                   color: AppTheme.textSecondary,

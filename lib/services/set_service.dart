@@ -84,32 +84,40 @@ class SetService {
   }
 
   /// Get all sets for the current user
+  /// Uses a fallback query without orderBy if the index is still building
   Stream<List<PictogramSet>> getUserSets() {
     if (_currentUserId == null) {
       return Stream.value([]);
     }
 
+    // Use the query without orderBy and sort in memory
+    // This works immediately while the index is building
+    // Once the index is ready, you can switch back to orderBy for better performance
     return _firestore
         .collection(_collectionName)
         .where('userId', isEqualTo: _currentUserId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .handleError((error) {
-      // When offline, Firestore will return cached data
-      // If there's an error, return empty list instead of crashing
-      if (_isOfflineError(error)) {
-        return <PictogramSet>[];
-      }
-      throw error;
-    }).map((snapshot) {
+        .map((snapshot) {
       try {
-        return snapshot.docs
+        final sets = snapshot.docs
             .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
             .toList();
+        // Sort in memory by createdAt descending (newest first)
+        sets.sort((a, b) {
+          return b.createdAt.compareTo(a.createdAt);
+        });
+        return sets;
       } catch (e) {
         // If parsing fails, return empty list
         return <PictogramSet>[];
       }
+    }).handleError((error) {
+      // When offline, Firestore will return cached data
+      if (_isOfflineError(error)) {
+        return <PictogramSet>[];
+      }
+      // Re-throw other errors
+      throw error;
     });
   }
 

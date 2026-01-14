@@ -7,6 +7,7 @@ import '../models/set_model.dart';
 import '../services/set_service.dart';
 import '../services/arasaac_service.dart';
 import 'pictogram_picker_screen.dart';
+import '../providers/language_provider.dart';
 
 class CreateSetScreen extends StatefulWidget {
   const CreateSetScreen({super.key});
@@ -31,9 +32,10 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
 
   void _goToStep2() {
     if (_nameController.text.trim().isEmpty) {
+      final localizations = LanguageProvider.localizationsOf(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Voer een naam in'),
+          content: Text(localizations.enterName),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -78,10 +80,12 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
   }
 
   Future<void> _saveSet() async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     if (_selectedPictograms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Selecteer minimaal één pictogram'),
+          content: Text(localizations.selectAtLeastOne),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -95,8 +99,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Niet ingelogd'),
+        SnackBar(
+          content: Text(localizations.notLoggedIn),
           backgroundColor: Colors.red,
         ),
       );
@@ -121,7 +125,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Pictoreeks opgeslagen!'),
+            content: Text(localizations.setSaved),
             backgroundColor: AppTheme.accentGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -171,24 +175,35 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Text(_currentStep == 1 ? 'Nieuwe pictoreeks' : 'Pictogrammen kiezen'),
+        title: Builder(
+          builder: (context) {
+            final localizations = LanguageProvider.localizationsOf(context);
+            return Text(_currentStep == 1 ? localizations.newPictogramSet : localizations.selectPictograms);
+          },
+        ),
         backgroundColor: AppTheme.primaryBlueLight,
-        leading: _currentStep == 2
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _currentStep = 1;
-                  });
-                },
-              )
-            : null,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (_currentStep == 2) {
+              // Go back to step 1
+              setState(() {
+                _currentStep = 1;
+              });
+            } else {
+              // Go back to previous screen (home)
+              Navigator.of(context).pop();
+            }
+          },
+        ),
       ),
       body: _currentStep == 1 ? _buildStep1() : _buildStep2(),
     );
   }
 
   Widget _buildStep1() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -209,8 +224,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               controller: _nameController,
               style: const TextStyle(fontSize: 18),
               decoration: InputDecoration(
-                labelText: 'Naam',
-                hintText: 'Geef een naam…',
+                labelText: localizations.name,
+                hintText: localizations.giveAName,
                 prefixIcon: const Icon(Icons.label_outline, size: 28),
               ),
               textInputAction: TextInputAction.done,
@@ -226,7 +241,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                 minimumSize: const Size(double.infinity, 64),
               ),
               child: Text(
-                'Begin',
+                localizations.begin,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -240,6 +255,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
   }
 
   Widget _buildStep2() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
     return SafeArea(
       child: Column(
         children: [
@@ -251,7 +268,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${_selectedPictograms.length} pictogrammen geselecteerd',
+                    '${_selectedPictograms.length} ${localizations.pictogramsSelected}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -263,7 +280,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                   child: TextButton.icon(
                     onPressed: _openPictogramPicker,
                     icon: const Icon(Icons.add, size: 20),
-                    label: const Text('Toevoegen'),
+                    label: Text(localizations.addPictograms),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: const Size(0, 36),
@@ -289,7 +306,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Geen pictogrammen geselecteerd',
+                          localizations.noPictogramsSelected,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 color: AppTheme.textSecondary,
                               ),
@@ -298,7 +315,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                         ElevatedButton.icon(
                           onPressed: _openPictogramPicker,
                           icon: const Icon(Icons.add),
-                          label: const Text('Pictogrammen kiezen'),
+                          label: Text(localizations.choosePictograms),
                         ),
                       ],
                     ),
@@ -347,7 +364,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                           ),
                         )
                       : Text(
-                          'Opslaan',
+                          localizations.save,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -392,30 +409,68 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlueLight.withOpacity(0.2),
+                color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(11),
                 child: CachedNetworkImage(
-                  imageUrl: _arasaacService.getStaticImageUrl(pictogram.id),
+                  // Use thumbnail URL (500px) for small cards - optimized for performance
+                  imageUrl: _arasaacService.getThumbnailUrl(pictogram.id),
+                  maxWidthDiskCache: 500,
+                  maxHeightDiskCache: 500,
+                  memCacheWidth: 300,
+                  memCacheHeight: 300,
+                  httpHeaders: const {
+                    'Accept': 'image/png,image/*;q=0.8',
+                    'User-Agent': 'Flutter-App',
+                  },
                   placeholder: (context, url) => Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
                     ),
                   ),
-                  errorWidget: (context, url, error) => Icon(
-                    _getIconForKeyword(pictogram.keyword),
-                    size: 32,
-                    color: AppTheme.primaryBlue,
-                  ),
+                  errorWidget: (context, url, error) {
+                    // Try preview URL (1000px) as fallback
+                    final previewUrl = _arasaacService.getPreviewUrl(pictogram.id);
+                    if (previewUrl != _arasaacService.getThumbnailUrl(pictogram.id)) {
+                      return CachedNetworkImage(
+                        imageUrl: previewUrl,
+                        maxWidthDiskCache: 1000,
+                        maxHeightDiskCache: 1000,
+                        memCacheWidth: 300,
+                        memCacheHeight: 300,
+                        httpHeaders: const {
+                          'Accept': 'image/png,image/*;q=0.8',
+                          'User-Agent': 'Flutter-App',
+                        },
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Icon(
+                          _getIconForKeyword(pictogram.keyword),
+                          size: 32,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      );
+                    }
+                    return Icon(
+                      _getIconForKeyword(pictogram.keyword),
+                      size: 32,
+                      color: AppTheme.primaryBlue,
+                    );
+                  },
                   fit: BoxFit.contain,
                 ),
               ),
             ),
             const SizedBox(height: 6),
-            // Keyword
+            // Keyword - displays localized Dutch keyword from model
             Flexible(
               child: Text(
                 pictogram.keyword,
