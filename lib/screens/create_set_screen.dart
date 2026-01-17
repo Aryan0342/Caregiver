@@ -138,7 +138,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     } catch (e) {
       if (mounted) {
         final errorMessage = e.toString();
-        final isOffline = errorMessage.toLowerCase().contains('offline');
+        final isOffline = errorMessage.toLowerCase().contains('offline') ||
+                         errorMessage.toLowerCase().contains('timeout');
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -156,8 +157,9 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
           ),
         );
         
-        // If offline, still allow navigation back (data will sync when online)
+        // If offline or timeout, still allow navigation back (data will sync when online)
         if (isOffline) {
+          // Firestore will queue the write when online
           Navigator.pop(context, true);
         }
       }
@@ -181,7 +183,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
             return Text(_currentStep == 1 ? localizations.newPictogramSet : localizations.selectPictograms);
           },
         ),
-        backgroundColor: AppTheme.primaryBlueLight,
+        backgroundColor: AppTheme.primaryBlue,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -211,11 +213,19 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Icon
-            Icon(
-              Icons.add_circle_outline,
-              size: 100,
-              color: AppTheme.primaryBlue,
+            // Icon - circular add button with blue background
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryBlue,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add,
+                size: 60,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -237,6 +247,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
             ElevatedButton(
               onPressed: _goToStep2,
               style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 minimumSize: const Size(double.infinity, 64),
               ),
@@ -263,7 +274,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
           // Selected pictograms count
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppTheme.primaryBlueLight.withOpacity(0.3),
+            color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
             child: Row(
               children: [
                 Expanded(
@@ -339,7 +350,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               color: AppTheme.surfaceWhite,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),
@@ -415,8 +426,11 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(11),
                 child: CachedNetworkImage(
-                  // Use thumbnail URL (500px) for small cards - optimized for performance
-                  imageUrl: _arasaacService.getThumbnailUrl(pictogram.id),
+                  // For custom pictograms, use the imageUrl from the model
+                  // For ARASAAC pictograms, use thumbnail URL (500px) for small cards
+                  imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                      ? pictogram.imageUrl // Custom pictogram
+                      : _arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
                   maxWidthDiskCache: 500,
                   maxHeightDiskCache: 500,
                   memCacheWidth: 300,

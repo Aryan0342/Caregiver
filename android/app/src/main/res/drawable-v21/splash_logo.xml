@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modern app logo - stylized pictogram icon (API 21+) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="140dp"
+    android:height="140dp"
+    android:viewportWidth="140"
+    android:viewportHeight="140">
+    
+    <!-- Outer circle with shadow effect -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,10 C90,10 110,20 120,40 C130,60 130,80 120,100 C110,120 90,130 70,130 C50,130 30,120 20,100 C10,80 10,60 20,40 C30,20 50,10 70,10 Z"/>
+    
+    <!-- Inner grid pattern representing pictograms -->
+    <group>
+        <!-- Top row squares -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M40,35 L50,35 L50,45 L40,45 Z"/>
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M55,35 L65,35 L65,45 L55,45 Z"/>
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M70,35 L80,35 L80,45 L70,45 Z"/>
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M85,35 L95,35 L95,45 L85,45 Z"/>
+        
+        <!-- Middle row squares -->
+        <path
+            android:fillColor="#6BA3D8"
+            android:pathData="M40,50 L50,50 L50,60 L40,60 Z"/>
+        <path
+            android:fillColor="#6BA3D8"
+            android:pathData="M55,50 L65,50 L65,60 L55,60 Z"/>
+        <path
+            android:fillColor="#6BA3D8"
+            android:pathData="M70,50 L80,50 L80,60 L70,60 Z"/>
+        <path
+            android:fillColor="#6BA3D8"
+            android:pathData="M85,50 L95,50 L95,60 L85,60 Z"/>
+        
+        <!-- Bottom row squares -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M40,65 L50,65 L50,75 L40,75 Z"/>
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M55,65 L65,65 L65,75 L55,75 Z"/>
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M70,65 L80,65 L80,75 L70,75 Z"/>
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M85,65 L95,65 L95,75 L85,75 Z"/>
+    </group>
+</vector>

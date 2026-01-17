@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
 import '../services/arasaac_service.dart';
 import '../providers/language_provider.dart';
+import '../routes/app_routes.dart';
 
 class ClientSessionScreen extends StatefulWidget {
   final PictogramSet set;
@@ -21,6 +24,7 @@ class ClientSessionScreen extends StatefulWidget {
 class _ClientSessionScreenState extends State<ClientSessionScreen> {
   final ArasaacService _arasaacService = ArasaacService();
   int _currentStepIndex = 0;
+  final Map<int, String> _keywordCache = {}; // Cache for fetched keywords
 
   void _nextStep() {
     if (_currentStepIndex < widget.set.pictograms.length - 1) {
@@ -30,13 +34,45 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
     }
   }
 
+  /// Get pictogram keyword, fetching from ARASAAC if needed
+  Future<String> _getPictogramKeyword(Pictogram pictogram) async {
+    // If keyword is already valid, return it
+    if (pictogram.keyword.isNotEmpty && pictogram.keyword != 'Onbekend') {
+      return pictogram.keyword;
+    }
+    
+    // Check cache first
+    if (_keywordCache.containsKey(pictogram.id)) {
+      return _keywordCache[pictogram.id]!;
+    }
+    
+    // Try to fetch keyword from ARASAAC by ID
+    try {
+      final fetchedPictogram = await _arasaacService.getPictogramById(pictogram.id);
+      if (fetchedPictogram != null) {
+        final keyword = fetchedPictogram.keyword;
+        if (keyword.isNotEmpty && keyword != 'Onbekend') {
+          _keywordCache[pictogram.id] = keyword;
+          return keyword;
+        }
+      }
+    } catch (e) {
+      // Silently fail - use stored keyword
+      if (kDebugMode) {
+        debugPrint('Error fetching keyword for pictogram ${pictogram.id}: $e');
+      }
+    }
+    
+    // Last resort: return stored keyword (even if it's "Onbekend")
+    // Don't show "Pictogram {id}" - just show the stored keyword
+    return pictogram.keyword;
+  }
+
   void _markAsDone() {
-    // If not on last step, move to next step
-    if (_currentStepIndex < widget.set.pictograms.length - 1) {
-      _nextStep();
-    } else {
-      // If on last step, show completion message and go back
-      final localizations = LanguageProvider.localizationsOf(context);
+    // Always navigate back to My Pictogram Sets screen when Done is clicked
+    final localizations = LanguageProvider.localizationsOf(context);
+    
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations.allStepsCompleted),
@@ -47,12 +83,11 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
           ),
         ),
       );
-      // Optionally navigate back after a delay
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
+      // Navigate back to My Sets screen
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.mySets,
+        (route) => route.isFirst,
+      );
     }
   }
 
@@ -138,15 +173,67 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
                           color: AppTheme.primaryBlueLight,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
-                          // Displays localized Dutch keyword from model
-                          currentPictogram.keyword,
-                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                color: AppTheme.textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 36,
-                              ),
-                          textAlign: TextAlign.center,
+                        child: FutureBuilder<String>(
+                          future: _getPictogramKeyword(currentPictogram),
+                          builder: (context, snapshot) {
+                            // Always show the stored keyword first, even if it's "Onbekend"
+                            // Only show "..." if we're actively fetching AND have no stored keyword
+                            final storedKeyword = currentPictogram.keyword;
+                            final isFetching = snapshot.connectionState == ConnectionState.waiting;
+                            
+                            // If we have a stored keyword (even if "Onbekend"), show it
+                            if (storedKeyword.isNotEmpty) {
+                              // If fetching and we have a stored keyword, show it (don't show "...")
+                              if (isFetching) {
+                                return Text(
+                                  storedKeyword,
+                                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                        color: AppTheme.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 36,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                );
+                              }
+                              
+                              // Use fetched keyword if available, otherwise use stored
+                              final keyword = snapshot.data ?? storedKeyword;
+                              return Text(
+                                keyword,
+                                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                      color: AppTheme.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 36,
+                                    ),
+                                textAlign: TextAlign.center,
+                              );
+                            }
+                            
+                            // Only show "..." if we have no stored keyword AND are fetching
+                            if (isFetching) {
+                              return Text(
+                                '...',
+                                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                      color: AppTheme.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 36,
+                                    ),
+                                textAlign: TextAlign.center,
+                              );
+                            }
+                            
+                            // Final fallback: use fetched keyword or empty string
+                            final keyword = snapshot.data ?? '';
+                            return Text(
+                              keyword.isEmpty ? '' : keyword,
+                              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 36,
+                                  ),
+                              textAlign: TextAlign.center,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -224,13 +311,63 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
   }
 
   Widget _buildPictogramImage(Pictogram pictogram) {
-    // Use best quality image for fullscreen display (5000px)
+    // For custom pictograms, use the imageUrl from the model (Firebase Storage URL)
+    // For ARASAAC pictograms, check cache first for offline support
+    if (pictogram.imageUrl.isNotEmpty && pictogram.id < 0) {
+      // Custom pictogram - use stored Firebase Storage URL directly
+      return CachedNetworkImage(
+        imageUrl: pictogram.imageUrl,
+        fit: BoxFit.contain,
+        maxWidthDiskCache: 5000,
+        maxHeightDiskCache: 5000,
+        memCacheWidth: 5000,
+        memCacheHeight: 5000,
+        httpHeaders: const {
+          'Accept': 'image/png,image/*;q=0.8',
+          'User-Agent': 'Flutter-App',
+        },
+        placeholder: (context, url) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppTheme.primaryBlue,
+            ),
+            strokeWidth: 4,
+          ),
+        ),
+        errorWidget: (context, url, error) => _buildFallbackIcon(pictogram),
+      );
+    }
+    
+    // ARASAAC pictogram - check cache first for offline support
+    return FutureBuilder<File?>(
+      future: _arasaacService.getCachedImage(pictogram.id),
+      builder: (context, snapshot) {
+        // If cached image exists, use it
+        if (snapshot.hasData && snapshot.data != null) {
+          final cachedFile = snapshot.data!;
+          return Image.file(
+            cachedFile,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              // If cached file fails, try network
+              return _buildNetworkImageWithFallbacks(pictogram);
+            },
+          );
+        }
+        
+        // Not cached or still checking - try network with fallbacks
+        return _buildNetworkImageWithFallbacks(pictogram);
+      },
+    );
+  }
+
+  Widget _buildNetworkImageWithFallbacks(Pictogram pictogram) {
+    // Try network with multiple size fallbacks
     final imageUrl = _arasaacService.getBestQualityImageUrl(pictogram.id);
     
     return CachedNetworkImage(
       imageUrl: imageUrl,
       fit: BoxFit.contain,
-      // Optimize cache for fullscreen images (5000px)
       maxWidthDiskCache: 5000,
       maxHeightDiskCache: 5000,
       memCacheWidth: 5000,

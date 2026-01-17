@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 /// Healthcare pictogram app theme with soft blue tones, rounded corners,
 /// large buttons, and clear typography. Designed to be calm, modern, and accessible.
 class AppTheme {
-  // Soft blue color palette
-  static const Color primaryBlue = Color(0xFF6BA3D8); // Soft, calming blue
-  static const Color primaryBlueLight = Color(0xFF9BC4E8); // Lighter blue for backgrounds
-  static const Color primaryBlueDark = Color(0xFF4A7FA8); // Darker blue for pressed states
-  static const Color accentOrange = Color(0xFFFF8C42); // Warm accent for secondary actions
-  static const Color accentGreen = Color(0xFF6BCB77); // Success/positive actions
+  // Color palette matching reference design - darker, more saturated colors
+  static const Color primaryBlue = Color(0xFF4A90E2); // Darker, more saturated blue for primary buttons
+  static const Color primaryBlueLight = Color(0xFF6BA3D8); // Medium blue for backgrounds and AppBar
+  static const Color primaryBlueDark = Color(0xFF357ABD); // Darker blue for pressed states
+  static const Color accentOrange = Color(0xFFFF6B35); // Darker, more vibrant orange for secondary actions
+  static const Color accentGreen = Color(0xFF3DA55F); // Dark green matching reference design for success/positive actions
   static const Color backgroundLight = Color(0xFFF5F7FA); // Very light background
   static const Color surfaceWhite = Color(0xFFFFFFFF); // Pure white for cards
   static const Color textPrimary = Color(0xFF2C3E50); // Dark text for readability
@@ -253,7 +253,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: surfaceWhite,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

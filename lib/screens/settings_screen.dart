@@ -2,9 +2,25 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/language_service.dart';
 import '../providers/language_provider.dart';
+import '../routes/app_routes.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsScreenContent();
+  }
+}
+
+class _SettingsScreenContent extends StatefulWidget {
+  const _SettingsScreenContent();
+
+  @override
+  State<_SettingsScreenContent> createState() => _SettingsScreenContentState();
+}
+
+class _SettingsScreenContentState extends State<_SettingsScreenContent> {
 
   void _showLanguageSelector(BuildContext context) {
     final languageService = LanguageProvider.of(context)?.languageService ?? LanguageService();
@@ -211,7 +227,8 @@ class SettingsScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
         title: Text(localizations.settings),
-        backgroundColor: AppTheme.primaryBlueLight,
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: ListView(
@@ -227,7 +244,7 @@ class SettingsScreen extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withOpacity(0.3),
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -248,6 +265,39 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
 
+            // Change PIN
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.lock_outline,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+                title: Text(
+                  localizations.changePin,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(localizations.changePinDescription),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () {
+                  Navigator.pushNamed(context, AppRoutes.changePin);
+                },
+              ),
+            ),
+
             // Offline modus (Offline mode) - info only
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -258,7 +308,7 @@ class SettingsScreen extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withOpacity(0.3),
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -289,7 +339,7 @@ class SettingsScreen extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withOpacity(0.3),
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -320,7 +370,7 @@ class SettingsScreen extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withOpacity(0.3),
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

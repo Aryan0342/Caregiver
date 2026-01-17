@@ -22,7 +22,8 @@ class MySetsScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
         title: Text(localizations.myPictogramSets),
-        backgroundColor: AppTheme.primaryBlueLight,
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
@@ -355,7 +356,11 @@ class MySetsScreen extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
               child: CachedNetworkImage(
-                imageUrl: arasaacService.getThumbnailUrl(pictogram.id),
+                // For custom pictograms, use the imageUrl from the model
+                // For ARASAAC pictograms, use thumbnail URL
+                imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                    ? pictogram.imageUrl // Custom pictogram
+                    : arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
                 maxWidthDiskCache: 300,
                 maxHeightDiskCache: 300,
                 memCacheWidth: 300,

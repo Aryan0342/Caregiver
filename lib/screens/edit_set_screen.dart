@@ -6,6 +6,7 @@ import '../models/set_model.dart';
 import '../services/set_service.dart';
 import '../services/arasaac_service.dart';
 import '../providers/language_provider.dart';
+import '../utils/pin_guard.dart';
 import 'pictogram_picker_screen.dart';
 
 class EditSetScreen extends StatefulWidget {
@@ -26,12 +27,35 @@ class _EditSetScreenState extends State<EditSetScreen> {
   final _nameController = TextEditingController();
   List<Pictogram> _selectedPictograms = [];
   bool _isSaving = false;
+  bool _isCheckingPin = true;
+  bool _pinVerified = false;
 
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.set.name;
     _selectedPictograms = List.from(widget.set.pictograms);
+    _checkPin();
+  }
+
+  Future<void> _checkPin() async {
+    final verified = await PinGuard.requirePin(
+      context,
+      title: 'Pictoreeks bewerken',
+      subtitle: 'Voer uw pincode in om de pictoreeks te bewerken',
+    );
+
+    if (mounted) {
+      setState(() {
+        _isCheckingPin = false;
+        _pinVerified = verified;
+      });
+
+      // If PIN not verified, go back
+      if (!verified) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   @override
@@ -349,8 +373,11 @@ class _EditSetScreenState extends State<EditSetScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(11),
                 child: CachedNetworkImage(
-                  // Use thumbnail URL (500px) for small cards - optimized for performance
-                  imageUrl: _arasaacService.getThumbnailUrl(pictogram.id),
+                  // For custom pictograms, use the imageUrl from the model
+                  // For ARASAAC pictograms, use thumbnail URL (500px) for small cards
+                  imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                      ? pictogram.imageUrl // Custom pictogram
+                      : _arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
                   maxWidthDiskCache: 500,
                   maxHeightDiskCache: 500,
                   memCacheWidth: 300,

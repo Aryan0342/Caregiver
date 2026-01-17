@@ -31,6 +31,93 @@ class AppLocalizations {
   String get enterPassword => _language == AppLanguage.dutch ? 'Voer uw wachtwoord in' : 'Enter your password';
   String get testLogin => _language == AppLanguage.dutch ? 'Test Inloggen' : 'Test Login';
   String get testAccount => _language == AppLanguage.dutch ? 'Test account' : 'Test account';
+  String get forgotPassword => _language == AppLanguage.dutch ? 'Wachtwoord vergeten?' : 'Forgot password?';
+  String get resetPassword => _language == AppLanguage.dutch ? 'Wachtwoord resetten' : 'Reset password';
+  String get enterEmailForReset => _language == AppLanguage.dutch ? 'Voer uw e-mailadres in om een wachtwoord reset link te ontvangen' : 'Enter your email address to receive a password reset link';
+  String get resetEmailSent => _language == AppLanguage.dutch ? 'Er is een e-mail verzonden met instructies om uw wachtwoord te resetten. Controleer uw inbox.' : 'An email has been sent with instructions to reset your password. Check your inbox.';
+  String get resetEmailError => _language == AppLanguage.dutch ? 'Fout bij verzenden van reset e-mail' : 'Error sending reset email';
+
+  // Registration screen
+  String get createAccount => _language == AppLanguage.dutch ? 'Account aanmaken' : 'Create account';
+  String get fullName => _language == AppLanguage.dutch ? 'Volledige naam' : 'Full name';
+  String get enterFullName => _language == AppLanguage.dutch ? 'Voer uw volledige naam in' : 'Enter your full name';
+  String get confirmPassword => _language == AppLanguage.dutch ? 'Bevestig wachtwoord' : 'Confirm password';
+  String get enterConfirmPassword => _language == AppLanguage.dutch ? 'Voer uw wachtwoord opnieuw in' : 'Enter your password again';
+  String get alreadyHaveAccount => _language == AppLanguage.dutch ? 'Al een account? Inloggen' : 'Already have an account? Login';
+  String get registrationError => _language == AppLanguage.dutch ? 'Fout bij aanmaken account' : 'Error creating account';
+  String get registrationSuccess => _language == AppLanguage.dutch ? 'Account succesvol aangemaakt!' : 'Account created successfully!';
+  String get fieldRequired => _language == AppLanguage.dutch ? 'Dit veld is verplicht' : 'This field is required';
+  String get invalidEmail => _language == AppLanguage.dutch ? 'Voer een geldig e-mailadres in' : 'Enter a valid email address';
+  String get passwordsDoNotMatch => _language == AppLanguage.dutch ? 'Wachtwoorden komen niet overeen' : 'Passwords do not match';
+  String get passwordTooShort => _language == AppLanguage.dutch ? 'Wachtwoord moet minimaal 6 tekens lang zijn' : 'Password must be at least 6 characters';
+
+  // Profile setup screen
+  String get profileSetup => _language == AppLanguage.dutch ? 'Profiel instellen' : 'Setup profile';
+  String get profileSetupDescription => _language == AppLanguage.dutch ? 'Vertel ons iets over uzelf en uw cliënt' : 'Tell us about yourself and your client';
+  String get role => _language == AppLanguage.dutch ? 'Rol' : 'Role';
+  String get selectRole => _language == AppLanguage.dutch ? 'Selecteer uw rol' : 'Select your role';
+  String get roleParent => _language == AppLanguage.dutch ? 'Ouder' : 'Parent';
+  String get roleTeacher => _language == AppLanguage.dutch ? 'Leraar' : 'Teacher';
+  String get roleTherapist => _language == AppLanguage.dutch ? 'Therapeut' : 'Therapist';
+  String get clientName => _language == AppLanguage.dutch ? 'Cliënt naam' : 'Client name';
+  String get enterClientName => _language == AppLanguage.dutch ? 'Voer de naam van uw cliënt in (optioneel)' : 'Enter your client\'s name (optional)';
+  String get clientAgeRange => _language == AppLanguage.dutch ? 'Leeftijdsgroep cliënt' : 'Client age range';
+  String get selectAgeRange => _language == AppLanguage.dutch ? 'Selecteer leeftijdsgroep (optioneel)' : 'Select age range (optional)';
+  String get ageRange3to5 => _language == AppLanguage.dutch ? '3-5 jaar' : '3-5 years';
+  String get ageRange6to9 => _language == AppLanguage.dutch ? '6-9 jaar' : '6-9 years';
+  String get ageRange10to14 => _language == AppLanguage.dutch ? '10-14 jaar' : '10-14 years';
+  String get ageRange15plus => _language == AppLanguage.dutch ? '15+ jaar' : '15+ years';
+  String get saveProfile => _language == AppLanguage.dutch ? 'Profiel opslaan' : 'Save profile';
+  String get profileSaved => _language == AppLanguage.dutch ? 'Profiel opgeslagen!' : 'Profile saved!';
+  String get profileSaveError => _language == AppLanguage.dutch ? 'Fout bij opslaan profiel' : 'Error saving profile';
+  String get skip => _language == AppLanguage.dutch ? 'Overslaan' : 'Skip';
+
+  // PIN setup/verification
+  String get createPin => _language == AppLanguage.dutch ? 'Pincode instellen' : 'Set PIN code';
+  String get createPinDescription => _language == AppLanguage.dutch ? 'Kies een pincode van 4 cijfers om uw account te beveiligen' : 'Choose a 4 digit PIN code to secure your account';
+  String get confirmPin => _language == AppLanguage.dutch ? 'Bevestig pincode' : 'Confirm PIN';
+  String get enterPin => _language == AppLanguage.dutch ? 'Voer pincode in' : 'Enter PIN code';
+  String get pinCreated => _language == AppLanguage.dutch ? 'Pincode ingesteld!' : 'PIN code set!';
+  String get incorrectPin => _language == AppLanguage.dutch ? 'Onjuiste pincode' : 'Incorrect PIN code';
+  String get pinsDoNotMatch => _language == AppLanguage.dutch ? 'Pincodes komen niet overeen' : 'PIN codes do not match';
+  String get pinTooShort => _language == AppLanguage.dutch ? 'Pincode moet precies 4 cijfers zijn' : 'PIN must be exactly 4 digits';
+  String get pinTooLong => _language == AppLanguage.dutch ? 'Pincode moet precies 4 cijfers zijn' : 'PIN must be exactly 4 digits';
+  String get pinRequired => _language == AppLanguage.dutch ? 'Pincode vereist' : 'PIN required';
+  String get pinRequiredMessage => _language == AppLanguage.dutch ? 'Voer uw pincode in om door te gaan' : 'Enter your PIN code to continue';
+  String get changePin => _language == AppLanguage.dutch ? 'Pincode wijzigen' : 'Change PIN code';
+  String get changePinDescription => _language == AppLanguage.dutch ? 'Wijzig uw pincode' : 'Change your PIN code';
+  String get currentPin => _language == AppLanguage.dutch ? 'Huidige pincode' : 'Current PIN';
+  String get newPin => _language == AppLanguage.dutch ? 'Nieuwe pincode' : 'New PIN';
+  String get confirmNewPin => _language == AppLanguage.dutch ? 'Bevestig nieuwe pincode' : 'Confirm new PIN';
+  String get pinChanged => _language == AppLanguage.dutch ? 'Pincode gewijzigd!' : 'PIN code changed!';
+  String get pinChangeError => _language == AppLanguage.dutch ? 'Fout bij wijzigen pincode' : 'Error changing PIN code';
+
+  // Face ID / Biometric
+  String get faceId => _language == AppLanguage.dutch ? 'Face ID' : 'Face ID';
+  String get faceIdSetupPrompt => _language == AppLanguage.dutch 
+      ? 'Wilt u Face ID inschakelen voor snellere toegang tot de app?'
+      : 'Would you like to enable Face ID for faster access to the app?';
+  String get enableFaceId => _language == AppLanguage.dutch ? 'Face ID inschakelen' : 'Enable Face ID';
+  String get faceIdEnabled => _language == AppLanguage.dutch ? 'Face ID ingeschakeld' : 'Face ID enabled';
+  String get faceIdDisabled => _language == AppLanguage.dutch ? 'Face ID uitgeschakeld' : 'Face ID disabled';
+  String get biometricAuthFailed => _language == AppLanguage.dutch 
+      ? 'Biometrische authenticatie mislukt. Gebruik uw pincode.'
+      : 'Biometric authentication failed. Please use your PIN code.';
+  String get authenticateWithFaceId => _language == AppLanguage.dutch 
+      ? 'Verifieer uw identiteit met Face ID'
+      : 'Verify your identity with Face ID';
+  String get useFaceId => _language == AppLanguage.dutch ? 'Face ID gebruiken' : 'Use Face ID';
+  String get faceIdDescription => _language == AppLanguage.dutch 
+      ? 'Gebruik Face ID of vingerafdruk om de app te openen'
+      : 'Use Face ID or fingerprint to open the app';
+
+  // Welcome screen
+  String get iAmCaregiver => _language == AppLanguage.dutch ? 'Ik ben verzorger' : 'I am a caregiver';
+  String get startWithClient => _language == AppLanguage.dutch ? 'Start met cliënt' : 'Start with client';
+  String get clientModeDisabledMessage => _language == AppLanguage.dutch 
+      ? 'Client modus is beschikbaar nadat een verzorger account is aangemaakt en een pincode is ingesteld.'
+      : 'Client mode is available after a caregiver account is created and a PIN code is set.';
+  String get enterPinToEnterClientMode => _language == AppLanguage.dutch ? 'Voer uw pincode in om de client modus te starten' : 'Enter your PIN code to start client mode';
 
   // Home screen
   String get createPictogramSeries => _language == AppLanguage.dutch ? 'Pictoreeks Maken' : 'Create Pictogram Series';
@@ -65,7 +152,6 @@ class AppLocalizations {
   String get createFirstSet => _language == AppLanguage.dutch ? 'Maak uw eerste pictoreeks aan' : 'Create your first pictogram set';
   String get errorLoadingSets => _language == AppLanguage.dutch ? 'Fout bij laden van pictoreeksen' : 'Error loading pictogram sets';
   String get steps => _language == AppLanguage.dutch ? 'stappen' : 'steps';
-  String get startWithClient => _language == AppLanguage.dutch ? 'Start met cliënt' : 'Start with client';
   String get noPictograms => _language == AppLanguage.dutch ? 'Geen pictogrammen' : 'No pictograms';
 
   // Client session screen

@@ -21,6 +21,74 @@ service cloud.firestore {
                        request.auth.uid == resource.data.userId;
     }
     
+    // Caregivers collection - users can only access their own profile
+    match /caregivers/{caregiverId} {
+      // Allow read if user is authenticated and accessing their own profile
+      allow read: if request.auth != null && 
+                     request.auth.uid == caregiverId;
+      
+      // Allow create if user is authenticated and creating their own profile
+      allow create: if request.auth != null && 
+                       request.auth.uid == caregiverId;
+      
+      // Allow update if user is authenticated and updating their own profile
+      allow update: if request.auth != null && 
+                       request.auth.uid == caregiverId;
+      
+      // Allow delete if user is authenticated and deleting their own profile
+      allow delete: if request.auth != null && 
+                       request.auth.uid == caregiverId;
+      
+      // Settings subcollection - for PIN and other settings
+      match /settings/{settingsId} {
+        // Allow read if user is authenticated and accessing their own settings
+        allow read: if request.auth != null && 
+                       request.auth.uid == caregiverId;
+        
+        // Allow create if user is authenticated and creating their own settings
+        allow create: if request.auth != null && 
+                         request.auth.uid == caregiverId;
+        
+        // Allow update if user is authenticated and updating their own settings
+        allow update: if request.auth != null && 
+                         request.auth.uid == caregiverId;
+        
+        // Allow delete if user is authenticated and deleting their own settings
+        allow delete: if request.auth != null && 
+                         request.auth.uid == caregiverId;
+      }
+    }
+    
+    // Custom pictograms collection - admin only
+    match /custom_pictograms/{pictogramId} {
+      // Allow read for authenticated users (app users can view custom pictograms)
+      allow read: if request.auth != null;
+      
+      // Allow write only for admin users
+      allow create, update, delete: if request.auth != null && 
+                                      exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                                      get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Admin users collection - admin management
+    match /admin_users/{adminId} {
+      // Only admins can read/write admin users
+      allow read, write: if request.auth != null && 
+                          exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                          get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Statistics collection - admin only
+    match /statistics/{document=**} {
+      // Allow read for authenticated users (for app statistics)
+      allow read: if request.auth != null;
+      
+      // Allow write only for admin users
+      allow write: if request.auth != null && 
+                    exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                    get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
     // Default: deny all other access
     match /{document=**} {
       allow read, write: if false;

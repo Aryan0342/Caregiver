@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
+import '../services/auth_state_service.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 /// 
@@ -15,10 +16,21 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   /// Handle user logout with error handling.
-  void _signOut(BuildContext context) async {
+  Future<void> _signOut(BuildContext context) async {
     try {
+      // Clear login status so next time requires email/password login
+      final authStateService = AuthStateService();
+      await authStateService.clearLoginStatus();
+      
       await FirebaseAuth.instance.signOut();
-      // Navigation will be handled by the auth state listener in main.dart
+      
+      // Navigate to login screen after logout
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false, // Remove all previous routes
+        );
+      }
     } catch (e) {
       if (context.mounted) {
         final localizations = LanguageProvider.localizationsOf(context);
