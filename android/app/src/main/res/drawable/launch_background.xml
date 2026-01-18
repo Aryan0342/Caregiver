@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Custom splash screen using the provided image -->
+<!-- Native splash screen with app logo -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Custom splash image - fills entire screen -->
+    <!-- Background gradient -->
     <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="@color/splash_gradient_start"
+                android:centerColor="@color/primary_blue_light"
+                android:endColor="@color/splash_gradient_end"
+                android:dither="true" />
+        </shape>
+    </item>
+    
+    <!-- App Logo - centered bitmap (will be auto-scaled by Android) -->
+    <item android:gravity="center">
         <bitmap
-            android:gravity="fill"
-            android:src="@drawable/splash_image" />
+            android:src="@drawable/app_logo"
+            android:gravity="center"
+            android:tileMode="disabled" />
     </item>
 </layer-list>

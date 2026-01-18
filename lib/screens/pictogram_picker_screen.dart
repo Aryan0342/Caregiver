@@ -25,8 +25,7 @@ class PictogramPickerScreen extends StatefulWidget {
 class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   final ArasaacService _arasaacService = ArasaacService();
   final Map<PictogramCategory, List<Pictogram>> _pictogramsByCategory = {};
-  final Map<PictogramCategory, List<Pictogram>> _allPictogramsByCategory = {}; // Store all loaded pictograms
-  final Map<PictogramCategory, int> _displayedCountByCategory = {}; // Track how many are displayed
+  final Map<PictogramCategory, bool> _isOnlineByCategory = {}; // Track online/offline state per category
   final Set<Pictogram> _selectedPictograms = {};
   PictogramCategory _selectedCategory = PictogramCategory.eten; // Start with Feeding category
   bool _isLoading = false;
@@ -87,22 +86,62 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     }
   }
 
+  /// Load pictograms for a category - handles both online and offline modes with pagination
   Future<void> _loadPictograms(PictogramCategory category, {bool loadMore = false}) async {
-    // If loading more, fetch next batch from API
+    final currentPictograms = _pictogramsByCategory[category] ?? [];
+    final isOnline = _isOnlineByCategory[category] ?? true; // Assume online by default
+    final currentOffset = loadMore ? currentPictograms.length : 0;
+
     if (loadMore) {
-      final displayedCount = _displayedCountByCategory[category] ?? 0;
-      
+      // Loading more pictograms
       setState(() {
         _isLoadingMore = true;
       });
 
       try {
-        // Fetch next batch from API
-        final morePictograms = await _arasaacService.searchPictograms(
-          category: category,
-          limit: _loadMoreCount,
-          offset: displayedCount,
-        );
+        List<Pictogram> morePictograms;
+
+        if (isOnline) {
+          // Online mode: fetch from API with pagination
+          morePictograms = await _arasaacService.searchPictograms(
+            category: category,
+            limit: _loadMoreCount,
+            offset: currentOffset,
+          ).timeout(const Duration(seconds: 30), onTimeout: () {
+            if (kDebugMode) {
+              debugPrint('searchPictograms timed out - switching to offline mode');
+            }
+            return <Pictogram>[];
+          });
+
+          if (morePictograms.isEmpty) {
+            // API returned empty - check if we're actually offline
+            throw SocketException('No results from API');
+          }
+
+          // Cache newly loaded pictograms
+          _precachePictograms(morePictograms, category.key);
+        } else {
+          // Offline mode: load from cache with pagination
+          // Try to enhance keywords if we might be online
+          bool mightBeOnline = false;
+          try {
+            final testResult = await _arasaacService.getPictogramById(1).timeout(
+              const Duration(seconds: 1),
+              onTimeout: () => null,
+            );
+            mightBeOnline = testResult != null;
+          } catch (e) {
+            mightBeOnline = false;
+          }
+          
+          morePictograms = await _arasaacService.getCachedPictogramsWithPagination(
+            category: category.key,
+            limit: _loadMoreCount,
+            offset: currentOffset,
+            enhanceKeywords: mightBeOnline, // Enhance if online
+          );
+        }
 
         if (morePictograms.isEmpty) {
           // No more pictograms available
@@ -113,305 +152,221 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
         }
 
         // Add to existing list
-        final currentPictograms = _pictogramsByCategory[category] ?? [];
-        final allPictograms = _allPictogramsByCategory[category] ?? [];
-        
-        final updatedPictograms = [...currentPictograms, ...morePictograms];
-        final updatedAllPictograms = [...allPictograms, ...morePictograms];
-        
         setState(() {
-          _allPictogramsByCategory[category] = updatedAllPictograms;
-          _pictogramsByCategory[category] = updatedPictograms;
-          _displayedCountByCategory[category] = updatedPictograms.length;
+          _pictogramsByCategory[category] = [...currentPictograms, ...morePictograms];
           _isLoadingMore = false;
         });
-
-        // Cache only if we're still within first 50 pictograms
-        if (updatedAllPictograms.length <= 50) {
-          _precachePictograms(morePictograms, category.key);
-        }
       } catch (e) {
+        if (e is SocketException || e is TimeoutException) {
+          // Network error - switch to offline mode and try cache
+          if (isOnline) {
+            debugPrint('Network error, switching to offline mode for category ${category.key}');
+            setState(() {
+              _isOnlineByCategory[category] = false;
+              _isLoadingMore = false;
+            });
+            // Retry in offline mode
+            return _loadPictograms(category, loadMore: true);
+          }
+        }
+
         setState(() {
           _isLoadingMore = false;
         });
         debugPrint('Error loading more pictograms: $e');
       }
-      
-      return;
-    }
-    
-    // Initial load - check if we already have pictograms loaded
-    if (_allPictogramsByCategory.containsKey(category) && _allPictogramsByCategory[category]!.isNotEmpty) {
-      // Already have pictograms, just show initial count
-      final allPictograms = _allPictogramsByCategory[category]!;
-      final initialCount = _initialLoadCount.clamp(0, allPictograms.length);
-      setState(() {
-        _pictogramsByCategory[category] = allPictograms.take(initialCount).toList();
-        _displayedCountByCategory[category] = initialCount;
-      });
       return;
     }
 
+    // Initial load
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      // Clear ALL cached pictograms for this category when loading in online mode
-      await _arasaacService.clearCacheForCategory(category.key);
-      
-      // Fetch initial batch (what fits on screen)
+      // Try online first
+      debugPrint('Attempting to fetch pictograms for category ${category.key} (online mode)...');
       final pictograms = await _arasaacService.searchPictograms(
         category: category,
         limit: _initialLoadCount,
         offset: 0,
-      );
-
-      // If API returned empty list, try to load cached pictograms (might be offline)
-      if (pictograms.isEmpty) {
-        debugPrint('No pictograms from API, trying to load cached pictograms...');
-        final cachedPictograms = await _tryLoadCachedPictograms(category);
-        
-        if (cachedPictograms.isNotEmpty) {
-          // Use cached pictograms when offline
-          debugPrint('Loaded ${cachedPictograms.length} cached pictograms');
-          final initialCount = _initialLoadCount.clamp(0, cachedPictograms.length);
-          setState(() {
-            _allPictogramsByCategory[category] = cachedPictograms;
-            _pictogramsByCategory[category] = cachedPictograms.take(initialCount).toList();
-            _displayedCountByCategory[category] = initialCount;
-            _isLoading = false;
-          });
-        } else {
-          // No cached pictograms available - show offline message
-          debugPrint('No cached pictograms found');
-          setState(() {
-            _errorMessage = 'Offline modus: Geen pictogrammen beschikbaar. Verbind met internet om nieuwe pictogrammen te zoeken.';
-            _isLoading = false;
-          });
+      ).timeout(const Duration(seconds: 30), onTimeout: () {
+        if (kDebugMode) {
+          debugPrint('searchPictograms timed out after 30 seconds');
         }
-      } else {
-        // Store pictograms and show initial count
-        // Note: We only fetched 18, but there might be more available
-        // So we should show "Load More" button even if we have exactly 18
-        setState(() {
-          _allPictogramsByCategory[category] = pictograms;
-          _pictogramsByCategory[category] = pictograms;
-          _displayedCountByCategory[category] = pictograms.length;
-          _isLoading = false;
-        });
+        return <Pictogram>[];
+      });
+
+      if (pictograms.isNotEmpty) {
+        // Online mode: successfully fetched from API
+        // Enhance keywords for any pictograms that might have fallback/truncated keywords
+        final enhancedPictograms = await _enhancePictogramKeywords(pictograms);
         
-        // Cache only first 50 pictograms in background for offline use (don't block UI)
-        _precachePictograms(pictograms, category.key);
+        debugPrint('Online mode: Successfully fetched ${enhancedPictograms.length} pictograms for category ${category.key}');
+        setState(() {
+          _pictogramsByCategory[category] = enhancedPictograms;
+          _isOnlineByCategory[category] = true;
+          _isLoading = false;
+        });
+
+        // Cache pictograms in background for offline use (with correct keywords)
+        _precachePictograms(enhancedPictograms, category.key);
+        return;
       }
+
+      // Empty result or timeout - try offline mode
+      throw SocketException('No results from API');
     } on SocketException catch (e) {
-      // Offline - try to load cached pictograms for this category
-      debugPrint('SocketException caught, trying to load cached pictograms: $e');
-      final cachedPictograms = await _tryLoadCachedPictograms(category);
-      
-      if (cachedPictograms.isNotEmpty) {
-        debugPrint('Loaded ${cachedPictograms.length} cached pictograms after SocketException');
-        final initialCount = _initialLoadCount.clamp(0, cachedPictograms.length);
-        setState(() {
-          _allPictogramsByCategory[category] = cachedPictograms;
-          _pictogramsByCategory[category] = cachedPictograms.take(initialCount).toList();
-          _displayedCountByCategory[category] = initialCount;
-          _isLoading = false;
-        });
-      } else {
-        debugPrint('No cached pictograms found after SocketException');
-        setState(() {
-          _errorMessage = 'Offline modus: Geen pictogrammen beschikbaar. Verbind met internet om nieuwe pictogrammen te zoeken.';
-          _isLoading = false;
-        });
-      }
+      // Offline - load from cache
+      debugPrint('SocketException caught, loading cached pictograms for category ${category.key}: $e');
+      await _loadOfflinePictograms(category);
     } catch (e) {
-      // Any other error - also try to load cached pictograms as fallback
-      debugPrint('Error loading pictograms: $e, trying cached pictograms as fallback...');
-      final cachedPictograms = await _tryLoadCachedPictograms(category);
-      
-      if (cachedPictograms.isNotEmpty) {
-        debugPrint('Loaded ${cachedPictograms.length} cached pictograms as fallback');
-        final initialCount = _initialLoadCount.clamp(0, cachedPictograms.length);
-        setState(() {
-          _allPictogramsByCategory[category] = cachedPictograms;
-          _pictogramsByCategory[category] = cachedPictograms.take(initialCount).toList();
-          _displayedCountByCategory[category] = initialCount;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Fout bij laden van pictogrammen: ${e.toString()}';
-          _isLoading = false;
-        });
-      }
+      // Other error - try offline as fallback
+      debugPrint('Error loading pictograms: $e, trying offline mode...');
+      await _loadOfflinePictograms(category);
     }
   }
 
-  /// Try to load cached pictograms when offline, filtered by category
-  Future<List<Pictogram>> _tryLoadCachedPictograms([PictogramCategory? category]) async {
+  /// Load pictograms from cache (offline mode) with pagination support
+  /// Also enhances keywords if online
+  Future<void> _loadOfflinePictograms(PictogramCategory category) async {
     try {
-      // Get all cached pictogram IDs from the cache directory
-      final cacheDir = await _arasaacService.getCacheDirectory();
-      if (cacheDir == null) {
-        debugPrint('Cache directory is null');
-        return [];
-      }
-      
-      if (!await cacheDir.exists()) {
-        debugPrint('Cache directory does not exist at: ${cacheDir.path}');
-        return [];
+      // First load cached pictograms (might have bad keywords in metadata)
+      var cachedPictograms = await _arasaacService.getCachedPictogramsWithPagination(
+        category: category.key,
+        limit: _initialLoadCount,
+        offset: 0,
+        enhanceKeywords: false, // Don't enhance yet - check online status first
+      );
+
+      if (cachedPictograms.isEmpty) {
+        debugPrint('No cached pictograms found for category ${category.key}');
+        setState(() {
+          _errorMessage = 'Offline modus: Geen pictogrammen beschikbaar. Verbind met internet om nieuwe pictogrammen te zoeken.';
+          _isOnlineByCategory[category] = false;
+          _isLoading = false;
+        });
+        return;
       }
 
-      debugPrint('Cache directory exists at: ${cacheDir.path}');
-      
-      final cachedIds = <int>[];
-      int fileCount = 0;
-      int dirCount = 0;
-      
+      // Check if we're actually online (maybe API failed but network is available)
+      bool mightBeOnline = false;
       try {
-        await for (final entity in cacheDir.list()) {
-          if (entity is File) {
-            fileCount++;
-            // Handle both Windows (\) and Unix (/) path separators
-            final fileName = entity.path.split(Platform.pathSeparator).last;
-            // Extract ID from filename (format: {id}.png)
-            final match = RegExp(r'^(\d+)\.png$').firstMatch(fileName);
-            if (match != null) {
-              final id = int.tryParse(match.group(1)!);
-              if (id != null) {
-                cachedIds.add(id);
-              } else {
-                debugPrint('Could not parse ID from filename: $fileName');
-              }
-            } else {
-              debugPrint('Filename does not match pattern: $fileName');
-            }
-          } else if (entity is Directory) {
-            dirCount++;
-          }
+        // Quick test to see if we can reach API with a simple pictogram ID
+        final testResult = await _arasaacService.getPictogramById(1).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => null,
+        );
+        mightBeOnline = testResult != null;
+      } catch (e) {
+        mightBeOnline = false;
+      }
+
+      // If online, try to enhance keywords
+      if (mightBeOnline) {
+        debugPrint('Online detected, enhancing keywords for ${cachedPictograms.length} cached pictograms...');
+        cachedPictograms = await _arasaacService.getCachedPictogramsWithPagination(
+          category: category.key,
+          limit: _initialLoadCount,
+          offset: 0,
+          enhanceKeywords: true, // Enhance keywords now that we know we're online
+        );
+      }
+
+      debugPrint('${mightBeOnline ? "Online" : "Offline"} mode: Loaded ${cachedPictograms.length} cached pictograms for category ${category.key}');
+      setState(() {
+        _pictogramsByCategory[category] = cachedPictograms;
+        _isOnlineByCategory[category] = mightBeOnline;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading cached pictograms: $e');
+      setState(() {
+        _errorMessage = 'Fout bij laden van pictogrammen: ${e.toString()}';
+        _isOnlineByCategory[category] = false;
+        _isLoading = false;
+      });
+    }
+  }
+
+
+  /// Enhance pictogram keywords by fetching from API if needed
+  Future<List<Pictogram>> _enhancePictogramKeywords(List<Pictogram> pictograms) async {
+    final enhanced = <Pictogram>[];
+    
+    for (final pictogram in pictograms) {
+      // Check if keyword needs enhancement (fallback or truncated)
+      final needsEnhancement = pictogram.keyword.isEmpty ||
+                               pictogram.keyword == 'Opgeslagen pictogram' ||
+                               pictogram.keyword == 'Saved pictogram' ||
+                               pictogram.keyword == 'Onbekend' ||
+                               pictogram.keyword.startsWith('Opgeslag') ||
+                               pictogram.keyword.startsWith('Saved') ||
+                               pictogram.keyword.contains('picto') ||
+                               pictogram.keyword.startsWith('Pictogram ');
+      
+      if (!needsEnhancement || pictogram.id <= 0) {
+        enhanced.add(pictogram);
+        continue;
+      }
+      
+      // Try to fetch real keyword
+      try {
+        final fetched = await _arasaacService.getPictogramById(pictogram.id).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => null,
+        );
+        
+        if (fetched != null && 
+            fetched.keyword.isNotEmpty && 
+            fetched.keyword != 'Opgeslagen pictogram' &&
+            fetched.keyword != 'Saved pictogram' &&
+            !fetched.keyword.startsWith('Opgeslag')) {
+          enhanced.add(pictogram.copyWith(keyword: fetched.keyword));
+          debugPrint('Enhanced keyword for pictogram ${pictogram.id}: "${pictogram.keyword}" -> "${fetched.keyword}"');
+        } else {
+          enhanced.add(pictogram);
         }
       } catch (e) {
-        debugPrint('Error listing cache directory: $e');
-        return [];
+        // Keep original on error
+        enhanced.add(pictogram);
       }
-
-      debugPrint('Found $fileCount files and $dirCount directories in cache directory');
-      debugPrint('Extracted ${cachedIds.length} valid pictogram IDs from cache');
-
-      if (cachedIds.isEmpty) {
-        debugPrint('No cached pictograms found. User needs to view pictograms online first to cache them.');
-        return [];
-      }
-
-      // Get cached pictograms, filtered by category if provided
-      final categoryKey = category?.key;
-      debugPrint('Loading cached pictograms${categoryKey != null ? ' for category $categoryKey' : ''}...');
-      final cachedPictograms = await _arasaacService.getCachedPictograms(
-        ids: cachedIds.isEmpty ? null : cachedIds,
-        category: categoryKey,
-      );
-      debugPrint('Successfully loaded ${cachedPictograms.length} cached pictograms${categoryKey != null ? ' for category $categoryKey' : ''}');
-      
-      if (cachedPictograms.isEmpty && cachedIds.isNotEmpty) {
-        debugPrint('WARNING: Found ${cachedIds.length} cached IDs but getCachedPictograms returned empty list');
-        debugPrint('First few IDs: ${cachedIds.take(5).toList()}');
-      }
-      
-      // Enhance cached pictograms with proper keywords (they have "Pictogram {id}" by default)
-      // But only if online - skip enhancement when offline to avoid spamming API
-      final enhancedPictograms = <Pictogram>[];
-      
-      // Check if online by testing first pictogram
-      bool isOnline = false;
-      final firstPictogramToEnhance = cachedPictograms.firstWhere(
-        (p) => p.keyword.startsWith('Pictogram ') && p.id > 0,
-        orElse: () => cachedPictograms.isNotEmpty ? cachedPictograms.first : Pictogram(
-          id: 0,
-          keyword: '',
-          category: '',
-          imageUrl: '',
-        ),
-      );
-      
-      if (firstPictogramToEnhance.id > 0) {
-        try {
-          final testEnhanced = await _arasaacService.getPictogramById(firstPictogramToEnhance.id)
-              .timeout(const Duration(seconds: 2));
-          isOnline = testEnhanced != null;
-        } catch (e) {
-          // Network error or timeout - assume offline
-          isOnline = false;
-        }
-      }
-      
-      if (!isOnline) {
-        // Offline - return cached pictograms as-is without enhancement
-        debugPrint('Offline mode: Skipping keyword enhancement for ${cachedPictograms.length} cached pictograms');
-        return cachedPictograms;
-      }
-      
-      // Online - enhance pictograms that need it
-      for (final pictogram in cachedPictograms) {
-        // If keyword is "Pictogram {id}", try to fetch proper keyword
-        if (pictogram.keyword.startsWith('Pictogram ') && pictogram.id > 0) {
-          try {
-            final enhanced = await _arasaacService.getPictogramById(pictogram.id);
-            if (enhanced != null && enhanced.keyword.isNotEmpty && enhanced.keyword != 'Onbekend') {
-              // Use enhanced keyword, keep other properties
-              enhancedPictograms.add(pictogram.copyWith(
-                keyword: enhanced.keyword,
-                category: enhanced.category,
-              ));
-              continue;
-            }
-          } catch (e) {
-            // Silently fail - use original pictogram
-            // Don't log errors when offline (we already checked, but individual requests might fail)
-          }
-        }
-        // Keep original pictogram if enhancement failed or not needed
-        enhancedPictograms.add(pictogram);
-      }
-      
-      debugPrint('Enhanced ${enhancedPictograms.length} cached pictograms with keywords');
-      return enhancedPictograms;
-    } catch (e, stackTrace) {
-      debugPrint('Error loading cached pictograms: $e');
-      debugPrint('Stack trace: $stackTrace');
-      return [];
     }
+    
+    return enhanced;
   }
 
   /// Pre-cache pictogram images in the background for offline use
-  /// Only caches first 50 pictograms per category for offline mode
+  /// Caches pictograms as they are loaded (no arbitrary limit)
   Future<void> _precachePictograms(List<Pictogram> pictograms, String categoryKey) async {
     // Only cache ARASAAC pictograms (not custom ones)
     final arasaacPictograms = pictograms.where((p) => p.id > 0).toList();
     
-    // Limit to first 50 pictograms for caching
-    const maxCacheCount = 50;
-    final pictogramsToCache = arasaacPictograms.take(maxCacheCount).toList();
+    if (arasaacPictograms.isEmpty) {
+      return;
+    }
     
-    debugPrint('Pre-caching ${pictogramsToCache.length} pictograms (limited to $maxCacheCount) for category $categoryKey...');
+    debugPrint('Pre-caching ${arasaacPictograms.length} pictograms for category $categoryKey...');
     int cachedCount = 0;
     int errorCount = 0;
     
     // Cache in smaller batches to avoid overwhelming the network
     const batchSize = 10;
-    for (int i = 0; i < pictogramsToCache.length; i += batchSize) {
-      final batch = pictogramsToCache.skip(i).take(batchSize).toList();
+    for (int i = 0; i < arasaacPictograms.length; i += batchSize) {
+      final batch = arasaacPictograms.skip(i).take(batchSize).toList();
       
       // Process batch in parallel
       await Future.wait(
         batch.map((pictogram) async {
           try {
-            // Download and cache (will skip if already cached with correct category)
+            // Download and cache (will skip if already cached)
+            // Pass keyword so it's stored in metadata for offline display
             final cached = await _arasaacService.downloadAndCachePictogramAtSize(
               pictogram.id,
               size: 500,
               category: categoryKey,
+              keyword: pictogram.keyword, // Store keyword for offline use
             );
             if (cached != null) {
               cachedCount++;
@@ -426,23 +381,19 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       );
       
       // Small delay between batches to avoid rate limiting
-      if (i + batchSize < pictogramsToCache.length) {
+      if (i + batchSize < arasaacPictograms.length) {
         await Future.delayed(const Duration(milliseconds: 100));
-      }
-      
-      if ((i + batchSize) % 50 == 0 || i + batchSize >= pictogramsToCache.length) {
-        debugPrint('Pre-cached ${i + batchSize}/${pictogramsToCache.length} pictograms... ($cachedCount cached, $errorCount errors)');
       }
     }
     
-    debugPrint('Pre-caching complete: $cachedCount cached, $errorCount errors (limited to first $maxCacheCount)');
+    debugPrint('Pre-caching complete: $cachedCount cached, $errorCount errors for category $categoryKey');
   }
 
   /// Cache image to custom directory when displayed (called for each pictogram in grid)
-  void _cacheImageToCustomDirectory(int pictogramId, String category) {
-    // Always download and cache (don't skip if already cached)
-    // This ensures we always have the latest version and update category metadata
-    _arasaacService.downloadAndCachePictogram(pictogramId, category: category).then((file) {
+  void _cacheImageToCustomDirectory(int pictogramId, String category, String keyword) {
+    // Always download and cache with category and keyword
+    // This ensures we always have the latest version and update metadata
+    _arasaacService.downloadAndCachePictogram(pictogramId, category: category, keyword: keyword).then((file) {
       if (file != null) {
         if (kDebugMode) {
           debugPrint('Successfully cached pictogram $pictogramId to custom directory');
@@ -491,10 +442,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       _isSearching = false;
       _searchResults = [];
     });
-    // Reset displayed count when switching categories
-    if (!_allPictogramsByCategory.containsKey(category)) {
-      _displayedCountByCategory.remove(category);
-    }
+    // Load pictograms for the new category
     _loadPictograms(category);
   }
 
@@ -825,8 +773,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     // Only use thumbnail URL - no fallbacks to speed up loading
     // Also cache to our custom directory when image loads
     if (pictogram.id > 0) {
-      // ARASAAC pictogram - cache it when displayed with category
-      _cacheImageToCustomDirectory(pictogram.id, pictogram.category);
+      // ARASAAC pictogram - cache it when displayed with category and keyword
+      _cacheImageToCustomDirectory(pictogram.id, pictogram.category, pictogram.keyword);
     }
     
     return CachedNetworkImage(
@@ -861,16 +809,13 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       return false;
     }
     
-    // Always show if we have loaded the initial batch
-    // Even if we have exactly 18, there might be more available from API
-    final displayedCount = _displayedCountByCategory[_selectedCategory] ?? 0;
     final currentPictograms = _pictogramsByCategory[_selectedCategory] ?? [];
     
     // Show button if:
     // 1. We have displayed some pictograms (at least initial load)
     // 2. We're not currently loading more
     // 3. We have at least the initial count (might be more available)
-    return displayedCount >= _initialLoadCount && 
+    return currentPictograms.length >= _initialLoadCount && 
            !_isLoadingMore && 
            currentPictograms.isNotEmpty;
   }

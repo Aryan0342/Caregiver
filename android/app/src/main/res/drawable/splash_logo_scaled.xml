@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Constrained app logo for splash screen - inset to show only center portion -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/app_logo"
+    android:insetLeft="35%"
+    android:insetTop="35%"
+    android:insetRight="35%"
+    android:insetBottom="35%" />

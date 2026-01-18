@@ -4,6 +4,7 @@ import '../theme.dart';
 import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
 import '../services/auth_state_service.dart';
+import '../services/arasaac_service.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 /// 
@@ -21,6 +22,10 @@ class HomeScreen extends StatelessWidget {
       // Clear login status so next time requires email/password login
       final authStateService = AuthStateService();
       await authStateService.clearLoginStatus();
+      
+      // Clear all pictogram cache (disk + memory) on logout
+      final arasaacService = ArasaacService();
+      await arasaacService.clearAllPictogramCacheFully();
       
       await FirebaseAuth.instance.signOut();
       

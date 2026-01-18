@@ -196,6 +196,11 @@ class AppLocalizations {
   String get versionInfo => _language == AppLanguage.dutch ? 'Versie en informatie' : 'Version and information';
   String get privacyInfo => _language == AppLanguage.dutch ? 'Privacybeleid en gegevens' : 'Privacy policy and data';
   String get autoSaved => _language == AppLanguage.dutch ? 'Pictogrammen worden automatisch opgeslagen' : 'Pictograms are automatically saved';
+  String get clearCache => _language == AppLanguage.dutch ? 'Pictogramcache wissen' : 'Clear pictogram cache';
+  String get clearCacheDescription => _language == AppLanguage.dutch ? 'Wis alle opgeslagen pictogrammen (schijf en geheugen)' : 'Clear all saved pictograms (disk and memory)';
+  String get clearCacheSuccess => _language == AppLanguage.dutch ? 'Cache gewist' : 'Cache cleared';
+  String get clearCacheError => _language == AppLanguage.dutch ? 'Fout bij wissen van cache' : 'Error clearing cache';
+  String get savedPictogram => _language == AppLanguage.dutch ? 'Opgeslagen pictogram' : 'Saved pictogram';
 
   // Pictogram picker
   String get selectPictograms => _language == AppLanguage.dutch ? 'Selecteer pictogrammen' : 'Select pictograms';

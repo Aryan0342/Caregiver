@@ -3,6 +3,7 @@ import '../theme.dart';
 import '../services/language_service.dart';
 import '../providers/language_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/arasaac_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -218,6 +219,76 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
     );
   }
 
+  Future<void> _handleClearCache(BuildContext context) async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.delete_outline, color: AppTheme.primaryBlue),
+            const SizedBox(width: 12),
+            Text(localizations.clearCache),
+          ],
+        ),
+        content: Text(localizations.clearCacheDescription),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              localizations.cancel,
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              localizations.delete,
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final arasaacService = ArasaacService();
+        await arasaacService.clearAllPictogramCacheFully();
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.clearCacheSuccess),
+              backgroundColor: AppTheme.accentGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.clearCacheError),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
@@ -326,6 +397,37 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                   color: AppTheme.textSecondary,
                 ),
                 onTap: () => _showOfflineModeInfo(context),
+              ),
+            ),
+
+            // Clear cache
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+                title: Text(
+                  localizations.clearCache,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(localizations.clearCacheDescription),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () => _handleClearCache(context),
               ),
             ),
 

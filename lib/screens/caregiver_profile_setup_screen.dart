@@ -152,12 +152,12 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                 constraints: BoxConstraints(
                   minHeight: constraints.maxHeight - 48, // Account for padding
                 ),
-                child: IntrinsicHeight(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                 const SizedBox(height: 20),
                 
                 // Description
@@ -186,12 +186,14 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   style: const TextStyle(fontSize: 18, color: Colors.black),
                   dropdownColor: AppTheme.surfaceWhite,
                   menuMaxHeight: 200,
+                  isExpanded: true,
                   items: [
                     DropdownMenuItem(
                       value: 'Parent',
                       child: Text(
                         localizations.roleParent,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
@@ -199,6 +201,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       child: Text(
                         localizations.roleTeacher,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
@@ -206,6 +209,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       child: Text(
                         localizations.roleTherapist,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -257,12 +261,14 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   style: const TextStyle(fontSize: 18, color: Colors.black),
                   dropdownColor: AppTheme.surfaceWhite,
                   menuMaxHeight: 200,
+                  isExpanded: true,
                   items: [
                     DropdownMenuItem(
                       value: '3-5',
                       child: Text(
                         localizations.ageRange3to5,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
@@ -270,6 +276,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       child: Text(
                         localizations.ageRange6to9,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
@@ -277,6 +284,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       child: Text(
                         localizations.ageRange10to14,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
@@ -284,6 +292,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       child: Text(
                         localizations.ageRange15plus,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -310,12 +319,14 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   style: const TextStyle(fontSize: 18, color: Colors.black),
                   dropdownColor: AppTheme.surfaceWhite,
                   menuMaxHeight: 200,
+                  isExpanded: true,
                   items: [
                     DropdownMenuItem(
                       value: 'nl',
                       child: const Text(
                         'Nederlands',
                         style: TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
@@ -323,6 +334,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       child: const Text(
                         'English',
                         style: TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -414,7 +426,6 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                       ],
                     ),
                   ),
-                ),
               ),
             );
           },

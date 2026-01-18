@@ -27,8 +27,6 @@ class _EditSetScreenState extends State<EditSetScreen> {
   final _nameController = TextEditingController();
   List<Pictogram> _selectedPictograms = [];
   bool _isSaving = false;
-  bool _isCheckingPin = true;
-  bool _pinVerified = false;
 
   @override
   void initState() {
@@ -46,11 +44,6 @@ class _EditSetScreenState extends State<EditSetScreen> {
     );
 
     if (mounted) {
-      setState(() {
-        _isCheckingPin = false;
-        _pinVerified = verified;
-      });
-
       // If PIN not verified, go back
       if (!verified) {
         Navigator.of(context).pop();

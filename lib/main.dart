@@ -28,13 +28,7 @@ import 'providers/language_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Suppress Google Play Services warnings in debug mode
-  if (kDebugMode) {
-    // Suppress verbose logging from Google Play Services
-  }
-  
-  // Initialize Firebase (required for AuthWrapper)
-  // Native splash screen shows during this brief initialization
+  // Initialize Firebase
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -53,28 +47,23 @@ void main() async {
     debugPrint('Firebase initialization error: $e');
   }
   
-  // Initialize language service (fast operation)
-  final languageService = LanguageService();
-  
-  // Run app - Flutter splash screen appears instantly
-  runApp(MyApp(languageService: languageService));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  final LanguageService languageService;
-  
-  const MyApp({super.key, required this.languageService});
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  LanguageService get _languageService => widget.languageService;
+  late final LanguageService _languageService;
 
   @override
   void initState() {
     super.initState();
+    _languageService = LanguageService();
     _languageService.addListener(_onLanguageChanged);
   }
 
