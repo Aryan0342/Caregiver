@@ -1,5 +1,5 @@
 name: caregiver
-description: "Dag in beeld - Pictogram series app for daily routines and healthcare communication"
+description: "Je Dag in Beeld - Pictogram series app for daily routines and healthcare communication"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

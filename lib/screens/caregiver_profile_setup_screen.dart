@@ -18,16 +18,17 @@ class CaregiverProfileSetupScreen extends StatefulWidget {
 
 class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _clientNameController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _organisationController = TextEditingController();
+  final _locationController = TextEditingController();
   final _profileService = CaregiverProfileService();
   final _authService = AuthService();
   
   String? _selectedRole;
-  String? _selectedAgeRange;
+  String? _selectedSex;
   String _selectedLanguage = 'nl';
   bool _isLoading = false;
   String? _errorMessage;
-  String? _caregiverName;
 
   @override
   void initState() {
@@ -37,7 +38,9 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
 
   @override
   void dispose() {
-    _clientNameController.dispose();
+    _nameController.dispose();
+    _organisationController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -45,9 +48,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
   void _loadCaregiverName() {
     final user = _authService.currentUser;
     if (user != null) {
-      setState(() {
-        _caregiverName = user.displayName ?? user.email?.split('@').first ?? 'Caregiver';
-      });
+      _nameController.text = user.displayName ?? user.email?.split('@').first ?? '';
     }
   }
 
@@ -73,12 +74,17 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
     try {
       // Save profile to Firestore
       await _profileService.saveProfile(
-        name: _caregiverName ?? 'Caregiver',
+        name: _nameController.text.trim().isEmpty 
+            ? 'Caregiver' 
+            : _nameController.text.trim(),
         role: _selectedRole!,
-        clientName: _clientNameController.text.trim().isEmpty 
+        sex: _selectedSex,
+        organisation: _organisationController.text.trim().isEmpty 
             ? null 
-            : _clientNameController.text.trim(),
-        ageRange: _selectedAgeRange,
+            : _organisationController.text.trim(),
+        location: _locationController.text.trim().isEmpty 
+            ? null 
+            : _locationController.text.trim(),
         language: _selectedLanguage,
       );
 
@@ -115,7 +121,9 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
     try {
       // Save with default values
       await _profileService.saveProfile(
-        name: _caregiverName ?? 'Caregiver',
+        name: _nameController.text.trim().isEmpty 
+            ? 'Caregiver' 
+            : _nameController.text.trim(),
         role: _selectedRole ?? 'Parent',
         language: _selectedLanguage,
       );
@@ -228,13 +236,13 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                 ),
                 const SizedBox(height: 24),
                 
-                // Client Name field (optional)
+                // Name field
                 TextFormField(
-                  controller: _clientNameController,
+                  controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: localizations.clientName,
-                    hintText: localizations.enterClientName,
-                    prefixIcon: const Icon(Icons.child_care_outlined),
+                    labelText: localizations.caregiverName,
+                    hintText: localizations.enterCaregiverName,
+                    prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -246,12 +254,12 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                 ),
                 const SizedBox(height: 24),
                 
-                // Client Age Range dropdown (optional)
+                // Sex dropdown (optional)
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(
-                    labelText: localizations.clientAgeRange,
-                    hintText: localizations.selectAgeRange,
-                    prefixIcon: const Icon(Icons.calendar_today_outlined),
+                    labelText: localizations.caregiverSex,
+                    hintText: localizations.selectSex,
+                    prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -264,33 +272,25 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   isExpanded: true,
                   items: [
                     DropdownMenuItem(
-                      value: '3-5',
+                      value: 'Male',
                       child: Text(
-                        localizations.ageRange3to5,
+                        localizations.sexMale,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
-                      value: '6-9',
+                      value: 'Female',
                       child: Text(
-                        localizations.ageRange6to9,
+                        localizations.sexFemale,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
-                      value: '10-14',
+                      value: 'Other',
                       child: Text(
-                        localizations.ageRange10to14,
-                        style: const TextStyle(color: Colors.black, fontSize: 18),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: '15+',
-                      child: Text(
-                        localizations.ageRange15plus,
+                        localizations.sexOther,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -298,10 +298,46 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   ],
                   onChanged: (value) {
                     setState(() {
-                      _selectedAgeRange = value;
+                      _selectedSex = value;
                     });
                   },
-                  value: _selectedAgeRange,
+                  value: _selectedSex,
+                ),
+                const SizedBox(height: 24),
+                
+                // Organisation field (optional)
+                TextFormField(
+                  controller: _organisationController,
+                  decoration: InputDecoration(
+                    labelText: localizations.organisation,
+                    hintText: localizations.enterOrganisation,
+                    prefixIcon: const Icon(Icons.business_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.surfaceWhite,
+                  ),
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 24),
+                
+                // Location field (optional)
+                TextFormField(
+                  controller: _locationController,
+                  decoration: InputDecoration(
+                    labelText: localizations.location,
+                    hintText: localizations.enterLocation,
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.surfaceWhite,
+                  ),
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontSize: 18),
                 ),
                 const SizedBox(height: 24),
                 

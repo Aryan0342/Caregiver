@@ -89,6 +89,29 @@ service cloud.firestore {
                     get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
     }
     
+    // Picto requests collection - users can create, admins can read/update
+    match /picto_requests/{requestId} {
+      // Allow authenticated users to create requests
+      allow create: if request.auth != null &&
+                     request.resource.data.requestedBy == request.auth.uid;
+      
+      // Allow users to read their own requests
+      allow read: if request.auth != null &&
+                   (resource.data.requestedBy == request.auth.uid ||
+                    exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                    get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true);
+      
+      // Allow admins to update request status
+      allow update: if request.auth != null &&
+                     exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+      
+      // Allow admins to delete requests
+      allow delete: if request.auth != null &&
+                     exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
     // Default: deny all other access
     match /{document=**} {
       allow read, write: if false;

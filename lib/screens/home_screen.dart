@@ -62,12 +62,19 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top section: Header with logout button
+            // Top section: Header with logo and logout button
             Padding(
               padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Logo on left top
+                  Image.asset(
+                    'assets/images/app_logo.png',
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.contain,
+                  ),
                   // Logout button in top right (subtle, not prominent)
                   IconButton(
                     icon: const Icon(Icons.logout),
@@ -79,7 +86,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             
-            // Main heading section: Title and subtitle
+            // Main heading section: Title only
             Padding(
               padding: const EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 48.0),
               child: Column(
@@ -94,17 +101,6 @@ class HomeScreen extends StatelessWidget {
                           fontSize: 32,
                           height: 1.2,
                           letterSpacing: 0.5,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Subtitle: "Samen stap voor stap"
-                  Text(
-                    localizations.togetherStepByStep,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal,
-                          height: 1.4,
                         ),
                   ),
                 ],
@@ -130,7 +126,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     
-                    // Secondary action: "Mijn pictoreeksen" (Orange button)
+                    // Secondary action: "Opgeslagen pictoreeksen" (Orange button)
                     _buildMainActionButton(
                       context,
                       icon: Icons.folder_rounded,
@@ -197,9 +193,9 @@ class HomeScreen extends StatelessWidget {
         highlightColor: Colors.white.withValues(alpha: 0.1),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           constraints: const BoxConstraints(
-            minHeight: 80, // Large touch target for accessibility
+            minHeight: 70, // Smaller touch target
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -209,9 +205,9 @@ class HomeScreen extends StatelessWidget {
               Icon(
                 icon,
                 color: Colors.white,
-                size: 40,
+                size: 32,
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
               // Button text
               Flexible(
                 child: Text(
@@ -219,7 +215,7 @@ class HomeScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
-                        fontSize: 22,
+                        fontSize: 20,
                         letterSpacing: 0.5,
                         height: 1.3,
                       ),

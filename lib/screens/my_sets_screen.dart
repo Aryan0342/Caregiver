@@ -6,7 +6,7 @@ import '../models/pictogram_model.dart';
 import '../services/set_service.dart';
 import '../services/arasaac_service.dart';
 import 'edit_set_screen.dart';
-import 'client_session_screen.dart';
+import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
 
 class MySetsScreen extends StatelessWidget {
@@ -294,21 +294,21 @@ class MySetsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // Start met cliënt button
+                // Pictoreeks starten button
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ClientSessionScreen(set: set),
+                          builder: (context) => ClientModeSessionScreen(set: set),
                         ),
                       );
                     },
                     icon: const Icon(Icons.play_arrow, size: 18),
                     label: Builder(
                       builder: (context) => Text(
-                        LanguageProvider.localizationsOf(context).startWithClient,
+                        LanguageProvider.localizationsOf(context).startPictoreeks,
                         style: const TextStyle(fontSize: 14),
                       ),
                     ),

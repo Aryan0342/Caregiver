@@ -34,6 +34,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   int _currentStepIndex = 0;
   DateTime? _lastExitAttempt;
   final Map<int, String> _keywordCache = {}; // Cache for fetched keywords
+  List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +61,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   Widget _buildMainContent() {
     final localizations = LanguageProvider.localizationsOf(context);
     
-    if (widget.set.pictograms.isEmpty) {
+    // Use modified sequence if available, otherwise use original
+    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    
+    if (pictograms.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -76,16 +80,19 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       );
     }
 
-    final currentPictogram = widget.set.pictograms[_currentStepIndex];
-    final isLastStep = _currentStepIndex == widget.set.pictograms.length - 1;
+    final currentPictogram = pictograms[_currentStepIndex];
+    final isLastStep = _currentStepIndex == pictograms.length - 1;
+    final isFirstStep = _currentStepIndex == 0;
 
     return Column(
       children: [
         // Fullscreen pictogram display
         Expanded(
           child: GestureDetector(
-            // Tap anywhere on pictogram to mark as done
-            onTap: _markAsDone,
+            // Tap anywhere on pictogram to go to next step
+            onTap: isLastStep ? null : () {
+              _nextStep();
+            },
             child: Container(
               width: double.infinity,
               margin: const EdgeInsets.all(24),
@@ -122,8 +129,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               vertical: 20,
             ),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlueLight,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.black,
+                width: 2,
+              ),
             ),
                         child: FutureBuilder<String>(
                           future: _getPictogramKeyword(currentPictogram),
@@ -190,9 +201,40 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           ),
         ),
 
-        const SizedBox(height: 48),
+        const SizedBox(height: 16),
 
-        // Action buttons - only "Klaar" and "Volgende stap"
+        // Pictograms preview (tiny, under the title) - shows previous and next with horizontal scroll
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: SizedBox(
+            height: 60,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: pictograms.length, // Show all pictograms
+              itemBuilder: (context, index) {
+                final pictogram = pictograms[index];
+                final isCurrent = index == _currentStepIndex;
+                final isPrevious = index < _currentStepIndex;
+                final isNext = index > _currentStepIndex;
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildTinyPictogramPreview(
+                    pictogram, 
+                    index + 1,
+                    isCurrent: isCurrent,
+                    isPrevious: isPrevious,
+                    isNext: isNext,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Action buttons - "Terug", "Wijzigen", "Volgende"
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -208,46 +250,133 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           child: SafeArea(
             child: Row(
               children: [
-                // "Klaar" button
+                // "Terug" button
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _markAsDone,
-                    icon: const Icon(Icons.check, size: 28),
-                    label: Text(
-                      localizations.done,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      backgroundColor: AppTheme.accentGreen,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  child: Material(
+                    color: isFirstStep 
+                        ? AppTheme.textSecondary.withValues(alpha: 0.5)
+                        : AppTheme.textSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: isFirstStep ? null : () {
+                        _previousStep();
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                        constraints: const BoxConstraints(minHeight: 56),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.arrow_back, size: 24, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                localizations.back,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
 
-                // "Volgende stap" button (only show if not last step)
-                if (!isLastStep)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _nextStep,
-                      icon: const Icon(Icons.arrow_forward, size: 28),
-                      label: Text(
-                        localizations.nextStep,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        backgroundColor: AppTheme.primaryBlue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                // "Wijzigen" button
+                Expanded(
+                  child: Material(
+                    color: AppTheme.accentOrange,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: () {
+                        _modifySequence();
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                        constraints: const BoxConstraints(minHeight: 56),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.edit, size: 24, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                localizations.modify,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // "Volgende" / "Klaar" button
+                Expanded(
+                  child: Material(
+                    color: isLastStep 
+                        ? AppTheme.accentGreen
+                        : AppTheme.primaryBlue,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: isLastStep ? () {
+                        _exitWithPin();
+                      } : () {
+                        _nextStep();
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                        constraints: const BoxConstraints(minHeight: 56),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isLastStep ? Icons.check : Icons.arrow_forward,
+                              size: 24,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                isLastStep ? localizations.done : localizations.next,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -370,22 +499,56 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   }
 
   void _nextStep() {
-    if (_currentStepIndex < widget.set.pictograms.length - 1) {
+    if (!mounted) return;
+    
+    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    if (_currentStepIndex < pictograms.length - 1) {
       setState(() {
         _currentStepIndex++;
       });
     }
   }
 
-  void _markAsDone() {
-    // If not on last step, move to next step
-    if (_currentStepIndex < widget.set.pictograms.length - 1) {
-      _nextStep();
-    } else {
-      // If on last step, loop back to first step (no exit without PIN)
+  void _previousStep() {
+    if (_currentStepIndex > 0) {
       setState(() {
+        _currentStepIndex--;
+      });
+    }
+  }
+
+  void _modifySequence() async {
+    final currentSequence = _modifiedSequence ?? List<Pictogram>.from(widget.set.pictograms);
+    
+    // Show dialog to modify sequence
+    final result = await showDialog<List<Pictogram>>(
+      context: context,
+      builder: (context) => _ModifySequenceDialog(
+        currentSequence: currentSequence,
+        currentIndex: _currentStepIndex,
+      ),
+    );
+    
+    if (result != null) {
+      setState(() {
+        _modifiedSequence = result;
+        // Reset to first step after modification
         _currentStepIndex = 0;
       });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Volgorde tijdelijk gewijzigd. Wijzigingen worden niet opgeslagen.'),
+            backgroundColor: AppTheme.accentOrange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -526,6 +689,125 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
+  Widget _buildTinyPictogramPreview(
+    Pictogram pictogram, 
+    int stepNumber, {
+    bool isCurrent = false,
+    bool isPrevious = false,
+    bool isNext = false,
+  }) {
+    // Determine border color based on state
+    Color borderColor;
+    if (isCurrent) {
+      borderColor = AppTheme.accentGreen; // Green for current
+    } else if (isPrevious) {
+      borderColor = AppTheme.textSecondary; // Gray for previous (completed)
+    } else {
+      borderColor = AppTheme.primaryBlue.withValues(alpha: 0.3); // Blue for next
+    }
+    
+    // Determine background opacity based on state
+    double backgroundAlpha;
+    if (isCurrent) {
+      backgroundAlpha = 0.4; // More visible for current
+    } else if (isPrevious) {
+      backgroundAlpha = 0.15; // Less visible for previous
+    } else {
+      backgroundAlpha = 0.2; // Normal for next
+    }
+    
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryBlueLight.withValues(alpha: backgroundAlpha),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: borderColor,
+          width: isCurrent ? 2 : 1, // Thicker border for current
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(7),
+        child: Stack(
+          children: [
+            // Pictogram image
+            Opacity(
+              opacity: isPrevious ? 0.6 : 1.0, // Dim previous items
+              child: CachedNetworkImage(
+                imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                    ? pictogram.imageUrl
+                    : _arasaacService.getThumbnailUrl(pictogram.id),
+                fit: BoxFit.contain,
+                maxWidthDiskCache: 200,
+                maxHeightDiskCache: 200,
+                memCacheWidth: 100,
+                memCacheHeight: 100,
+                placeholder: (context, url) => Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Icon(
+                  _getIconForKeyword(pictogram.keyword),
+                  size: 20,
+                  color: AppTheme.primaryBlue,
+                ),
+              ),
+            ),
+            // Step number badge
+            Positioned(
+              bottom: 2,
+              right: 2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isCurrent 
+                      ? AppTheme.accentGreen 
+                      : isPrevious 
+                          ? AppTheme.textSecondary 
+                          : AppTheme.primaryBlue,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${stepNumber}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            // Checkmark for completed (previous) items
+            if (isPrevious)
+              Positioned(
+                top: 2,
+                left: 2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   IconData _getIconForKeyword(String keyword) {
     final lowerKeyword = keyword.toLowerCase();
     if (lowerKeyword.contains('eten') || lowerKeyword.contains('drink') || lowerKeyword.contains('food')) {
@@ -541,5 +823,130 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     } else {
       return Icons.image_outlined;
     }
+  }
+}
+
+/// Dialog for modifying the pictogram sequence temporarily
+class _ModifySequenceDialog extends StatefulWidget {
+  final List<Pictogram> currentSequence;
+  final int currentIndex;
+
+  const _ModifySequenceDialog({
+    required this.currentSequence,
+    required this.currentIndex,
+  });
+
+  @override
+  State<_ModifySequenceDialog> createState() => _ModifySequenceDialogState();
+}
+
+class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
+  late List<Pictogram> _modifiedSequence;
+  final ArasaacService _arasaacService = ArasaacService();
+
+  @override
+  void initState() {
+    super.initState();
+    _modifiedSequence = List<Pictogram>.from(widget.currentSequence);
+  }
+
+  void _reorderPictogram(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    setState(() {
+      final item = _modifiedSequence.removeAt(oldIndex);
+      _modifiedSequence.insert(newIndex, item);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
+    return AlertDialog(
+      title: Text(localizations.modifySequence),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              localizations.modifySequenceDescription,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ReorderableListView.builder(
+                shrinkWrap: true,
+                itemCount: _modifiedSequence.length,
+                onReorder: _reorderPictogram,
+                itemBuilder: (context, index) {
+                  final pictogram = _modifiedSequence[index];
+                  return _buildPictogramListItem(pictogram, index);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(localizations.cancel),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(_modifiedSequence),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.accentOrange,
+          ),
+          child: Text(localizations.save),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPictogramListItem(Pictogram pictogram, int index) {
+    return Card(
+      key: ValueKey(pictogram.id),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: CachedNetworkImage(
+              imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                  ? pictogram.imageUrl
+                  : _arasaacService.getThumbnailUrl(pictogram.id),
+              fit: BoxFit.contain,
+              placeholder: (context, url) => Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                ),
+              ),
+              errorWidget: (context, url, error) => Icon(
+                Icons.image_outlined,
+                size: 24,
+                color: AppTheme.primaryBlue,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          pictogram.keyword,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text('Stap ${index + 1}'),
+        trailing: const Icon(Icons.drag_handle),
+      ),
+    );
   }
 }

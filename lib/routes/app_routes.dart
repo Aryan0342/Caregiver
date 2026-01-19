@@ -12,4 +12,5 @@ class AppRoutes {
   static const String changePin = '/change-pin';
   static const String forgotPassword = '/forgot-password';
   static const String clientMode = '/client-mode';
+  static const String requestPicto = '/request-picto';
 }

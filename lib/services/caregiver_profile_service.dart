@@ -22,16 +22,18 @@ class CaregiverProfileService {
   /// 
   /// [name] - Caregiver's full name
   /// [role] - Caregiver's role (Parent, Teacher, Therapist)
-  /// [clientName] - Name of the client (optional)
-  /// [ageRange] - Client's age range (optional)
+  /// [sex] - Caregiver's sex (optional)
+  /// [organisation] - Caregiver's organisation (optional)
+  /// [location] - Caregiver's specific location (optional)
   /// [language] - Preferred language (default: 'nl')
   /// 
   /// Returns true if successful, throws exception on error
   Future<bool> saveProfile({
     required String name,
     required String role,
-    String? clientName,
-    String? ageRange,
+    String? sex,
+    String? organisation,
+    String? location,
     String language = 'nl',
   }) async {
     if (_currentUserId == null) {
@@ -48,11 +50,14 @@ class CaregiverProfileService {
       };
 
       // Add optional fields if provided
-      if (clientName != null && clientName.trim().isNotEmpty) {
-        profileData['clientName'] = clientName.trim();
+      if (sex != null && sex.trim().isNotEmpty) {
+        profileData['sex'] = sex.trim();
       }
-      if (ageRange != null && ageRange.isNotEmpty) {
-        profileData['ageRange'] = ageRange;
+      if (organisation != null && organisation.trim().isNotEmpty) {
+        profileData['organisation'] = organisation.trim();
+      }
+      if (location != null && location.trim().isNotEmpty) {
+        profileData['location'] = location.trim();
       }
 
       await _firestore

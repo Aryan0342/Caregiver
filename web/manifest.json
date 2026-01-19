@@ -1,6 +1,6 @@
 {
-    "name": "Dag in Beeld",
-    "short_name": "Dag in Beeld",
+    "name": "Je Dag in Beeld",
+    "short_name": "Je Dag in Beeld",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -18,6 +18,7 @@ import 'screens/create_caregiver_pin_screen.dart';
 import 'screens/change_pin_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/client_mode_entry_screen.dart';
+import 'screens/request_picto_screen.dart';
 import 'services/language_service.dart';
 import 'services/setup_service.dart';
 import 'services/pin_auth_service.dart';
@@ -113,6 +114,7 @@ class _MyAppState extends State<MyApp> {
           AppRoutes.changePin: (context) => const ChangePinScreen(),
           AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
           AppRoutes.clientMode: (context) => const ClientModeEntryScreen(),
+          AppRoutes.requestPicto: (context) => const RequestPictoScreen(),
         },
         // Fallback for unknown routes
         onUnknownRoute: (settings) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/pin_service.dart';
 import '../providers/language_provider.dart';
+import '../routes/app_routes.dart';
 import 'pin_entry_screen.dart';
 
 /// Screen for verifying caregiver PIN.
@@ -87,6 +88,10 @@ class _VerifyPinScreenState extends State<VerifyPinScreen> {
       showBackButton: true,
       errorMessage: _errorMessage,
       onPinComplete: _onPinComplete,
+      onForgotPin: () {
+        // Navigate to change PIN screen
+        Navigator.pushNamed(context, AppRoutes.changePin);
+      },
     );
   }
 }

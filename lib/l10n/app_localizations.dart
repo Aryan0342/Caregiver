@@ -7,7 +7,7 @@ class AppLocalizations {
   AppLocalizations(AppLanguage language) : _language = language;
 
   // App name
-  String get appName => _language == AppLanguage.dutch ? 'Dag in beeld' : 'Day in view';
+  String get appName => _language == AppLanguage.dutch ? 'Je Dag in Beeld' : 'Your Day in View';
   String get appSubtitle => _language == AppLanguage.dutch ? 'pictoreeksen' : 'pictogram sequences';
 
   // Common
@@ -53,12 +53,23 @@ class AppLocalizations {
 
   // Profile setup screen
   String get profileSetup => _language == AppLanguage.dutch ? 'Profiel instellen' : 'Setup profile';
-  String get profileSetupDescription => _language == AppLanguage.dutch ? 'Vertel ons iets over uzelf en uw cliënt' : 'Tell us about yourself and your client';
+  String get profileSetupDescription => _language == AppLanguage.dutch ? 'Vertel ons iets over uzelf' : 'Tell us about yourself';
   String get role => _language == AppLanguage.dutch ? 'Rol' : 'Role';
   String get selectRole => _language == AppLanguage.dutch ? 'Selecteer uw rol' : 'Select your role';
   String get roleParent => _language == AppLanguage.dutch ? 'Ouder' : 'Parent';
   String get roleTeacher => _language == AppLanguage.dutch ? 'Leraar' : 'Teacher';
   String get roleTherapist => _language == AppLanguage.dutch ? 'Therapeut' : 'Therapist';
+  String get caregiverName => _language == AppLanguage.dutch ? 'Naam' : 'Name';
+  String get enterCaregiverName => _language == AppLanguage.dutch ? 'Voer uw naam in' : 'Enter your name';
+  String get caregiverSex => _language == AppLanguage.dutch ? 'Geslacht' : 'Sex';
+  String get selectSex => _language == AppLanguage.dutch ? 'Selecteer geslacht' : 'Select sex';
+  String get sexMale => _language == AppLanguage.dutch ? 'Man' : 'Male';
+  String get sexFemale => _language == AppLanguage.dutch ? 'Vrouw' : 'Female';
+  String get sexOther => _language == AppLanguage.dutch ? 'Anders' : 'Other';
+  String get organisation => _language == AppLanguage.dutch ? 'Organisatie' : 'Organisation';
+  String get enterOrganisation => _language == AppLanguage.dutch ? 'Voer organisatie in' : 'Enter organisation';
+  String get location => _language == AppLanguage.dutch ? 'Naam specifieke locatie' : 'Name specific location';
+  String get enterLocation => _language == AppLanguage.dutch ? 'Voer specifieke locatie in' : 'Enter specific location';
   String get clientName => _language == AppLanguage.dutch ? 'Cliënt naam' : 'Client name';
   String get enterClientName => _language == AppLanguage.dutch ? 'Voer de naam van uw cliënt in (optioneel)' : 'Enter your client\'s name (optional)';
   String get clientAgeRange => _language == AppLanguage.dutch ? 'Leeftijdsgroep cliënt' : 'Client age range';
@@ -113,7 +124,7 @@ class AppLocalizations {
 
   // Welcome screen
   String get iAmCaregiver => _language == AppLanguage.dutch ? 'Ik ben verzorger' : 'I am a caregiver';
-  String get startWithClient => _language == AppLanguage.dutch ? 'Start met cliënt' : 'Start with client';
+  String get startWithClient => _language == AppLanguage.dutch ? 'Pictoreeks starten' : 'Start pictoreeks';
   String get clientModeDisabledMessage => _language == AppLanguage.dutch 
       ? 'Client modus is beschikbaar nadat een verzorger account is aangemaakt en een pincode is ingesteld.'
       : 'Client mode is available after a caregiver account is created and a PIN code is set.';
@@ -124,7 +135,8 @@ class AppLocalizations {
   String get togetherStepByStep => _language == AppLanguage.dutch ? 'Samen stap voor stap' : 'Together step by step';
   String get newPictogramSet => _language == AppLanguage.dutch ? 'Nieuwe pictoreeks' : 'New pictogram set';
   String get createNewSet => _language == AppLanguage.dutch ? 'Maak een nieuwe pictogramreeks' : 'Create a new pictogram sequence';
-  String get myPictogramSets => _language == AppLanguage.dutch ? 'Mijn pictoreeksen' : 'My pictogram sets';
+  String get myPictogramSets => _language == AppLanguage.dutch ? 'Opgeslagen pictoreeksen' : 'Saved pictogram sets';
+  String get singleUsePictoreeks => _language == AppLanguage.dutch ? 'Eenmalige pictoreeks' : 'Single-use pictoreeks';
   String get viewMySets => _language == AppLanguage.dutch ? 'Bekijk uw pictogramreeksen' : 'View your pictogram sequences';
   String get settings => _language == AppLanguage.dutch ? 'Instellingen' : 'Settings';
   String get appSettings => _language == AppLanguage.dutch ? 'App-instellingen en voorkeuren' : 'App settings and preferences';
@@ -132,7 +144,7 @@ class AppLocalizations {
 
   // Create/Edit set screen
   String get editPictogramSet => _language == AppLanguage.dutch ? 'Pictoreeks bewerken' : 'Edit pictogram set';
-  String get giveAName => _language == AppLanguage.dutch ? 'Geef een naam...' : 'Give a name...';
+  String get giveAName => _language == AppLanguage.dutch ? 'Naam pictoreeks. (Bv. Ochtend ADL.)' : 'Name pictoreeks. (E.g. Morning ADL.)';
   String get begin => _language == AppLanguage.dutch ? 'Begin' : 'Begin';
   String get enterName => _language == AppLanguage.dutch ? 'Voer een naam in' : 'Enter a name';
   String get selectedPictograms => _language == AppLanguage.dutch ? 'Geselecteerde pictogrammen' : 'Selected pictograms';
@@ -141,6 +153,7 @@ class AppLocalizations {
   String get setSaved => _language == AppLanguage.dutch ? 'Pictoreeks opgeslagen!' : 'Pictogram set saved!';
   String get setUpdated => _language == AppLanguage.dutch ? 'Pictoreeks bijgewerkt!' : 'Pictogram set updated!';
   String get saveError => _language == AppLanguage.dutch ? 'Fout bij opslaan' : 'Error saving';
+  String get saveSet => _language == AppLanguage.dutch ? 'Pictoreeks opslaan' : 'Save pictoreeks';
   String get step => _language == AppLanguage.dutch ? 'Stap' : 'Step';
   String get of => _language == AppLanguage.dutch ? 'van' : 'of';
   String get reorderInstructions => _language == AppLanguage.dutch 
@@ -153,11 +166,15 @@ class AppLocalizations {
   String get errorLoadingSets => _language == AppLanguage.dutch ? 'Fout bij laden van pictoreeksen' : 'Error loading pictogram sets';
   String get steps => _language == AppLanguage.dutch ? 'stappen' : 'steps';
   String get noPictograms => _language == AppLanguage.dutch ? 'Geen pictogrammen' : 'No pictograms';
+  String get startPictoreeks => _language == AppLanguage.dutch ? 'Pictoreeks starten' : 'Start pictoreeks';
 
   // Client session screen
   String get nextStep => _language == AppLanguage.dutch ? 'Volgende stap' : 'Next step';
   String get allStepsCompleted => _language == AppLanguage.dutch ? 'Alle stappen voltooid!' : 'All steps completed!';
   String get noPictogramsInSet => _language == AppLanguage.dutch ? 'Geen pictogrammen in deze reeks' : 'No pictograms in this set';
+  String get modify => _language == AppLanguage.dutch ? 'Wijzigen' : 'Modify';
+  String get modifySequence => _language == AppLanguage.dutch ? 'Wijzig volgorde' : 'Modify sequence';
+  String get modifySequenceDescription => _language == AppLanguage.dutch ? 'Wijzig de volgorde tijdelijk voor onvoorziene situaties. Deze wijziging wordt niet opgeslagen.' : 'Temporarily modify the sequence for unforeseen situations. This change will not be saved.';
 
   // Settings screen
   String get languageLabel => _language == AppLanguage.dutch ? 'Taal' : 'Language';
@@ -203,8 +220,18 @@ class AppLocalizations {
   String get savedPictogram => _language == AppLanguage.dutch ? 'Opgeslagen pictogram' : 'Saved pictogram';
 
   // Pictogram picker
-  String get selectPictograms => _language == AppLanguage.dutch ? 'Selecteer pictogrammen' : 'Select pictograms';
-  String get searchPictograms => _language == AppLanguage.dutch ? 'Zoek pictogrammen...' : 'Search pictograms...';
+  String get selectPictograms => _language == AppLanguage.dutch ? 'Selecteer Picto\'s' : 'Select Picto\'s';
+  String get searchPictograms => _language == AppLanguage.dutch ? 'Zoek Picto\'s...' : 'Search Picto\'s...';
+  String get requestPicto => _language == AppLanguage.dutch ? 'Vraag een picto aan' : 'Request a picto';
+  String get requestPictoDescription => _language == AppLanguage.dutch ? 'Vraag een ontbrekende picto aan' : 'Request a missing picto';
+  String get requestPictoSubtitle => _language == AppLanguage.dutch ? 'Beschrijf welke picto u nodig heeft en we voegen deze toe aan de collectie' : 'Describe which picto you need and we will add it to the collection';
+  String get keyword => _language == AppLanguage.dutch ? 'Trefwoord' : 'Keyword';
+  String get enterKeyword => _language == AppLanguage.dutch ? 'Voer trefwoord in' : 'Enter keyword';
+  String get category => _language == AppLanguage.dutch ? 'Categorie' : 'Category';
+  String get selectCategory => _language == AppLanguage.dutch ? 'Selecteer categorie' : 'Select category';
+  String get description => _language == AppLanguage.dutch ? 'Beschrijving (optioneel)' : 'Description (optional)';
+  String get enterDescription => _language == AppLanguage.dutch ? 'Beschrijf wat u zoekt...' : 'Describe what you are looking for...';
+  String get submitRequest => _language == AppLanguage.dutch ? 'Aanvraag verzenden' : 'Submit request';
   String get categories => _language == AppLanguage.dutch ? 'Categorieën' : 'Categories';
   // ARASAAC Category translations
   String get feeding => _language == AppLanguage.dutch ? 'Voeding' : 'Feeding';
@@ -267,9 +294,10 @@ class AppLocalizations {
     }
   }
   String get selected => _language == AppLanguage.dutch ? 'Geselecteerd' : 'Selected';
-  String get pictogramsSelected => _language == AppLanguage.dutch ? 'pictogrammen geselecteerd' : 'pictograms selected';
-  String get noPictogramsSelected => _language == AppLanguage.dutch ? 'Geen pictogrammen geselecteerd' : 'No pictograms selected';
-  String get choosePictograms => _language == AppLanguage.dutch ? 'Pictogrammen kiezen' : 'Choose pictograms';
+  String get pictogramsSelected => _language == AppLanguage.dutch ? 'Picto\'s geselecteerd' : 'Picto\'s selected';
+  String get noPictogramsSelected => _language == AppLanguage.dutch ? 'Geen Picto\'s geselecteerd' : 'No Picto\'s selected';
+  String get choosePictograms => _language == AppLanguage.dutch ? 'Picto\'s kiezen' : 'Choose Picto\'s';
+  String get loadMorePictos => _language == AppLanguage.dutch ? 'Laad meer Picto\'s' : 'Load more Picto\'s';
   String get name => _language == AppLanguage.dutch ? 'Naam' : 'Name';
 
   // Error messages

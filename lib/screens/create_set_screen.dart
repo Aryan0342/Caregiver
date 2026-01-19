@@ -7,6 +7,7 @@ import '../models/set_model.dart';
 import '../services/set_service.dart';
 import '../services/arasaac_service.dart';
 import 'pictogram_picker_screen.dart';
+import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
 
 class CreateSetScreen extends StatefulWidget {
@@ -172,6 +173,43 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     }
   }
 
+  void _startWithClient() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    
+    if (_selectedPictograms.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(localizations.selectAtLeastOne),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Create a temporary PictogramSet (not saved) and navigate to client mode
+    final tempSet = PictogramSet(
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}', // Temporary ID
+      name: _nameController.text.trim().isEmpty 
+          ? 'Tijdelijke pictoreeks' 
+          : _nameController.text.trim(),
+      userId: FirebaseAuth.instance.currentUser?.uid ?? 'temp',
+      pictograms: _selectedPictograms,
+      createdAt: DateTime.now(),
+    );
+
+    // Navigate to client mode session screen (doesn't save the set)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClientModeSessionScreen(set: tempSet),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -306,34 +344,46 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
           // Pictogram list (reorderable)
           Expanded(
             child: _selectedPictograms.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.image_outlined,
-                          size: 80,
-                          color: AppTheme.textSecondary,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          localizations.noPictogramsSelected,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: AppTheme.textSecondary,
+                ? SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height - 300,
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.image_outlined,
+                              size: 80,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(height: 16),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Text(
+                                localizations.noPictogramsSelected,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                textAlign: TextAlign.center,
                               ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _openPictogramPicker,
+                              icon: const Icon(Icons.add),
+                              label: Text(localizations.choosePictograms),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: _openPictogramPicker,
-                          icon: const Icon(Icons.add),
-                          label: Text(localizations.choosePictograms),
-                        ),
-                      ],
+                      ),
                     ),
                   )
                 : ReorderableListView.builder(
                     padding: const EdgeInsets.all(16),
-                    scrollDirection: Axis.horizontal,
+                    scrollDirection: Axis.vertical,
                     itemCount: _selectedPictograms.length,
                     onReorder: _reorderPictogram,
                     itemBuilder: (context, index) {
@@ -343,7 +393,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                   ),
           ),
 
-          // Save button
+          // Two action buttons: Save set and Start with client
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -357,31 +407,65 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               ],
             ),
             child: SafeArea(
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveSet,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    minimumSize: const Size(double.infinity, 64),
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          localizations.save,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Save set button (green)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _saveSet,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        minimumSize: const Size(double.infinity, 64),
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
-                        ),
-                ),
+                            )
+                          : Text(
+                              localizations.saveSet,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Start with client button (blue)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _startWithClient,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        minimumSize: const Size(double.infinity, 64),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            localizations.startWithClient,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -394,31 +478,29 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     return Card(
       key: ValueKey(pictogram.id),
       elevation: 2,
-      margin: const EdgeInsets.only(right: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
+        width: double.infinity,
         constraints: const BoxConstraints(
-          minWidth: 100,
-          maxWidth: 120,
+          minHeight: 120,
         ),
         padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             // Drag handle
             Icon(
               Icons.drag_handle,
               color: AppTheme.textSecondary,
-              size: 18,
+              size: 24,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(width: 12),
             // Pictogram image
             Container(
-              width: 70,
-              height: 70,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
@@ -483,35 +565,41 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            // Keyword - displays localized Dutch keyword from model
-            Flexible(
-              child: Text(
-                pictogram.keyword,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+            const SizedBox(width: 12),
+            // Keyword and index
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Keyword - displays localized Dutch keyword from model
+                  Text(
+                    pictogram.keyword,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  // Index number
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Index number
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryBlue,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
+                    child: Text(
+                      'Stap ${index + 1}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

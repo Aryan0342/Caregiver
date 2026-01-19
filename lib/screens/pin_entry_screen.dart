@@ -19,6 +19,7 @@ class PinEntryScreen extends StatefulWidget {
   final String? errorMessage;
   final Function(String)? onError;
   final VoidCallback? onBack;
+  final VoidCallback? onForgotPin;
 
   const PinEntryScreen({
     super.key,
@@ -31,6 +32,7 @@ class PinEntryScreen extends StatefulWidget {
     this.errorMessage,
     this.onError,
     this.onBack,
+    this.onForgotPin,
   });
 
   @override
@@ -72,7 +74,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       // Haptic feedback
       HapticFeedback.lightImpact();
       
-      // Check if PIN is complete (exactly minLength, which should be 4)
+      // Check if PIN is complete (exactly minLength)
       if (_enteredPin.length == widget.minLength && widget.onPinComplete != null) {
         // Small delay for visual feedback
         Future.delayed(const Duration(milliseconds: 200), () {
@@ -100,14 +102,19 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Colors.white,
       appBar: widget.showBackButton
           ? AppBar(
-              title: Text(widget.title),
-              backgroundColor: AppTheme.primaryBlueLight,
+              title: Text(
+                widget.title,
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: AppTheme.primaryBlueLight, // Light blue header
+              foregroundColor: Colors.white,
+              elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                color: AppTheme.textPrimary,
+                color: Colors.white,
                 onPressed: widget.onBack ?? () {
                   Navigator.of(context).pop();
                 },
@@ -125,36 +132,10 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Title and subtitle
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                              fontSize: 28,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (widget.subtitle != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.subtitle!,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: AppTheme.textSecondary,
-                                fontSize: 16,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                // Add top spacing to move content down
+                const SizedBox(height: 80),
 
-                // PIN dots display
+                // PIN dots display - use same blue as number buttons
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
@@ -169,7 +150,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                             height: 20,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isFilled ? AppTheme.primaryBlue : AppTheme.primaryBlueLight,
+                              color: isFilled ? AppTheme.primaryBlue : Colors.transparent,
                               border: Border.all(
                                 color: AppTheme.primaryBlue,
                                 width: 2,
@@ -236,14 +217,14 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      // Row 4: Clear, 0, Backspace
+                      // Row 4: Trash, 0, Backspace
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _buildActionButton(
-                            icon: Icons.clear,
+                            icon: Icons.delete_outline,
                             onPressed: _clearPin,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.primaryBlue,
                           ),
                           _buildNumberButton('0'),
                           _buildActionButton(
@@ -256,6 +237,21 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 32),
+                
+                // Forgot PIN link
+                if (widget.onForgotPin != null)
+                  TextButton(
+                    onPressed: widget.onForgotPin,
+                    child: const Text(
+                      'Pincode vergeten?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.primaryBlueLight,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -269,10 +265,12 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
     return Material(
       color: AppTheme.surfaceWhite,
       borderRadius: BorderRadius.circular(16),
-      elevation: 2,
+      elevation: 0,
       child: InkWell(
         onTap: () => _onNumberPressed(number),
         borderRadius: BorderRadius.circular(16),
+        splashColor: AppTheme.primaryBlue.withValues(alpha: 0.2),
+        highlightColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
         child: Container(
           width: 80,
           height: 80,
@@ -282,7 +280,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+              color: AppTheme.primaryBlue,
             ),
           ),
         ),
@@ -298,10 +296,12 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
     return Material(
       color: AppTheme.surfaceWhite,
       borderRadius: BorderRadius.circular(16),
-      elevation: 2,
+      elevation: 0,
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(16),
+        splashColor: color.withValues(alpha: 0.2),
+        highlightColor: color.withValues(alpha: 0.1),
         child: Container(
           width: 80,
           height: 80,

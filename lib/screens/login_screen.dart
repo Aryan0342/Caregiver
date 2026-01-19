@@ -111,34 +111,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Logo
+                  // App Logo (bigger)
                   Image.asset(
                     'assets/images/app_logo.png',
-                    width: 120,
-                    height: 120,
+                    width: 200,
+                    height: 200,
                     fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Title
-                  Text(
-                    localizations.appName,
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          color: AppTheme.primaryBlue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Subtitle
-                  Text(
-                    localizations.appSubtitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.accentOrange,
-                          fontWeight: FontWeight.w600,
-                        ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
                   
@@ -235,8 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   
                   // Forgot Password button
-                  Align(
-                    alignment: Alignment.centerRight,
+                  Center(
                     child: TextButton(
                       onPressed: _isLoading
                           ? null

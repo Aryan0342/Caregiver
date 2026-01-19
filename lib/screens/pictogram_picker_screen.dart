@@ -7,6 +7,7 @@ import '../models/pictogram_model.dart';
 import '../services/arasaac_service.dart';
 import '../theme.dart';
 import '../providers/language_provider.dart';
+import 'request_picto_screen.dart';
 
 class PictogramPickerScreen extends StatefulWidget {
   final List<Pictogram>? initialSelection;
@@ -466,12 +467,26 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
         foregroundColor: Colors.white,
         actions: [
           if (_selectedPictograms.isNotEmpty)
-            TextButton.icon(
-              onPressed: _confirmSelection,
-              icon: const Icon(Icons.check, color: Colors.white),
-              label: Text(
-                '${localizations.done} (${_selectedPictograms.length})',
-                style: const TextStyle(color: Colors.white),
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: ElevatedButton.icon(
+                onPressed: _confirmSelection,
+                icon: const Icon(Icons.check, color: Colors.white, size: 20),
+                label: Text(
+                  '${localizations.done} (${_selectedPictograms.length})',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGreen,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
             ),
         ],
@@ -632,7 +647,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                           onPressed: () => _loadPictograms(_selectedCategory, loadMore: true),
                                           icon: const Icon(Icons.expand_more),
                                           label: Text(
-                                            'Laad meer pictogrammen',
+                                            localizations.loadMorePictos,
                                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.w600,
@@ -650,6 +665,54 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                           ),
                                         ),
                                 ),
+                              // Request picto bar at bottom
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryBlue,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, -2),
+                                    ),
+                                  ],
+                                ),
+                                child: SafeArea(
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const RequestPictoScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.add_circle_outline,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            localizations.requestPicto,
+                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
           ),
