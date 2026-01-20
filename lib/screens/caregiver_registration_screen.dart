@@ -110,6 +110,19 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
           debugPrint('Caregiver account created with UID: ${result.uid}');
         }
         
+        // Send email verification automatically after registration
+        final user = _authService.currentUser;
+        if (user != null && !user.emailVerified) {
+          debugPrint('Sending email verification to: ${user.email}');
+          final verificationResult = await _authService.sendEmailVerification();
+          
+          if (verificationResult.success) {
+            debugPrint('Email verification sent successfully');
+          } else {
+            debugPrint('Failed to send email verification: ${verificationResult.errorMessage}');
+          }
+        }
+        
         // Mark that user has logged in (for PIN auth on next app open)
         // This must be called after successful registration
         await _authStateService.markLoggedIn();
@@ -129,8 +142,8 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
           ),
         );
         
-        // Navigate to profile setup screen
-        Navigator.pushReplacementNamed(context, AppRoutes.caregiverProfileSetup);
+        // Navigate to email verification screen (blocks progression until verified)
+        Navigator.pushReplacementNamed(context, AppRoutes.emailVerification);
       }
     } else {
       // Show error message

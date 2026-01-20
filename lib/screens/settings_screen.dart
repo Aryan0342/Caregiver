@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../services/language_service.dart';
 import '../providers/language_provider.dart';
 import '../routes/app_routes.dart';
-import '../services/arasaac_service.dart';
+import '../services/auth_state_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -22,6 +23,39 @@ class _SettingsScreenContent extends StatefulWidget {
 }
 
 class _SettingsScreenContentState extends State<_SettingsScreenContent> {
+
+  /// Handle user logout with error handling.
+  Future<void> _signOut(BuildContext context) async {
+    try {
+      // Clear login status so next time requires email/password login
+      final authStateService = AuthStateService();
+      await authStateService.clearLoginStatus();
+      
+      await FirebaseAuth.instance.signOut();
+      
+      // Navigate to login screen after logout
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false, // Remove all previous routes
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        final localizations = LanguageProvider.localizationsOf(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.logoutError),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   void _showLanguageSelector(BuildContext context) {
     final languageService = LanguageProvider.of(context)?.languageService ?? LanguageService();
@@ -57,36 +91,6 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
             );
           }).toList(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              localizations.close,
-              style: TextStyle(color: AppTheme.primaryBlue),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showOfflineModeInfo(BuildContext context) {
-    final localizations = LanguageProvider.localizationsOf(context);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.cloud_off, color: AppTheme.primaryBlue),
-            const SizedBox(width: 12),
-            Text(localizations.offlineModeLabel),
-          ],
-        ),
-        content: Text(localizations.offlineModeInfo),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -195,14 +199,6 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
               Text(localizations.privacyInfo2),
               Text(localizations.privacyInfo3),
               Text(localizations.privacyInfo4),
-              const SizedBox(height: 16),
-              Text(
-                localizations.offlineUse,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(localizations.privacyInfo5),
-              Text(localizations.privacyInfo6),
             ],
           ),
         ),
@@ -217,76 +213,6 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
         ],
       ),
     );
-  }
-
-  Future<void> _handleClearCache(BuildContext context) async {
-    final localizations = LanguageProvider.localizationsOf(context);
-    
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.delete_outline, color: AppTheme.primaryBlue),
-            const SizedBox(width: 12),
-            Text(localizations.clearCache),
-          ],
-        ),
-        content: Text(localizations.clearCacheDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              localizations.cancel,
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              localizations.delete,
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        final arasaacService = ArasaacService();
-        await arasaacService.clearAllPictogramCacheFully();
-        
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localizations.clearCacheSuccess),
-              backgroundColor: AppTheme.accentGreen,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localizations.clearCacheError),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-      }
-    }
   }
 
   @override
@@ -369,68 +295,6 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
               ),
             ),
 
-            // Offline modus (Offline mode) - info only
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.cloud_off,
-                    color: AppTheme.primaryBlue,
-                  ),
-                ),
-                title: Text(
-                  localizations.offlineModeLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(localizations.autoSaved),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () => _showOfflineModeInfo(context),
-              ),
-            ),
-
-            // Clear cache
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.delete_outline,
-                    color: AppTheme.primaryBlue,
-                  ),
-                ),
-                title: Text(
-                  localizations.clearCache,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(localizations.clearCacheDescription),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () => _handleClearCache(context),
-              ),
-            ),
-
             // Over de app (About the app)
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -490,6 +354,44 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                   color: AppTheme.textSecondary,
                 ),
                 onTap: () => _showPrivacyDialog(context),
+              ),
+            ),
+
+            // Logout
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: Colors.red,
+                  ),
+                ),
+                title: Text(
+                  localizations.logout,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+                subtitle: Text(
+                  languageService.currentLanguage == AppLanguage.dutch 
+                    ? 'Uitloggen uit uw account' 
+                    : 'Sign out of your account'
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () => _signOut(context),
               ),
             ),
           ],

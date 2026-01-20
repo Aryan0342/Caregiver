@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import '../services/pin_service.dart';
 import '../providers/language_provider.dart';
+import '../routes/app_routes.dart';
 import 'pin_entry_screen.dart';
 
 /// Screen for changing caregiver PIN.
 /// 
 /// Requires:
-/// 1. Enter current PIN
+/// 1. Enter current PIN (skipped if forgotPin is true)
 /// 2. Enter new PIN
 /// 3. Confirm new PIN
 class ChangePinScreen extends StatefulWidget {
-  const ChangePinScreen({super.key});
+  final bool forgotPin;
+  
+  const ChangePinScreen({
+    super.key,
+    this.forgotPin = false,
+  });
 
   @override
   State<ChangePinScreen> createState() => _ChangePinScreenState();
@@ -19,10 +26,17 @@ class ChangePinScreen extends StatefulWidget {
 class _ChangePinScreenState extends State<ChangePinScreen> {
   final PinService _pinService = PinService();
   
-  // Step tracking
-  int _currentStep = 0; // 0: current PIN, 1: new PIN, 2: confirm PIN
+  // Step tracking - start at step 1 if forgot PIN (skip current PIN step)
+  late int _currentStep;
   String? _newPin;
   String? _errorMessage;
+  
+  @override
+  void initState() {
+    super.initState();
+    // If forgot PIN, skip step 0 (current PIN) and start at step 1 (new PIN)
+    _currentStep = widget.forgotPin ? 1 : 0;
+  }
 
   Future<void> _onCurrentPinComplete(String pin) async {
     // Verify current PIN
@@ -65,7 +79,7 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(localizations.pinChanged),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.accentGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -73,8 +87,17 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
           ),
         );
         
-        // Navigate back to settings
-        Navigator.of(context).pop();
+        // If this is a forgot PIN flow, navigate to home instead of going back
+        if (widget.forgotPin) {
+          // Clear all previous screens and navigate to home
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.home,
+            (route) => false,
+          );
+        } else {
+          // Normal PIN change - go back to settings
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       if (mounted) {

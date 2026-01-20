@@ -21,11 +21,13 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
   final _nameController = TextEditingController();
   final _organisationController = TextEditingController();
   final _locationController = TextEditingController();
+  final _securityAnswerController = TextEditingController();
   final _profileService = CaregiverProfileService();
   final _authService = AuthService();
   
   String? _selectedRole;
   String? _selectedSex;
+  String? _selectedSecurityQuestion;
   String _selectedLanguage = 'nl';
   bool _isLoading = false;
   String? _errorMessage;
@@ -41,6 +43,7 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
     _nameController.dispose();
     _organisationController.dispose();
     _locationController.dispose();
+    _securityAnswerController.dispose();
     super.dispose();
   }
 
@@ -59,10 +62,31 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
       _errorMessage = null;
     });
 
-    // Validate form (only role is required)
+    // Validate form (role and security question are required)
     if (_selectedRole == null || _selectedRole!.isEmpty) {
       setState(() {
         _errorMessage = 'Selecteer uw rol';
+      });
+      return;
+    }
+    
+    if (_selectedSecurityQuestion == null || _selectedSecurityQuestion!.isEmpty) {
+      setState(() {
+        _errorMessage = 'Selecteer een beveiligingsvraag';
+      });
+      return;
+    }
+    
+    if (_securityAnswerController.text.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'Voer een antwoord in voor de beveiligingsvraag';
+      });
+      return;
+    }
+    
+    if (_securityAnswerController.text.trim().length < 3) {
+      setState(() {
+        _errorMessage = 'Antwoord moet minimaal 3 tekens zijn';
       });
       return;
     }
@@ -86,6 +110,8 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
             ? null 
             : _locationController.text.trim(),
         language: _selectedLanguage,
+        securityQuestion: _selectedSecurityQuestion!,
+        securityAnswer: _securityAnswerController.text.trim(),
       );
 
       if (mounted) {
@@ -101,34 +127,6 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
           ),
         );
 
-        // Navigate to PIN setup screen
-        Navigator.pushReplacementNamed(context, AppRoutes.createCaregiverPin);
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
-    }
-  }
-
-  /// Handle skip (save with minimal data)
-  Future<void> _handleSkip() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Save with default values
-      await _profileService.saveProfile(
-        name: _nameController.text.trim().isEmpty 
-            ? 'Caregiver' 
-            : _nameController.text.trim(),
-        role: _selectedRole ?? 'Parent',
-        language: _selectedLanguage,
-      );
-
-      if (mounted) {
         // Navigate to PIN setup screen
         Navigator.pushReplacementNamed(context, AppRoutes.createCaregiverPin);
       }
@@ -383,6 +381,75 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   },
                   value: _selectedLanguage,
                 ),
+                const SizedBox(height: 24),
+                
+                // Security Question dropdown (required)
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: localizations.securityQuestion,
+                    hintText: localizations.selectSecurityQuestion,
+                    prefixIcon: const Icon(Icons.security),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.surfaceWhite,
+                  ),
+                  style: const TextStyle(fontSize: 18, color: Colors.black),
+                  dropdownColor: AppTheme.surfaceWhite,
+                  menuMaxHeight: 300,
+                  isExpanded: true,
+                  items: localizations.securityQuestionOptions.map((question) {
+                    return DropdownMenuItem(
+                      value: question,
+                      child: Text(
+                        question,
+                        style: const TextStyle(color: Colors.black, fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSecurityQuestion = value;
+                    });
+                  },
+                  value: _selectedSecurityQuestion,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return localizations.fieldRequired;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                
+                // Security Answer field (required)
+                TextFormField(
+                  controller: _securityAnswerController,
+                  decoration: InputDecoration(
+                    labelText: localizations.securityAnswer,
+                    hintText: localizations.enterSecurityAnswer,
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.surfaceWhite,
+                  ),
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontSize: 18),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return localizations.securityAnswerRequired;
+                    }
+                    if (value.trim().length < 3) {
+                      return localizations.securityAnswerTooShort;
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 32),
                 
                 // Error message
@@ -440,23 +507,6 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Skip button (optional)
-                TextButton(
-                  onPressed: _isLoading ? null : _handleSkip,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(
-                    localizations.skip,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppTheme.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
                   ),
                 ),
                       ],

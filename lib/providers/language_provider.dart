@@ -22,6 +22,11 @@ class LanguageProvider extends InheritedWidget {
     return provider?.localizations ?? AppLocalizations(AppLanguage.dutch);
   }
 
+  static LanguageService languageServiceOf(BuildContext context) {
+    final provider = of(context);
+    return provider?.languageService ?? LanguageService();
+  }
+
   @override
   bool updateShouldNotify(LanguageProvider oldWidget) {
     return languageService.currentLanguage != oldWidget.languageService.currentLanguage;

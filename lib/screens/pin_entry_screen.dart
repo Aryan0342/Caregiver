@@ -278,8 +278,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           child: Text(
             number,
             style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              fontWeight: FontWeight.normal,
               color: AppTheme.primaryBlue,
             ),
           ),

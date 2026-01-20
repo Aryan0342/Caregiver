@@ -15,21 +15,23 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <!-- Background gradient -->
+                            <!-- Cream beige background (#F0E5D5) to match app theme -->
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gradient-view">
                                 <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
-                                <color key="backgroundColor" red="0.290" green="0.565" blue="0.886" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="backgroundColor" red="0.941" green="0.898" blue="0.835" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                             </view>
-                            <!-- App Logo - centered, max width 250pt, maintains aspect ratio -->
+                            <!-- App Logo - centered, properly sized, maintains aspect ratio -->
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="app_logo" translatesAutoresizingMaskIntoConstraints="NO" id="logo-imageview">
                                 <rect key="frame" x="71.5" y="386" width="250" height="80"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" relation="lessThanOrEqual" constant="250" id="logo-max-width"/>
-                                    <constraint firstAttribute="height" relation="lessThanOrEqual" constant="200" id="logo-max-height"/>
+                                    <constraint firstAttribute="width" relation="lessThanOrEqual" constant="300" id="logo-max-width"/>
+                                    <constraint firstAttribute="height" relation="lessThanOrEqual" constant="300" id="logo-max-height"/>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="200" id="logo-min-width"/>
+                                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="200" id="logo-min-height"/>
                                 </constraints>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="0.290" green="0.565" blue="0.886" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.941" green="0.898" blue="0.835" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="gradient-view" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="gradient-leading"/>
                             <constraint firstItem="gradient-view" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="gradient-trailing"/>
@@ -46,7 +48,7 @@
         </scene>
     </scenes>
     <resources>
-        <!-- Colors matching app theme: Primary Blue #4A90E2 (74, 144, 226) -->
-        <!-- RGB values: 74/255 = 0.290, 144/255 = 0.565, 226/255 = 0.886 -->
+        <!-- Colors matching app theme: Cream Beige #F0E5D5 (240, 229, 213) -->
+        <!-- RGB values: 240/255 = 0.941, 229/255 = 0.898, 213/255 = 0.835 -->
     </resources>
 </document>

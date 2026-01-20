@@ -1,57 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
-import '../services/auth_state_service.dart';
-import '../services/arasaac_service.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 /// 
 /// Matches the reference design with:
 /// - Large header title and subtitle
 /// - Two prominent action buttons (New Series, My Series)
-/// - Settings button at the bottom
+/// - Settings icon in top right corner
 /// - Clean, caregiver-friendly, child-safe UI
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  /// Handle user logout with error handling.
-  Future<void> _signOut(BuildContext context) async {
-    try {
-      // Clear login status so next time requires email/password login
-      final authStateService = AuthStateService();
-      await authStateService.clearLoginStatus();
-      
-      // Clear all pictogram cache (disk + memory) on logout
-      final arasaacService = ArasaacService();
-      await arasaacService.clearAllPictogramCacheFully();
-      
-      await FirebaseAuth.instance.signOut();
-      
-      // Navigate to login screen after logout
-      if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          AppRoutes.login,
-          (route) => false, // Remove all previous routes
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        final localizations = LanguageProvider.localizationsOf(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.logoutError),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +22,7 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top section: Header with logo and logout button
+            // Top section: Header with logo and settings button
             Padding(
               padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 0),
               child: Row(
@@ -71,16 +31,18 @@ class HomeScreen extends StatelessWidget {
                   // Logo on left top
                   Image.asset(
                     'assets/images/app_logo.png',
-                    width: 50,
-                    height: 50,
+                    width: 100,
+                    height: 100,
                     fit: BoxFit.contain,
                   ),
-                  // Logout button in top right (subtle, not prominent)
+                  // Settings button in top right
                   IconButton(
-                    icon: const Icon(Icons.logout),
-                    tooltip: localizations.logout,
+                    icon: const Icon(Icons.settings_rounded),
+                    tooltip: localizations.settings,
                     color: AppTheme.textSecondary,
-                    onPressed: () => _signOut(context),
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.settings);
+                    },
                   ),
                 ],
               ),
@@ -88,7 +50,7 @@ class HomeScreen extends StatelessWidget {
             
             // Main heading section: Title only
             Padding(
-              padding: const EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 48.0),
+              padding: const EdgeInsets.fromLTRB(24.0, 48.0, 24.0, 48.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -137,26 +99,6 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                   ],
-                ),
-              ),
-            ),
-            
-            // Bottom section: Settings button
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 24.0),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceWhite,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Center(
-                  child: _buildSettingsButton(context, localizations),
                 ),
               ),
             ),
@@ -231,39 +173,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Build the settings button at the bottom of the screen.
-  /// 
-  /// Smaller and less prominent than main action buttons.
-  /// Uses a subtle, tappable design with gear icon.
-  Widget _buildSettingsButton(BuildContext context, dynamic localizations) {
-    return InkWell(
-      onTap: () {
-        Navigator.pushNamed(context, AppRoutes.settings);
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.settings_rounded,
-              color: AppTheme.primaryBlue,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              localizations.settings,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.primaryBlue,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 17,
-                    letterSpacing: 0.2,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

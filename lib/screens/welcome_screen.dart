@@ -80,19 +80,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // App logo/icon
-                  Container(
+                  // App logo
+                  Image.asset(
+                    'assets/images/app_logo.png',
                     width: 120,
                     height: 120,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlueLight,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Icon(
-                      Icons.image_outlined,
-                      size: 64,
-                      color: AppTheme.primaryBlue,
-                    ),
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 32),
 

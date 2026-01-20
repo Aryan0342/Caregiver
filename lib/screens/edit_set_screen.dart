@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../theme.dart';
 import '../models/pictogram_model.dart';
 import '../models/set_model.dart';
@@ -92,7 +91,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations.enterName),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.accentOrange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -106,7 +105,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localizations.selectAtLeastOne),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.accentOrange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -154,7 +153,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
                 ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
                 : 'Fout bij opslaan: ${errorMessage.length > 100 ? errorMessage.substring(0, 100) + "..." : errorMessage}',
             ),
-            backgroundColor: isOffline ? Colors.orange : Colors.red,
+            backgroundColor: isOffline ? AppTheme.accentOrange : Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -363,48 +362,38 @@ class _EditSetScreenState extends State<EditSetScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(11),
-                child: CachedNetworkImage(
+              child: Image.network(
                   // For custom pictograms, use the imageUrl from the model
                   // For ARASAAC pictograms, use thumbnail URL (500px) for small cards
-                  imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                  pictogram.imageUrl.isNotEmpty && pictogram.id < 0
                       ? pictogram.imageUrl // Custom pictogram
                       : _arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
-                  maxWidthDiskCache: 500,
-                  maxHeightDiskCache: 500,
-                  memCacheWidth: 300,
-                  memCacheHeight: 300,
-                  httpHeaders: const {
-                    'Accept': 'image/png,image/*;q=0.8',
-                    'User-Agent': 'Flutter-App',
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                      ),
+                    );
                   },
-                  placeholder: (context, url) => Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) {
+                  errorBuilder: (context, error, stackTrace) {
                     // Try preview URL (1000px) as fallback
                     final previewUrl = _arasaacService.getPreviewUrl(pictogram.id);
                     if (previewUrl != _arasaacService.getThumbnailUrl(pictogram.id)) {
-                      return CachedNetworkImage(
-                        imageUrl: previewUrl,
-                        maxWidthDiskCache: 1000,
-                        maxHeightDiskCache: 1000,
-                        memCacheWidth: 300,
-                        memCacheHeight: 300,
-                        httpHeaders: const {
-                          'Accept': 'image/png,image/*;q=0.8',
-                          'User-Agent': 'Flutter-App',
-                        },
+                      return Image.network(
+                        previewUrl,
                         fit: BoxFit.contain,
-                        placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Icon(
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Icon(
                           _getIconForKeyword(pictogram.keyword),
                           size: 32,
                           color: AppTheme.primaryBlue,

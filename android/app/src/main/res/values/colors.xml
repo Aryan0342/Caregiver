@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1a3a5c</color>
+    <color name="ic_launcher_background">#F0E5D5</color>
     
     <!-- App Theme Colors for Splash Screen -->
     <color name="primary_blue">#4A90E2</color>
@@ -9,6 +9,6 @@
     <color name="background_light">#F5F7FA</color>
     <color name="splash_gradient_start">#4A90E2</color>
     <color name="splash_gradient_end">#6BA3D8</color>
-    <!-- Splash background color for native splash screen -->
-    <color name="splash_background">#4A90E2</color>
+    <!-- Splash background color for native splash screen - updated to beige -->
+    <color name="splash_background">#F0E5D5</color>
 </resources>

@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'package:cached_network_image/cached_network_image.dart';
 import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
@@ -312,130 +310,73 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
 
   Widget _buildPictogramImage(Pictogram pictogram) {
     // For custom pictograms, use the imageUrl from the model (Firebase Storage URL)
-    // For ARASAAC pictograms, check cache first for offline support
+    // For ARASAAC pictograms, use network URL directly (online-only mode)
     if (pictogram.imageUrl.isNotEmpty && pictogram.id < 0) {
       // Custom pictogram - use stored Firebase Storage URL directly
-      return CachedNetworkImage(
-        imageUrl: pictogram.imageUrl,
+      return Image.network(
+        pictogram.imageUrl,
         fit: BoxFit.contain,
-        maxWidthDiskCache: 5000,
-        maxHeightDiskCache: 5000,
-        memCacheWidth: 5000,
-        memCacheHeight: 5000,
-        httpHeaders: const {
-          'Accept': 'image/png,image/*;q=0.8',
-          'User-Agent': 'Flutter-App',
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppTheme.primaryBlue,
+              ),
+              strokeWidth: 4,
+            ),
+          );
         },
-        placeholder: (context, url) => Center(
+        errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(pictogram),
+      );
+    }
+    
+    // ARASAAC pictogram - use network URL directly (online-only mode)
+    return _buildNetworkImageWithFallbacks(pictogram);
+  }
+
+  Widget _buildNetworkImageWithFallbacks(Pictogram pictogram) {
+    // Try network with multiple size fallbacks (online-only mode)
+    // Try sizes - start with 1500 which is more commonly available, then try larger/smaller
+    final imageSizes = [1500, 2500, 5000, 1000, 500];
+    return _buildImageWithFallbackSizes(pictogram.id, imageSizes, 0, pictogram);
+  }
+
+  Widget _buildImageWithFallbackSizes(
+    int pictogramId,
+    List<int> sizes,
+    int currentIndex,
+    Pictogram pictogram,
+  ) {
+    if (currentIndex >= sizes.length) {
+      // All sizes failed, show fallback icon
+      return _buildFallbackIcon(pictogram);
+    }
+
+    final imageUrl = _arasaacService.getStaticImageUrlWithSize(pictogramId, size: sizes[currentIndex]);
+    
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.contain,
+      headers: const {
+        'Accept': 'image/png,image/*;q=0.8',
+        'User-Agent': 'Flutter-App',
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(
               AppTheme.primaryBlue,
             ),
             strokeWidth: 4,
           ),
-        ),
-        errorWidget: (context, url, error) => _buildFallbackIcon(pictogram),
-      );
-    }
-    
-    // ARASAAC pictogram - check cache first for offline support
-    return FutureBuilder<File?>(
-      future: _arasaacService.getCachedImage(pictogram.id),
-      builder: (context, snapshot) {
-        // If cached image exists, use it
-        if (snapshot.hasData && snapshot.data != null) {
-          final cachedFile = snapshot.data!;
-          return Image.file(
-            cachedFile,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              // If cached file fails, try network
-              return _buildNetworkImageWithFallbacks(pictogram);
-            },
-          );
-        }
-        
-        // Not cached or still checking - try network with fallbacks
-        return _buildNetworkImageWithFallbacks(pictogram);
+        );
       },
-    );
-  }
-
-  Widget _buildNetworkImageWithFallbacks(Pictogram pictogram) {
-    // Try network with multiple size fallbacks
-    final imageUrl = _arasaacService.getBestQualityImageUrl(pictogram.id);
-    
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.contain,
-      maxWidthDiskCache: 5000,
-      maxHeightDiskCache: 5000,
-      memCacheWidth: 5000,
-      memCacheHeight: 5000,
-      httpHeaders: const {
-        'Accept': 'image/png,image/*;q=0.8',
-        'User-Agent': 'Flutter-App',
-      },
-      placeholder: (context, url) => Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(
-            AppTheme.primaryBlue,
-          ),
-          strokeWidth: 4,
-        ),
-      ),
-      errorWidget: (context, url, error) {
-        // Try smaller size as fallback (2500px)
-        final fallbackUrl = _arasaacService.getStaticImageUrlWithSize(pictogram.id, size: 2500);
-        if (fallbackUrl != imageUrl) {
-          return CachedNetworkImage(
-            imageUrl: fallbackUrl,
-            fit: BoxFit.contain,
-            maxWidthDiskCache: 2500,
-            maxHeightDiskCache: 2500,
-            memCacheWidth: 2500,
-            memCacheHeight: 2500,
-            httpHeaders: const {
-              'Accept': 'image/png,image/*;q=0.8',
-              'User-Agent': 'Flutter-App',
-            },
-            placeholder: (context, url) => Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppTheme.primaryBlue,
-                ),
-                strokeWidth: 4,
-              ),
-            ),
-            errorWidget: (context, url, error) {
-              // Try even smaller size (1500px)
-              final smallerUrl = _arasaacService.getStaticImageUrlWithSize(pictogram.id, size: 1500);
-              if (smallerUrl != fallbackUrl) {
-                return CachedNetworkImage(
-                  imageUrl: smallerUrl,
-                  fit: BoxFit.contain,
-                  maxWidthDiskCache: 1500,
-                  maxHeightDiskCache: 1500,
-                  memCacheWidth: 1500,
-                  memCacheHeight: 1500,
-                  httpHeaders: const {
-                    'Accept': 'image/png,image/*;q=0.8',
-                    'User-Agent': 'Flutter-App',
-                  },
-                  placeholder: (context, url) => Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.primaryBlue,
-                      ),
-                      strokeWidth: 4,
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => _buildFallbackIcon(pictogram),
-                );
-              }
-              return _buildFallbackIcon(pictogram);
-            },
-          );
+      errorBuilder: (context, error, stackTrace) {
+        // Try next size in the list
+        if (currentIndex < sizes.length - 1) {
+          return _buildImageWithFallbackSizes(pictogramId, sizes, currentIndex + 1, pictogram);
         }
         return _buildFallbackIcon(pictogram);
       },

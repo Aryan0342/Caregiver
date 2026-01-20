@@ -34,8 +34,34 @@ class AppLocalizations {
   String get forgotPassword => _language == AppLanguage.dutch ? 'Wachtwoord vergeten?' : 'Forgot password?';
   String get resetPassword => _language == AppLanguage.dutch ? 'Wachtwoord resetten' : 'Reset password';
   String get enterEmailForReset => _language == AppLanguage.dutch ? 'Voer uw e-mailadres in om een wachtwoord reset link te ontvangen' : 'Enter your email address to receive a password reset link';
+  String get enterEmailToSeeSecurityQuestion => _language == AppLanguage.dutch ? 'Voer uw e-mailadres in om uw beveiligingsvraag te zien' : 'Enter your email address to see your security question';
+  String get loadSecurityQuestion => _language == AppLanguage.dutch ? 'Beveiligingsvraag laden' : 'Load security question';
   String get resetEmailSent => _language == AppLanguage.dutch ? 'Er is een e-mail verzonden met instructies om uw wachtwoord te resetten. Controleer uw inbox.' : 'An email has been sent with instructions to reset your password. Check your inbox.';
   String get resetEmailError => _language == AppLanguage.dutch ? 'Fout bij verzenden van reset e-mail' : 'Error sending reset email';
+  String get enterResetCode => _language == AppLanguage.dutch ? 'Voer de resetcode uit de e-mail in' : 'Enter the reset code from the email';
+  String get resetCode => _language == AppLanguage.dutch ? 'Resetcode' : 'Reset code';
+  String get newPassword => _language == AppLanguage.dutch ? 'Nieuw wachtwoord' : 'New password';
+  String get enterNewPassword => _language == AppLanguage.dutch ? 'Voer uw nieuwe wachtwoord in' : 'Enter your new password';
+  String get passwordResetSuccess => _language == AppLanguage.dutch ? 'Wachtwoord succesvol gereset! U kunt nu inloggen.' : 'Password reset successfully! You can now log in.';
+  String get passwordResetError => _language == AppLanguage.dutch ? 'Fout bij resetten van wachtwoord' : 'Error resetting password';
+  String get invalidResetCode => _language == AppLanguage.dutch ? 'Ongeldige of verlopen resetcode' : 'Invalid or expired reset code';
+
+  // Email verification
+  String get verifyYourEmail => _language == AppLanguage.dutch ? 'Verifieer uw e-mailadres' : 'Verify your email';
+  String get verificationEmailSent => _language == AppLanguage.dutch ? 'We hebben een verificatielink naar uw e-mailadres gestuurd. Controleer uw inbox en klik op de link om uw e-mail te verifiëren.' : 'We\'ve sent a verification link to your email address. Please check your inbox and click the link to verify your email.';
+  String get verificationEmailSentTitle => _language == AppLanguage.dutch ? 'Verificatie-e-mail verzonden' : 'Verification email sent';
+  String get iveVerifiedMyEmail => _language == AppLanguage.dutch ? 'Ik heb mijn e-mail geverifieerd' : 'I\'ve verified my email';
+  String get resendEmail => _language == AppLanguage.dutch ? 'Verstuur e-mail opnieuw' : 'Resend email';
+  String get resendingEmail => _language == AppLanguage.dutch ? 'E-mail wordt verzonden...' : 'Sending email...';
+  String get emailResentSuccess => _language == AppLanguage.dutch ? 'Verificatie-e-mail opnieuw verzonden!' : 'Verification email resent!';
+  String get checkingVerification => _language == AppLanguage.dutch ? 'Verificatiestatus controleren...' : 'Checking verification status...';
+  String get emailNotVerified => _language == AppLanguage.dutch ? 'E-mail nog niet geverifieerd. Controleer uw inbox en klik op de link in de verificatie-e-mail.' : 'Email not yet verified. Please check your inbox and click the link in the verification email.';
+  String get emailVerifiedSuccess => _language == AppLanguage.dutch ? 'E-mailadres geverifieerd! U kunt nu verder gaan.' : 'Email verified! You can now continue.';
+  String get emailVerificationError => _language == AppLanguage.dutch ? 'Fout bij verzenden van verificatie-e-mail' : 'Error sending verification email';
+  String get resendEmailCooldown => _language == AppLanguage.dutch ? 'Wacht even voordat u de e-mail opnieuw verstuurt' : 'Please wait before resending the email';
+  String get wrongEmail => _language == AppLanguage.dutch ? 'Verkeerd e-mailadres?' : 'Wrong email address?';
+  String get wrongEmailMessage => _language == AppLanguage.dutch ? 'Als u een verkeerd e-mailadres heeft ingevoerd, kunt u uitloggen en opnieuw registreren met het juiste e-mailadres.' : 'If you entered the wrong email address, you can sign out and register again with the correct email address.';
+  String get signOutAndRegister => _language == AppLanguage.dutch ? 'Uitloggen en opnieuw registreren' : 'Sign out and register again';
 
   // Registration screen
   String get createAccount => _language == AppLanguage.dutch ? 'Account aanmaken' : 'Create account';
@@ -102,6 +128,41 @@ class AppLocalizations {
   String get confirmNewPin => _language == AppLanguage.dutch ? 'Bevestig nieuwe pincode' : 'Confirm new PIN';
   String get pinChanged => _language == AppLanguage.dutch ? 'Pincode gewijzigd!' : 'PIN code changed!';
   String get pinChangeError => _language == AppLanguage.dutch ? 'Fout bij wijzigen pincode' : 'Error changing PIN code';
+  String get forgotPin => _language == AppLanguage.dutch ? 'Pincode vergeten?' : 'Forgot PIN?';
+
+  // Security question
+  String get securityQuestion => _language == AppLanguage.dutch ? 'Beveiligingsvraag' : 'Security question';
+  String get selectSecurityQuestion => _language == AppLanguage.dutch ? 'Selecteer een beveiligingsvraag' : 'Select a security question';
+  String get securityAnswer => _language == AppLanguage.dutch ? 'Antwoord' : 'Answer';
+  String get enterSecurityAnswer => _language == AppLanguage.dutch ? 'Voer uw antwoord in' : 'Enter your answer';
+  String get securityAnswerRequired => _language == AppLanguage.dutch ? 'Antwoord is verplicht' : 'Answer is required';
+  String get securityAnswerTooShort => _language == AppLanguage.dutch ? 'Antwoord moet minimaal 3 tekens zijn' : 'Answer must be at least 3 characters';
+  String get verifySecurityQuestion => _language == AppLanguage.dutch ? 'Beveiligingsvraag verifiëren' : 'Verify security question';
+  String get answerSecurityQuestion => _language == AppLanguage.dutch ? 'Beantwoord uw beveiligingsvraag om uw identiteit te verifiëren' : 'Answer your security question to verify your identity';
+  String get incorrectSecurityAnswer => _language == AppLanguage.dutch ? 'Onjuist antwoord. Probeer het opnieuw.' : 'Incorrect answer. Please try again.';
+  
+  // Security question options (these will be used as keys)
+  List<String> get securityQuestionOptions => _language == AppLanguage.dutch
+      ? [
+          'Wat is de naam van uw eerste huisdier?',
+          'Wat is de naam van de straat waar u opgroeide?',
+          'Wat is de naam van uw favoriete leraar?',
+          'Wat is de naam van uw beste vriend uit de kindertijd?',
+          'Wat was de naam van uw eerste school?',
+          'Wat is de naam van uw favoriete boek?',
+          'Wat is de naam van de stad waar u geboren bent?',
+          'Wat was de naam van uw eerste baas?',
+        ]
+      : [
+          'What is the name of your first pet?',
+          'What is the name of the street you grew up on?',
+          'What is the name of your favorite teacher?',
+          'What is the name of your best childhood friend?',
+          'What was the name of your first school?',
+          'What is the name of your favorite book?',
+          'What is the name of the city you were born in?',
+          'What was the name of your first boss?',
+        ];
 
   // Face ID / Biometric
   String get faceId => _language == AppLanguage.dutch ? 'Face ID' : 'Face ID';
@@ -144,11 +205,11 @@ class AppLocalizations {
 
   // Create/Edit set screen
   String get editPictogramSet => _language == AppLanguage.dutch ? 'Pictoreeks bewerken' : 'Edit pictogram set';
-  String get giveAName => _language == AppLanguage.dutch ? 'Naam pictoreeks. (Bv. Ochtend ADL.)' : 'Name pictoreeks. (E.g. Morning ADL.)';
+  String get giveAName => _language == AppLanguage.dutch ? 'Ochtend ADL' : 'Morning ADL';
   String get begin => _language == AppLanguage.dutch ? 'Begin' : 'Begin';
   String get enterName => _language == AppLanguage.dutch ? 'Voer een naam in' : 'Enter a name';
   String get selectedPictograms => _language == AppLanguage.dutch ? 'Geselecteerde pictogrammen' : 'Selected pictograms';
-  String get addPictograms => _language == AppLanguage.dutch ? 'Toevoegen' : 'Add';
+  String get addPictograms => _language == AppLanguage.dutch ? 'Voeg meer picto\'s toe' : 'Add more picto\'s';
   String get selectAtLeastOne => _language == AppLanguage.dutch ? 'Selecteer minimaal één pictogram' : 'Select at least one pictogram';
   String get setSaved => _language == AppLanguage.dutch ? 'Pictoreeks opgeslagen!' : 'Pictogram set saved!';
   String get setUpdated => _language == AppLanguage.dutch ? 'Pictoreeks bijgewerkt!' : 'Pictogram set updated!';

@@ -1,24 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Native splash screen with app logo (API 21+) -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Background gradient with smooth color transition -->
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:type="linear"
-                android:angle="135"
-                android:startColor="@color/splash_gradient_start"
-                android:centerColor="@color/primary_blue_light"
-                android:endColor="@color/splash_gradient_end"
-                android:dither="true" />
-        </shape>
-    </item>
-    
-    <!-- App Logo - centered bitmap (will be auto-scaled by Android) -->
-    <item android:gravity="center">
-        <bitmap
-            android:src="@drawable/app_logo"
-            android:gravity="center"
-            android:tileMode="disabled" />
-    </item>
-</layer-list>
+<!-- Native splash screen (API 21+) - updated to match new beige color scheme -->
+<!-- Simple beige background - logo will be shown in Flutter splash screen -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F0E5D5" />
+</shape>

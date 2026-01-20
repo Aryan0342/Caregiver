@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'arasaac_service.dart';
 
 enum AppLanguage {
   dutch('nl', 'Nederlands'),
@@ -53,12 +52,6 @@ class LanguageService extends ChangeNotifier {
       debugPrint('Failed to save language preference: $e');
     }
 
-    // Clear all pictogram cache (disk + memory) on language change
-    try {
-      final arasaacService = ArasaacService();
-      await arasaacService.clearAllPictogramCacheFully();
-    } catch (e) {
-      debugPrint('Failed to clear cache on language change: $e');
-    }
+    // Cache clearing removed - app works online only
   }
 }

@@ -24,8 +24,16 @@ service cloud.firestore {
     // Caregivers collection - users can only access their own profile
     match /caregivers/{caregiverId} {
       // Allow read if user is authenticated and accessing their own profile
-      allow read: if request.auth != null && 
-                     request.auth.uid == caregiverId;
+      allow get: if request.auth != null && 
+                    request.auth.uid == caregiverId;
+      
+      // Allow list/query operations:
+      // - Authenticated users can query (for their own profile access)
+      // - Unauthenticated users can query by email for forgot password flow
+      //   (We check that the document has an email field, indicating it's a valid profile)
+      //   Note: resource.data.email check ensures only profiles with email can be queried
+      allow list: if request.auth != null || 
+                     (request.auth == null && resource.data.email != null);
       
       // Allow create if user is authenticated and creating their own profile
       allow create: if request.auth != null && 

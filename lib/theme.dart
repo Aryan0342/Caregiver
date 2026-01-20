@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 
-/// Healthcare pictogram app theme with soft blue tones, rounded corners,
+/// Healthcare pictogram app theme with neutral earth tones, rounded corners,
 /// large buttons, and clear typography. Designed to be calm, modern, and accessible.
 class AppTheme {
-  // Color palette matching reference design - darker, more saturated colors
-  static const Color primaryBlue = Color(0xFF4A90E2); // Darker, more saturated blue for primary buttons
-  static const Color primaryBlueLight = Color(0xFF6BA3D8); // Medium blue for backgrounds and AppBar
-  static const Color primaryBlueDark = Color(0xFF357ABD); // Darker blue for pressed states
-  static const Color accentOrange = Color(0xFFFF6B35); // Darker, more vibrant orange for secondary actions
-  static const Color accentGreen = Color(0xFF3DA55F); // Dark green matching reference design for success/positive actions
-  static const Color backgroundLight = Color(0xFFF5F7FA); // Very light background
+  // Color palette - neutral earth tones
+  static const Color creamBeige = Color(0xFFF0E5D5); // Very light creamy beige - backgrounds
+  static const Color warmTan = Color(0xFFD6BF99); // Medium warm tan - secondary actions
+  static const Color mutedGreyBrown = Color(0xFF9A8C84); // Medium-dark muted grey-brown - primary
+  static const Color coolGreyBeige = Color(0xFFC2BAB1); // Light-medium cool grey-beige - containers
+  static const Color darkGreyBrown = Color(0xFF776E67); // Dark rich grey-brown - text and dark accents
+  
+  // Legacy color names for backward compatibility (mapped to new palette)
+  static const Color primaryBlue = mutedGreyBrown; // Primary actions
+  static const Color primaryBlueLight = coolGreyBeige; // Light backgrounds
+  static const Color primaryBlueDark = darkGreyBrown; // Darker states
+  static const Color accentOrange = warmTan; // Secondary actions
+  static const Color accentGreen = mutedGreyBrown; // Success/positive actions (using primary)
+  static const Color backgroundLight = creamBeige; // Very light background
   static const Color surfaceWhite = Color(0xFFFFFFFF); // Pure white for cards
-  static const Color textPrimary = Color(0xFF2C3E50); // Dark text for readability
-  static const Color textSecondary = Color(0xFF7F8C8D); // Secondary text
-  static const Color dividerColor = Color(0xFFE0E6ED); // Subtle dividers
+  static const Color textPrimary = darkGreyBrown; // Dark text for readability
+  static const Color textSecondary = mutedGreyBrown; // Secondary text
+  static const Color dividerColor = coolGreyBeige; // Subtle dividers
 
   /// Main app theme - light mode only
   static ThemeData get lightTheme {
@@ -23,12 +30,12 @@ class AppTheme {
       
       // Color scheme
       colorScheme: const ColorScheme.light(
-        primary: primaryBlue,
-        primaryContainer: primaryBlueLight,
-        secondary: accentOrange,
-        secondaryContainer: Color(0xFFFFE4D1),
+        primary: mutedGreyBrown,
+        primaryContainer: coolGreyBeige,
+        secondary: warmTan,
+        secondaryContainer: Color(0xFFE8DDCD), // Lighter warm tan
         surface: surfaceWhite,
-        error: Color(0xFFE74C3C),
+        error: Color(0xFFE74C3C), // Keep red for errors
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: textPrimary,
@@ -40,14 +47,14 @@ class AppTheme {
 
       // AppBar theme
       appBarTheme: const AppBarTheme(
-        backgroundColor: primaryBlueLight,
-        foregroundColor: textPrimary,
+        backgroundColor: primaryBlue,
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
-          color: textPrimary,
+          color: Colors.white,
           letterSpacing: 0.5,
         ),
         iconTheme: IconThemeData(
@@ -168,7 +175,7 @@ class AppTheme {
       // Elevated Button theme - large with rounded corners (accessibility optimized)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryBlue,
+          backgroundColor: mutedGreyBrown,
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
@@ -182,6 +189,14 @@ class AppTheme {
             letterSpacing: 0.5,
           ),
         ).copyWith(
+          backgroundColor: WidgetStateProperty.resolveWith<Color>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.disabled)) {
+                return mutedGreyBrown.withValues(alpha: 0.5);
+              }
+              return mutedGreyBrown;
+            },
+          ),
           elevation: WidgetStateProperty.resolveWith<double>(
             (Set<WidgetState> states) {
               if (states.contains(WidgetState.pressed)) {
@@ -199,7 +214,7 @@ class AppTheme {
       // Filled Button theme
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: primaryBlue,
+          backgroundColor: mutedGreyBrown,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
           minimumSize: const Size(120, 64), // Increased from 56 to 64
@@ -217,10 +232,10 @@ class AppTheme {
       // Outlined Button theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryBlue,
+          foregroundColor: mutedGreyBrown,
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
           minimumSize: const Size(120, 64), // Increased from 56 to 64
-          side: const BorderSide(color: primaryBlue, width: 2),
+          side: const BorderSide(color: mutedGreyBrown, width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -235,7 +250,7 @@ class AppTheme {
       // Text Button theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryBlue,
+          foregroundColor: mutedGreyBrown,
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
           minimumSize: const Size(88, 56), // Increased from 48 to 56
           shape: RoundedRectangleBorder(
@@ -274,7 +289,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryBlue, width: 2),
+          borderSide: const BorderSide(color: mutedGreyBrown, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -298,7 +313,7 @@ class AppTheme {
 
       // Floating Action Button theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: primaryBlue,
+        backgroundColor: mutedGreyBrown,
         foregroundColor: Colors.white,
         elevation: 4,
         shape: CircleBorder(),
@@ -320,11 +335,11 @@ class AppTheme {
 
       // Chip theme
       chipTheme: ChipThemeData(
-        backgroundColor: primaryBlueLight,
+        backgroundColor: coolGreyBeige,
         deleteIconColor: textPrimary,
         disabledColor: dividerColor,
-        selectedColor: primaryBlue,
-        secondarySelectedColor: primaryBlueLight,
+        selectedColor: mutedGreyBrown,
+        secondarySelectedColor: coolGreyBeige,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         labelStyle: const TextStyle(
           color: textPrimary,
@@ -344,7 +359,7 @@ class AppTheme {
       // Bottom navigation bar theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceWhite,
-        selectedItemColor: primaryBlue,
+        selectedItemColor: mutedGreyBrown,
         unselectedItemColor: textSecondary,
         selectedLabelStyle: TextStyle(
           fontSize: 14,
@@ -379,7 +394,7 @@ class AppTheme {
 
       // Snackbar theme
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: textPrimary,
+        backgroundColor: darkGreyBrown,
         contentTextStyle: const TextStyle(
           color: Colors.white,
           fontSize: 16,
@@ -393,10 +408,10 @@ class AppTheme {
     );
   }
 
-  /// Helper method to get a custom button style for secondary actions (orange)
+  /// Helper method to get a custom button style for secondary actions (warm tan)
   static ButtonStyle get orangeButtonStyle {
     return ElevatedButton.styleFrom(
-      backgroundColor: accentOrange,
+      backgroundColor: warmTan,
       foregroundColor: Colors.white,
       elevation: 2,
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
@@ -412,10 +427,10 @@ class AppTheme {
     );
   }
 
-  /// Helper method to get a custom button style for success actions (green)
+  /// Helper method to get a custom button style for success actions
   static ButtonStyle get greenButtonStyle {
     return ElevatedButton.styleFrom(
-      backgroundColor: accentGreen,
+      backgroundColor: mutedGreyBrown,
       foregroundColor: Colors.white,
       elevation: 2,
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),

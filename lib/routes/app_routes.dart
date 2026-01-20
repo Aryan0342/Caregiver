@@ -11,6 +11,9 @@ class AppRoutes {
   static const String createCaregiverPin = '/create-caregiver-pin';
   static const String changePin = '/change-pin';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
+  static const String securityQuestionVerification = '/security-question-verification';
   static const String clientMode = '/client-mode';
   static const String requestPicto = '/request-picto';
+  static const String emailVerification = '/email-verification';
 }

@@ -17,6 +17,9 @@ import 'screens/caregiver_profile_setup_screen.dart';
 import 'screens/create_caregiver_pin_screen.dart';
 import 'screens/change_pin_screen.dart';
 import 'screens/forgot_password_screen.dart';
+import 'screens/reset_password_screen.dart';
+import 'screens/security_question_verification_screen.dart';
+import 'screens/email_verification_screen.dart';
 import 'screens/client_mode_entry_screen.dart';
 import 'screens/request_picto_screen.dart';
 import 'services/language_service.dart';
@@ -27,27 +30,31 @@ import 'l10n/app_localizations.dart';
 import 'providers/language_provider.dart';
 
 void main() async {
+  // Required: Initialize Flutter bindings before any async operations
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
+  // CRITICAL PATH: Initialize Firebase - must be awaited for auth to work
+  // This is required before runApp() because AuthWrapper uses FirebaseAuth
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    
-    // Enable Firestore offline persistence
+
+    // IMPORTANT: Disable Firestore offline persistence so the app always works online.
+    // The client only uses the app with a network connection, so we explicitly
+    // turn off local persistence and caching for Firestore.
     try {
       FirebaseFirestore.instance.settings = const Settings(
-        persistenceEnabled: true,
-        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        persistenceEnabled: false, // Disable offline persistence
       );
     } catch (e) {
-      debugPrint('Firestore offline persistence: $e');
+      debugPrint('Firestore settings error: $e');
     }
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
   
+  // Start rendering immediately - Firestore settings will configure in background
   runApp(const MyApp());
 }
 
@@ -113,8 +120,22 @@ class _MyAppState extends State<MyApp> {
           AppRoutes.createCaregiverPin: (context) => const CreateCaregiverPinScreen(),
           AppRoutes.changePin: (context) => const ChangePinScreen(),
           AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
+          AppRoutes.resetPassword: (context) {
+            final email = ModalRoute.of(context)?.settings.arguments as String? ?? '';
+            return ResetPasswordScreen(email: email);
+          },
+          AppRoutes.securityQuestionVerification: (context) {
+            final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+            final email = args?['email'] as String? ?? '';
+            final onVerificationSuccess = args?['onVerificationSuccess'] as Function()? ?? () {};
+            return SecurityQuestionVerificationScreen(
+              email: email,
+              onVerificationSuccess: onVerificationSuccess,
+            );
+          },
           AppRoutes.clientMode: (context) => const ClientModeEntryScreen(),
           AppRoutes.requestPicto: (context) => const RequestPictoScreen(),
+          AppRoutes.emailVerification: (context) => const EmailVerificationScreen(),
         },
         // Fallback for unknown routes
         onUnknownRoute: (settings) {
@@ -226,6 +247,49 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
         // If user is logged in
         if (snapshot.hasData && snapshot.data != null) {
+          final user = snapshot.data!;
+          
+          // FIRST CHECK: Email verification - block all access if not verified
+          // Exception: Allow emailVerification screen itself
+          final currentRoute = ModalRoute.of(context)?.settings.name;
+          if (!user.emailVerified && currentRoute != AppRoutes.emailVerification) {
+            if (kDebugMode) {
+              debugPrint('AuthWrapper: Email not verified, routing to EmailVerificationScreen');
+            }
+            // Reload user to get latest emailVerified status (in case user just verified)
+            // Use Future.microtask to handle async reload without blocking
+            Future.microtask(() async {
+              try {
+                await user.reload();
+                final updatedUser = FirebaseAuth.instance.currentUser;
+                if (mounted && updatedUser != null && updatedUser.emailVerified) {
+                  // Email was verified - trigger rebuild to continue with normal flow
+                  if (kDebugMode) {
+                    debugPrint('AuthWrapper: Email verified after reload, continuing...');
+                  }
+                  setState(() {}); // Trigger rebuild to continue flow
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  debugPrint('AuthWrapper: Error reloading user: $e');
+                }
+              }
+            });
+            // Show verification screen while checking
+            return const EmailVerificationScreen();
+          }
+          
+          // If on email verification screen but email is now verified, continue
+          if (currentRoute == AppRoutes.emailVerification && user.emailVerified) {
+            // Email verified - navigate to profile setup or home
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _checkSetupAndNavigate(context);
+              }
+            });
+            return const SizedBox.shrink();
+          }
+
           // Check PIN requirement on first build (only once)
           if (!_hasCheckedPin && !_isCheckingPin) {
             _hasCheckedPin = true;
@@ -278,15 +342,16 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
           // PIN not required or already verified - proceed to home/setup
           // Check if we're already on a setup screen - don't interfere
-          final currentRoute = ModalRoute.of(context)?.settings.name;
-          if (currentRoute == AppRoutes.caregiverProfileSetup ||
-              currentRoute == AppRoutes.createCaregiverPin ||
-              currentRoute == AppRoutes.caregiverRegistration) {
+          final routeAfterCheck = ModalRoute.of(context)?.settings.name;
+          if (routeAfterCheck == AppRoutes.caregiverProfileSetup ||
+              routeAfterCheck == AppRoutes.createCaregiverPin ||
+              routeAfterCheck == AppRoutes.caregiverRegistration ||
+              routeAfterCheck == AppRoutes.emailVerification) {
             return const SizedBox.shrink();
           }
 
           // If already on home screen, don't navigate again
-          if (currentRoute == AppRoutes.home) {
+          if (routeAfterCheck == AppRoutes.home) {
             return const HomeScreen();
           }
 

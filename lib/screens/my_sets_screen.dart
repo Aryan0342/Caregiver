@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
@@ -61,9 +60,9 @@ class MySetsScreen extends StatelessWidget {
                           : Icons.error_outline,
                       size: 64,
                       color: isOffline 
-                        ? Colors.orange 
+                        ? AppTheme.accentOrange 
                         : isIndexBuilding 
-                          ? Colors.blue 
+                          ? AppTheme.primaryBlue 
                           : AppTheme.textSecondary,
                     ),
                     const SizedBox(height: 16),
@@ -355,24 +354,23 @@ class MySetsScreen extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
-              child: CachedNetworkImage(
+              child: Image.network(
                 // For custom pictograms, use the imageUrl from the model
                 // For ARASAAC pictograms, use thumbnail URL
-                imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+                pictogram.imageUrl.isNotEmpty && pictogram.id < 0
                     ? pictogram.imageUrl // Custom pictogram
                     : arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
-                maxWidthDiskCache: 300,
-                maxHeightDiskCache: 300,
-                memCacheWidth: 300,
-                memCacheHeight: 300,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Icon(
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Icon(
                   _getIconForKeyword(pictogram.keyword),
                   size: 22,
                   color: AppTheme.primaryBlue,

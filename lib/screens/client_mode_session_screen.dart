@@ -1,7 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'package:cached_network_image/cached_network_image.dart';
 import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
@@ -38,11 +36,22 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Disable back button completely
+    // Disable back button completely, but allow AppBar back button
     return PopScope(
       canPop: false, // Prevent back button and navigation gestures
       child: Scaffold(
         backgroundColor: AppTheme.backgroundLight,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+            onPressed: () {
+              // Navigate back to pictogram sets page
+              Navigator.pop(context);
+            },
+          ),
+        ),
         body: SafeArea(
           child: Stack(
             children: [
@@ -203,32 +212,42 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
         const SizedBox(height: 16),
 
-        // Pictograms preview (tiny, under the title) - shows previous and next with horizontal scroll
+        // Pictograms preview (tiny, under the title) - shows only next 3 pictograms (not current)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: SizedBox(
             height: 60,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: pictograms.length, // Show all pictograms
-              itemBuilder: (context, index) {
-                final pictogram = pictograms[index];
-                final isCurrent = index == _currentStepIndex;
-                final isPrevious = index < _currentStepIndex;
-                final isNext = index > _currentStepIndex;
-                
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildTinyPictogramPreview(
-                    pictogram, 
-                    index + 1,
-                    isCurrent: isCurrent,
-                    isPrevious: isPrevious,
-                    isNext: isNext,
-                  ),
-                );
-              },
-            ),
+            child: _getPreviewItemCount(pictograms.length) > 0
+                ? Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        _getPreviewItemCount(pictograms.length),
+                        (previewIndex) {
+                          // Start from next pictogram (skip current)
+                          final actualIndex = _currentStepIndex + 1 + previewIndex;
+                          if (actualIndex >= pictograms.length) {
+                            return const SizedBox.shrink(); // Safety check
+                          }
+                          
+                          final pictogram = pictograms[actualIndex];
+                          
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _buildTinyPictogramPreview(
+                              pictogram, 
+                              actualIndex + 1,
+                              isCurrent: false,
+                              isPrevious: false,
+                              isNext: true,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ),
 
@@ -498,6 +517,13 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
+  /// Calculate how many preview items to show (max 3 next, excluding current)
+  int _getPreviewItemCount(int totalPictograms) {
+    // Show only next pictograms (exclude current), max 3
+    final remaining = totalPictograms - (_currentStepIndex + 1);
+    return remaining > 3 ? 3 : (remaining > 0 ? remaining : 0);
+  }
+
   void _nextStep() {
     if (!mounted) return;
     
@@ -593,52 +619,33 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   Widget _buildPictogramImage(Pictogram pictogram) {
     // For custom pictograms, use the imageUrl from the model (Firebase Storage URL)
-    // For ARASAAC pictograms, check cache first, then try network
+    // For ARASAAC pictograms, use network URL directly (online-only mode)
     if (pictogram.imageUrl.isNotEmpty && pictogram.id < 0) {
       // Custom pictogram - use stored Firebase Storage URL directly
-      return CachedNetworkImage(
-        imageUrl: pictogram.imageUrl,
+      return Image.network(
+        pictogram.imageUrl,
         fit: BoxFit.contain,
-        maxWidthDiskCache: 5000,
-        maxHeightDiskCache: 5000,
-        placeholder: (context, url) => Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-            strokeWidth: 4,
-          ),
-        ),
-        errorWidget: (context, url, error) => _buildFallbackIcon(_getIconForKeyword(pictogram.keyword)),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+              strokeWidth: 4,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(_getIconForKeyword(pictogram.keyword)),
       );
     }
     
-    // ARASAAC pictogram - check cache first for offline support
-    return FutureBuilder<File?>(
-      future: _arasaacService.getCachedImage(pictogram.id),
-      builder: (context, snapshot) {
-        // If cached image exists, use it
-        if (snapshot.hasData && snapshot.data != null) {
-          final cachedFile = snapshot.data!;
-          return Image.file(
-            cachedFile,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              // If cached file fails, try network with fallback sizes
-              final fallbackIcon = _getIconForKeyword(pictogram.keyword);
-              final imageSizes = [5000, 2500, 1500];
-              return _buildImageWithFallbackSizes(pictogram.id, imageSizes, 0, fallbackIcon);
-            },
-          );
-        }
-        
-        // Not cached or still checking - try network with fallback sizes
-        final fallbackIcon = _getIconForKeyword(pictogram.keyword);
-        final imageSizes = [5000, 2500, 1500];
-        return _buildImageWithFallbackSizes(pictogram.id, imageSizes, 0, fallbackIcon);
-      },
-    );
+    // ARASAAC pictogram - use network URL directly (online-only mode)
+    // Try sizes from largest to smallest, with fallbacks
+    // Start with 1500 which is more commonly available, then try larger/smaller
+    final imageSizes = [1500, 2500, 5000, 1000, 500];
+    return _buildImageWithFallbackSizes(pictogram.id, imageSizes, 0, _getIconForKeyword(pictogram.keyword));
   }
 
-  // Helper for image loading with fallbacks
+  // Helper for image loading with fallbacks (online-only mode)
   Widget _buildImageWithFallbackSizes(
     int pictogramId,
     List<int> sizes,
@@ -652,30 +659,32 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
     final imageUrl = _arasaacService.getStaticImageUrlWithSize(pictogramId, size: sizes[currentIndex]);
     
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      httpHeaders: const {
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.contain,
+      headers: const {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'image/png,image/webp,image/*,*/*',
         'Accept-Language': 'en-US,en;q=0.9,nl;q=0.8',
       },
-      maxWidthDiskCache: sizes[currentIndex],
-      maxHeightDiskCache: sizes[currentIndex],
-      memCacheWidth: sizes[currentIndex],
-      memCacheHeight: sizes[currentIndex],
-      placeholder: (context, url) => Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(
-            AppTheme.primaryBlue,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppTheme.primaryBlue,
+            ),
+            strokeWidth: 4,
           ),
-          strokeWidth: 4,
-        ),
-      ),
-      errorWidget: (context, url, error) {
-        // Try next size in the list
-        return _buildImageWithFallbackSizes(pictogramId, sizes, currentIndex + 1, fallbackIcon);
+        );
       },
-      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        // Try next size in the list
+        if (currentIndex < sizes.length - 1) {
+          return _buildImageWithFallbackSizes(pictogramId, sizes, currentIndex + 1, fallbackIcon);
+        }
+        return _buildFallbackIcon(fallbackIcon);
+      },
     );
   }
 
@@ -734,26 +743,25 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             // Pictogram image
             Opacity(
               opacity: isPrevious ? 0.6 : 1.0, // Dim previous items
-              child: CachedNetworkImage(
-                imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+              child: Image.network(
+                pictogram.imageUrl.isNotEmpty && pictogram.id < 0
                     ? pictogram.imageUrl
                     : _arasaacService.getThumbnailUrl(pictogram.id),
                 fit: BoxFit.contain,
-                maxWidthDiskCache: 200,
-                maxHeightDiskCache: 200,
-                memCacheWidth: 100,
-                memCacheHeight: 100,
-                placeholder: (context, url) => Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                      ),
                     ),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Icon(
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Icon(
                   _getIconForKeyword(pictogram.keyword),
                   size: 20,
                   color: AppTheme.primaryBlue,
@@ -921,18 +929,21 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(7),
-            child: CachedNetworkImage(
-              imageUrl: pictogram.imageUrl.isNotEmpty && pictogram.id < 0
+            child: Image.network(
+              pictogram.imageUrl.isNotEmpty && pictogram.id < 0
                   ? pictogram.imageUrl
                   : _arasaacService.getThumbnailUrl(pictogram.id),
               fit: BoxFit.contain,
-              placeholder: (context, url) => Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-                ),
-              ),
-              errorWidget: (context, url, error) => Icon(
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.image_outlined,
                 size: 24,
                 color: AppTheme.primaryBlue,

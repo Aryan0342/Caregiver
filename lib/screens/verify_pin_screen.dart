@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../services/pin_service.dart';
 import '../providers/language_provider.dart';
-import '../routes/app_routes.dart';
+import '../services/auth_service.dart';
 import 'pin_entry_screen.dart';
+import 'security_question_verification_screen.dart';
+import 'change_pin_screen.dart';
 
 /// Screen for verifying caregiver PIN.
 /// 
@@ -88,9 +90,44 @@ class _VerifyPinScreenState extends State<VerifyPinScreen> {
       showBackButton: true,
       errorMessage: _errorMessage,
       onPinComplete: _onPinComplete,
-      onForgotPin: () {
-        // Navigate to change PIN screen
-        Navigator.pushNamed(context, AppRoutes.changePin);
+      onForgotPin: () async {
+        // Get user email first
+        final authService = AuthService();
+        final user = authService.currentUser;
+        
+        if (user?.email != null) {
+          // Navigate to security question verification screen
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SecurityQuestionVerificationScreen(
+                email: user!.email!,
+                onVerificationSuccess: () {
+                  // Verification successful - navigate to change PIN screen
+                  // Pass forgotPin=true to skip current PIN entry
+                  Navigator.of(context).pop(); // Close security question screen
+                  Navigator.of(context).pop(); // Close verify PIN screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePinScreen(forgotPin: true),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          // No email available - show error
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('E-mailadres niet gevonden. Log opnieuw in.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
       },
     );
   }

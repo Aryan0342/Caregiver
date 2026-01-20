@@ -12,6 +12,8 @@ import 'custom_pictogram_service.dart';
 class ArasaacService {
   final CustomPictogramService _customPictogramService = CustomPictogramService();
 
+  // NOTE: All explicit ARASAAC disk caching has been disabled. The app now
+  // always works online and does not store pictogram images on disk.
   Future<void> _metadataWriteLock = Future<void>.value();
 
   static const String _baseUrl = 'https://api.arasaac.org/api';
@@ -24,6 +26,7 @@ class ArasaacService {
 
   static const int _maxApiCallsPerCategory = 100;
 
+  // Deprecated cache constants (kept only for backward compatibility)
   static const String _cacheMetadataFile = 'cache_metadata.json';
   static const String _cacheDirectoryName = 'pictogram_cache';
 
@@ -39,475 +42,70 @@ class ArasaacService {
     _language = languageCode.toLowerCase().trim();
   }
 
+  // =========================
+  // DISABLED DISK CACHE (ONLINE ONLY)
+  // =========================
+
+  /// Offline disk caching is disabled. These members are kept as no-ops or
+  /// trivial implementations so existing call sites do not break.
+
   Directory? _cacheDir;
- Future<Directory?> getCacheDirectory() async {
-    await _initCache();
-    return _cacheDir;
+
+  Future<Directory?> getCacheDirectory() async {
+    // No disk cache directory is used anymore.
+    return null;
   }
 
   Future<void> _initCache() async {
-    if (_cacheDir == null) {
-      final appDir = await getApplicationDocumentsDirectory();
-      _cacheDir = Directory(path.join(appDir.path, _cacheDirectoryName));
-
-      if (!await _cacheDir!.exists()) {
-        await _cacheDir!.create(recursive: true);
-      }
-    }
+    // No-op: cache directory initialization disabled.
   }
 
   Future<String> _getCachePath(int pictogramId) async {
-    await _initCache();
-    return path.join(_cacheDir!.path, '$pictogramId.png');
+    // No-op path; callers should not rely on this while cache is disabled.
+    return '';
   }
 
   Future<bool> isCached(int pictogramId) async {
-    final cachePath = await _getCachePath(pictogramId);
-    return File(cachePath).existsSync();
+    // Always report not cached when offline cache is disabled.
+    return false;
   }
 
   Future<File?> getCachedImage(int pictogramId) async {
-    final cachePath = await _getCachePath(pictogramId);
-    final file = File(cachePath);
-
-    if (await file.exists()) {
-      return file;
-    }
-
+    // No cached image available when offline cache is disabled.
     return null;
   }
 
   Future<String> _getMetadataPath() async {
-    await _initCache();
-    return path.join(_cacheDir!.path, _cacheMetadataFile);
+    // No metadata file when cache is disabled.
+    return '';
   }
 
   Future<Map<int, String>> _loadCacheMetadata() async {
-    await _metadataWriteLock;
-
-    try {
-      final metadataPath = await _getMetadataPath();
-      final file = File(metadataPath);
-
-      if (!await file.exists()) {
-        return {};
-      }
-
-      final content = await file.readAsString();
-      if (content.trim().isEmpty) {
-        return {};
-      }
-
-      final Map<String, dynamic> jsonData = json.decode(content);
-
-      final metadata = <int, String>{};
-      for (final entry in jsonData.entries) {
-        final id = int.tryParse(entry.key);
-        if (id != null && entry.value is String) {
-          metadata[id] = entry.value as String;
-        }
-      }
-
-      return metadata;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error loading metadata (will recreate): $e');
-      }
-      try {
-        final metadataPath = await _getMetadataPath();
-        final file = File(metadataPath);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      } catch (_) {}
-      return {};
-    }
+    // No metadata is stored while offline cache is disabled.
+    return {};
   }
 
   Future<void> _saveCacheMetadata(Map<int, String> metadata) async {
-    await _metadataWriteLock;
-
-    final writeCompleter = Completer<void>();
-    _metadataWriteLock = writeCompleter.future;
-
-    try {
-      final metadataPath = await _getMetadataPath();
-      final tempPath = '$metadataPath.tmp';
-      final file = File(metadataPath);
-      final tempFile = File(tempPath);
-
-      final data = metadata.map((key, value) => MapEntry(key.toString(), value));
-      final jsonString = json.encode(data);
-
-      await tempFile.writeAsString(jsonString);
-
-      if (await file.exists()) {
-        await file.delete();
-      }
-      await tempFile.rename(metadataPath);
-
-      writeCompleter.complete();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error saving cache metadata: $e');
-      }
-      try {
-        final metadataPath = await _getMetadataPath();
-        final tempPath = '$metadataPath.tmp';
-        final tempFile = File(tempPath);
-        if (await tempFile.exists()) {
-          await tempFile.delete();
-        }
-      } catch (_) {
-      }
-      writeCompleter.complete();
-      rethrow;
-    }
+    // No-op: metadata is not written to disk anymore.
   }
 
-  Future<void> _cacheImage(int pictogramId, List<int> imageData, {required String category, required String keyword}) async {
-    try {
-      await _initCache();
-      final cachePath = await _getCachePath(pictogramId);
-      final file = File(cachePath);
-
-      if (kDebugMode) {
-        debugPrint('Caching pictogram $pictogramId to: $cachePath (${imageData.length} bytes)');
-      }
-
-      await file.writeAsBytes(imageData);
-
-      await _metadataWriteLock;
-
-      final operationCompleter = Completer<void>();
-      _metadataWriteLock = operationCompleter.future;
-
-      File? tempFile;
-      try {
-        // Load and save metadata directly (don't call _loadCacheMetadata/_saveCacheMetadata which wait on the lock)
-        final metadataPath = await _getMetadataPath();
-        final metadataFile = File(metadataPath);
-        final metadata = <int, String>{};
-        
-        // Load existing metadata
-        if (await metadataFile.exists()) {
-          try {
-            final content = await metadataFile.readAsString();
-            if (content.trim().isNotEmpty) {
-              final Map<String, dynamic> jsonData = json.decode(content);
-              for (final entry in jsonData.entries) {
-                final id = int.tryParse(entry.key);
-                if (id != null && entry.value is String) {
-                  metadata[id] = entry.value as String;
-                }
-              }
-            }
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('_cacheImage: Error loading metadata, will create new: $e');
-            }
-          }
-        }
-        
-        // Update metadata with new entry
-        final keywordToStore = keyword.trim().isNotEmpty ? keyword.trim() : (_language == 'nl' ? 'Opgeslagen pictogram' : 'Saved pictogram');
-        metadata[pictogramId] = '$category|$keywordToStore';
-        
-        // Save metadata using atomic write with unique temp file to avoid conflicts
-        final uniqueTempPath = '${metadataPath}.${pictogramId}.${DateTime.now().millisecondsSinceEpoch}.tmp';
-        tempFile = File(uniqueTempPath);
-        final data = metadata.map((key, value) => MapEntry(key.toString(), value));
-        final jsonString = json.encode(data);
-        await tempFile.writeAsString(jsonString);
-        
-        // Try to delete existing file (ignore if it doesn't exist - that's fine)
-        try {
-          if (await metadataFile.exists()) {
-            await metadataFile.delete();
-          }
-        } catch (e) {
-          // Ignore errors when deleting - file might have been deleted by another operation
-          if (kDebugMode) {
-            debugPrint('_cacheImage: Note - metadata file already deleted or inaccessible (ignoring): $e');
-          }
-        }
-        
-        // Rename temp file to final location (atomically replaces existing file)
-        await tempFile.rename(metadataPath);
-        
-        // Clean up any other temp files in the cache directory (ignore errors)
-        try {
-          final cacheDir = await getCacheDirectory();
-          if (cacheDir != null && await cacheDir.exists()) {
-            await for (final entity in cacheDir.list()) {
-              if (entity is File) {
-                final fileName = path.basename(entity.path);
-                if (fileName.startsWith(_cacheMetadataFile) && fileName.endsWith('.tmp') && fileName != path.basename(uniqueTempPath)) {
-                  try {
-                    await entity.delete();
-                  } catch (_) {
-                    // Ignore cleanup errors
-                  }
-                }
-              }
-            }
-          }
-        } catch (_) {
-          // Ignore cleanup errors
-        }
-        
-        operationCompleter.complete();
-      } catch (e) {
-        operationCompleter.complete();
-        // Clean up temp file on error
-        if (tempFile != null) {
-          try {
-            if (await tempFile.exists()) {
-              await tempFile.delete();
-            }
-          } catch (_) {
-            // Ignore cleanup errors
-          }
-        }
-        if (kDebugMode) {
-          debugPrint('_cacheImage: Error saving metadata for pictogram $pictogramId: $e');
-        }
-        rethrow;
-      }
-
-      if (await file.exists()) {
-        final fileSize = await file.length();
-        if (kDebugMode) {
-          debugPrint('Successfully wrote pictogram $pictogramId: $fileSize bytes');
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('Warning: File was written but does not exist: $cachePath');
-        }
-      }
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('Error in _cacheImage for pictogram $pictogramId: $e');
-        debugPrint('Stack trace: $stackTrace');
-      }
-      rethrow;
-    }
+  Future<void> _cacheImage(
+    int pictogramId,
+    List<int> imageData, {
+    required String category,
+    required String keyword,
+  }) async {
+    // No-op: images are no longer cached to disk.
   }
 
   Future<void> clearCacheForCategory(String category) async {
-    try {
-      final metadata = await _loadCacheMetadata();
-      final idsToRemove = <int>[];
-
-      metadata.forEach((id, metadataValue) {
-        String storedCategory;
-        if (metadataValue.contains('|')) {
-          storedCategory = metadataValue.split('|')[0];
-        } else {
-          storedCategory = metadataValue;
-        }
-
-        if (storedCategory == category || storedCategory == 'cached' || storedCategory.isEmpty) {
-          idsToRemove.add(id);
-        }
-      });
-
-      final cacheDir = await getCacheDirectory();
-      if (cacheDir != null && await cacheDir.exists()) {
-        try {
-          await for (final entity in cacheDir.list()) {
-            if (entity is File) {
-              final fileName = path.basename(entity.path);
-              final match = RegExp(r'^(\d+)\.png$').firstMatch(fileName);
-              if (match != null) {
-                final id = int.tryParse(match.group(1)!);
-                if (id != null) {
-                  if (!metadata.containsKey(id)) {
-                    idsToRemove.add(id);
-                  }
-                }
-              }
-            }
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error listing cache directory when clearing category: $e');
-          }
-        }
-      }
-
-      final uniqueIdsToRemove = idsToRemove.toSet().toList();
-
-      for (final id in uniqueIdsToRemove) {
-        try {
-          final cachePath = await _getCachePath(id);
-          final file = File(cachePath);
-          if (await file.exists()) {
-            await file.delete();
-          }
-          metadata.remove(id);
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error deleting cached pictogram $id: $e');
-          }
-        }
-      }
-
-      await _saveCacheMetadata(metadata);
-
-      if (kDebugMode) {
-        debugPrint('Cleared ${uniqueIdsToRemove.length} cached pictograms for category $category (including those with no category metadata)');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error clearing cache for category $category: $e');
-      }
-    }
+    // No-op: category-based cache is no longer used.
   }
 
   Future<File?> downloadAndCachePictogramAtSize(int pictogramId, {int size = 500, required String category, required String keyword}) async {
-    try {
-      final cached = await getCachedImage(pictogramId);
-      if (cached != null) {
-        // Always update metadata to ensure category is correct (fixes old "cached" category issue)
-        await _metadataWriteLock;
-        final operationCompleter = Completer<void>();
-        _metadataWriteLock = operationCompleter.future;
-
-        try {
-          final metadata = await _loadCacheMetadata();
-          final expectedValue = '$category|$keyword';
-          
-          // Check if metadata needs updating (wrong category or missing)
-          final currentValue = metadata[pictogramId];
-          if (currentValue != expectedValue) {
-            metadata[pictogramId] = expectedValue;
-            await _saveCacheMetadata(metadata);
-            
-            if (kDebugMode) {
-              debugPrint('Updated metadata for cached pictogram $pictogramId: "$currentValue" -> "$expectedValue"');
-            }
-          }
-          
-          operationCompleter.complete();
-        } catch (e) {
-          operationCompleter.complete();
-          if (kDebugMode) {
-            debugPrint('Error updating metadata for cached pictogram $pictogramId: $e');
-          }
-        }
-
-        return cached;
-      }
-
-      final sizesToTry = [size <= 500 ? size : 500, 500];
-      final uniqueSizes = <int>[];
-      for (final s in sizesToTry) {
-        if (s <= 500 && !uniqueSizes.contains(s)) {
-          uniqueSizes.add(s);
-        }
-      }
-
-      if (uniqueSizes.isEmpty) {
-        uniqueSizes.add(500);
-      }
-
-      for (final trySize in uniqueSizes) {
-        try {
-          final imageUrl = getStaticImageUrlWithSize(pictogramId, size: trySize);
-          if (kDebugMode) {
-            debugPrint('Downloading pictogram $pictogramId from: $imageUrl');
-          }
-
-          final response = await http.get(Uri.parse(imageUrl)).timeout(
-            _requestTimeout,
-            onTimeout: () {
-              if (kDebugMode) {
-                debugPrint('Timeout downloading pictogram $pictogramId at size $trySize');
-              }
-              throw Exception('Request timeout');
-            },
-          );
-
-          if (kDebugMode) {
-            debugPrint('Response status for pictogram $pictogramId (size $trySize): ${response.statusCode}, body length: ${response.bodyBytes.length}');
-          }
-
-          if (response.statusCode == 200) {
-            if (response.bodyBytes.isEmpty) {
-              if (kDebugMode) {
-                debugPrint('Empty response body for pictogram $pictogramId at size $trySize');
-              }
-              continue;
-            }
-
-                  try {
-                    await _cacheImage(pictogramId, response.bodyBytes, category: category, keyword: keyword);
-                    if (kDebugMode) {
-                      debugPrint('Successfully cached pictogram $pictogramId at size $trySize');
-                    }
-
-              final cachedFile = await getCachedImage(pictogramId);
-              if (cachedFile == null) {
-                if (kDebugMode) {
-                  debugPrint('Warning: Pictogram $pictogramId was cached but getCachedImage returned null');
-                }
-              }
-              return cachedFile;
-            } catch (cacheError) {
-              if (kDebugMode) {
-                debugPrint('Error caching pictogram $pictogramId: $cacheError');
-              }
-              continue;
-            }
-          } else if (response.statusCode == 404) {
-            if (kDebugMode) {
-              debugPrint('Size $trySize not available for pictogram $pictogramId (404), trying next size...');
-            }
-            continue;
-          } else {
-            if (kDebugMode) {
-              debugPrint('Failed to download pictogram $pictogramId at size $trySize: HTTP ${response.statusCode}');
-            }
-            continue;
-          }
-        } on SocketException catch (e) {
-          if (kDebugMode) {
-            debugPrint('SocketException downloading pictogram $pictogramId: $e');
-          }
-          return null;
-        } on TimeoutException catch (e) {
-          if (kDebugMode) {
-            debugPrint('TimeoutException downloading pictogram $pictogramId at size $trySize: $e');
-          }
-          continue;
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('Error downloading pictogram $pictogramId at size $trySize: $e');
-          }
-          continue;
-        }
-      }
-
-      if (kDebugMode) {
-        debugPrint('Failed to download pictogram $pictogramId at any available size');
-      }
-      return null;
-    } on SocketException catch (e) {
-      if (kDebugMode) {
-        debugPrint('SocketException downloading pictogram $pictogramId: $e');
-      }
-    } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('TimeoutException downloading pictogram $pictogramId: $e');
-      }
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('Error downloading pictogram $pictogramId: $e');
-        debugPrint('Stack trace: $stackTrace');
-      }
-    }
-
+    // Disk-based caching has been disabled. This method is kept only for
+    // backward compatibility and now always returns null so that callers
+    // fall back to using online image URLs directly.
     return null;
   }
 
@@ -516,159 +114,17 @@ class ArasaacService {
   }
 
   Future<List<Pictogram>> getCachedPictograms({List<int>? ids, String? category}) async {
-    final cachedPictograms = <Pictogram>[];
-    final metadata = await _loadCacheMetadata();
-
-    if (kDebugMode) {
-      debugPrint('getCachedPictograms: metadata has ${metadata.length} entries, filtering by category: $category');
-    }
-
-    List<int> idsToCheck = ids ?? [];
-    if (idsToCheck.isEmpty) {
-      try {
-        final cacheDir = await getCacheDirectory();
-        if (cacheDir != null && await cacheDir.exists()) {
-          await for (final entity in cacheDir.list()) {
-            if (entity is File) {
-              final fileName = entity.path.split(Platform.pathSeparator).last;
-              final match = RegExp(r'^(\d+)\.png$').firstMatch(fileName);
-              if (match != null) {
-                final id = int.tryParse(match.group(1)!);
-                if (id != null) {
-                  idsToCheck.add(id);
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('Error listing cache directory: $e');
-        }
-      }
-    }
-
-    for (final id in idsToCheck) {
-      try {
-        final cachedFile = await getCachedImage(id);
-
-        if (cachedFile != null) {
-          final metadataValue = metadata[id] ?? 'cached';
-          String pictogramCategory;
-          String pictogramKeyword;
-
-          if (metadataValue.contains('|')) {
-            final parts = metadataValue.split('|');
-            pictogramCategory = parts[0];
-            pictogramKeyword = parts.length > 1 && parts[1].isNotEmpty 
-                ? parts[1] 
-                : (_language == 'nl' ? 'Opgeslagen pictogram' : 'Saved pictogram');
-            
-            // If keyword is a fallback/truncated keyword, try to mark it as needing enhancement
-            // This helps when offline mode tries to enhance later
-            if (pictogramKeyword == 'Opgeslagen pictogram' || 
-                pictogramKeyword == 'Saved pictogram' ||
-                pictogramKeyword.startsWith('Opgeslag') ||
-                pictogramKeyword.contains('picto')) {
-              if (kDebugMode) {
-                debugPrint('Cached pictogram $id has fallback keyword in metadata: "$pictogramKeyword"');
-              }
-            }
-          } else {
-            pictogramCategory = metadataValue;
-            pictogramKeyword = _language == 'nl' ? 'Opgeslagen pictogram' : 'Saved pictogram';
-          }
-
-          // Filter by category if specified
-          if (category != null) {
-            // If pictogram has a category stored, it must match the requested category
-            if (pictogramCategory != category) {
-              // Skip if category doesn't match (including if it's 'cached' or empty)
-              // Only include pictograms that have the correct category
-              if (kDebugMode) {
-                debugPrint('Skipping pictogram $id: category mismatch (stored: "$pictogramCategory", requested: "$category")');
-              }
-              continue;
-            }
-            // Pictogram category matches - include it
-          }
-          // If category is null, include all pictograms regardless of their category
-
-          if (kDebugMode && cachedPictograms.length < 5) {
-            debugPrint('Adding cached pictogram $id with category: ${category ?? pictogramCategory}, keyword: $pictogramKeyword');
-          }
-
-          cachedPictograms.add(Pictogram(
-            id: id,
-            keyword: pictogramKeyword,
-            category: category ?? pictogramCategory,
-            imageUrl: cachedFile.path,
-          ));
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('Error checking cache for pictogram $id: $e');
-        }
-        continue;
-      }
-    }
-
-    if (kDebugMode) {
-      debugPrint('getCachedPictograms: Returning ${cachedPictograms.length} cached pictograms (checked ${idsToCheck.length} IDs)');
-    }
-
-    return cachedPictograms;
-  }
-
-  Future<void> clearCache() async {
-    await _initCache();
-
-    if (_cacheDir != null && await _cacheDir!.exists()) {
-      await _cacheDir!.delete(recursive: true);
-      await _cacheDir!.create(recursive: true);
-    }
+    // Offline pictogram cache has been removed. Always return an empty list.
+    return [];
   }
 
   Future<void> clearAllPictogramCacheFully() async {
-    if (kDebugMode) {
-      debugPrint('clearAllPictogramCacheFully: Starting full cache clear (disk + memory)...');
-    }
-
-    await clearCache();
-
-    try {
-      PaintingBinding.instance.imageCache.clear();
-      PaintingBinding.instance.imageCache.clearLiveImages();
-      
-      if (kDebugMode) {
-        debugPrint('clearAllPictogramCacheFully: Cleared Flutter image cache (memory)');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('clearAllPictogramCacheFully: Error clearing image cache: $e');
-      }
-    }
-
-    if (kDebugMode) {
-      debugPrint('clearAllPictogramCacheFully: Cache clear complete (disk + memory)');
-    }
+    // No-op: explicit pictogram cache is no longer used (online-only mode).
   }
 
   Future<int> getCacheSize() async {
-    await _initCache();
-
-    if (_cacheDir == null || !await _cacheDir!.exists()) {
-      return 0;
-    }
-
-    int totalSize = 0;
-    await for (final entity in _cacheDir!.list()) {
-      if (entity is File) {
-        totalSize += await entity.length();
-      }
-    }
-
-    return totalSize;
+    // Always zero because no disk cache is maintained anymore.
+    return 0;
   }
 
 
@@ -971,21 +427,8 @@ class ArasaacService {
     int offset = 0,
     bool enhanceKeywords = true,
   }) async {
-    final allCached = await getCachedPictograms(category: category);
-    
-    // Apply pagination
-    var paginatedResults = allCached.skip(offset).take(limit).toList();
-    
-    // If online and enhancement is requested, try to get real keywords for pictograms with fallback keywords
-    if (enhanceKeywords) {
-      paginatedResults = await _enhanceCachedPictogramKeywords(paginatedResults);
-    }
-    
-    if (kDebugMode) {
-      debugPrint('getCachedPictogramsWithPagination [${category ?? "all"}]: Returned ${paginatedResults.length} results (offset=$offset, limit=$limit) from ${allCached.length} total cached');
-    }
-    
-    return paginatedResults;
+    // Offline pictogram cache has been removed. Always return an empty list.
+    return [];
   }
 
   /// Enhance cached pictogram keywords by fetching from API if online

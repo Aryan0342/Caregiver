@@ -219,76 +219,32 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       // Empty result or timeout - try offline mode
       throw SocketException('No results from API');
     } on SocketException catch (e) {
-      // Offline - load from cache
-      debugPrint('SocketException caught, loading cached pictograms for category ${category.key}: $e');
-      await _loadOfflinePictograms(category);
-    } catch (e) {
-      // Other error - try offline as fallback
-      debugPrint('Error loading pictograms: $e, trying offline mode...');
-      await _loadOfflinePictograms(category);
-    }
-  }
-
-  /// Load pictograms from cache (offline mode) with pagination support
-  /// Also enhances keywords if online
-  Future<void> _loadOfflinePictograms(PictogramCategory category) async {
-    try {
-      // First load cached pictograms (might have bad keywords in metadata)
-      var cachedPictograms = await _arasaacService.getCachedPictogramsWithPagination(
-        category: category.key,
-        limit: _initialLoadCount,
-        offset: 0,
-        enhanceKeywords: false, // Don't enhance yet - check online status first
-      );
-
-      if (cachedPictograms.isEmpty) {
-        debugPrint('No cached pictograms found for category ${category.key}');
-        setState(() {
-          _errorMessage = 'Offline modus: Geen pictogrammen beschikbaar. Verbind met internet om nieuwe pictogrammen te zoeken.';
-          _isOnlineByCategory[category] = false;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Check if we're actually online (maybe API failed but network is available)
-      bool mightBeOnline = false;
-      try {
-        // Quick test to see if we can reach API with a simple pictogram ID
-        final testResult = await _arasaacService.getPictogramById(1).timeout(
-          const Duration(seconds: 2),
-          onTimeout: () => null,
-        );
-        mightBeOnline = testResult != null;
-      } catch (e) {
-        mightBeOnline = false;
-      }
-
-      // If online, try to enhance keywords
-      if (mightBeOnline) {
-        debugPrint('Online detected, enhancing keywords for ${cachedPictograms.length} cached pictograms...');
-        cachedPictograms = await _arasaacService.getCachedPictogramsWithPagination(
-          category: category.key,
-          limit: _initialLoadCount,
-          offset: 0,
-          enhanceKeywords: true, // Enhance keywords now that we know we're online
-        );
-      }
-
-      debugPrint('${mightBeOnline ? "Online" : "Offline"} mode: Loaded ${cachedPictograms.length} cached pictograms for category ${category.key}');
+      // Network error: no offline fallback anymore, just show an error message.
+      debugPrint('SocketException while loading pictograms for category ${category.key}: $e');
       setState(() {
-        _pictogramsByCategory[category] = cachedPictograms;
-        _isOnlineByCategory[category] = mightBeOnline;
+        _errorMessage = 'Geen internetverbinding. Verbind met internet om Picto\'s te laden.';
+        _isOnlineByCategory[category] = false;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading cached pictograms: $e');
+      // Other error: show a generic error message, no offline fallback.
+      debugPrint('Error loading pictograms: $e');
       setState(() {
-        _errorMessage = 'Fout bij laden van pictogrammen: ${e.toString()}';
+        _errorMessage = 'Fout bij laden van Picto\'s. Probeer het opnieuw met internetverbinding.';
         _isOnlineByCategory[category] = false;
         _isLoading = false;
       });
     }
+  }
+
+  /// Offline loading has been disabled. The app now always requires
+  /// an internet connection for pictogram search.
+  Future<void> _loadOfflinePictograms(PictogramCategory category) async {
+    setState(() {
+      _errorMessage = 'Geen internetverbinding. Verbind met internet om Picto\'s te laden.';
+      _isOnlineByCategory[category] = false;
+      _isLoading = false;
+    });
   }
 
 
@@ -390,25 +346,11 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     debugPrint('Pre-caching complete: $cachedCount cached, $errorCount errors for category $categoryKey');
   }
 
-  /// Cache image to custom directory when displayed (called for each pictogram in grid)
+  /// Previously cached pictogram images to disk for offline use.
+  /// Now disabled because the app only runs online; we no longer write any
+  /// ARASAAC images to local storage.
   void _cacheImageToCustomDirectory(int pictogramId, String category, String keyword) {
-    // Always download and cache with category and keyword
-    // This ensures we always have the latest version and update metadata
-    _arasaacService.downloadAndCachePictogram(pictogramId, category: category, keyword: keyword).then((file) {
-      if (file != null) {
-        if (kDebugMode) {
-          debugPrint('Successfully cached pictogram $pictogramId to custom directory');
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('Failed to cache pictogram $pictogramId (returned null)');
-        }
-      }
-    }).catchError((e) {
-      if (kDebugMode) {
-        debugPrint('Error caching pictogram $pictogramId: $e');
-      }
-    });
+    // Intentionally left as a no-op to avoid disk caching.
   }
 
   void _toggleSelection(Pictogram pictogram) {
@@ -424,7 +366,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
               content: Text(
                 'Maximum ${widget.maxSelection} pictogrammen geselecteerd',
               ),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppTheme.accentOrange,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -465,31 +407,6 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
         title: Text(localizations.choosePictograms),
         backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
-        actions: [
-          if (_selectedPictograms.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              child: ElevatedButton.icon(
-                onPressed: _confirmSelection,
-                icon: const Icon(Icons.check, color: Colors.white, size: 20),
-                label: Text(
-                  '${localizations.done} (${_selectedPictograms.length})',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentGreen,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-        ],
       ),
       body: Column(
         children: [
@@ -665,12 +582,12 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                           ),
                                         ),
                                 ),
-                              // Request picto bar at bottom
+                              // Bottom bar with Done and Request picto buttons
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryBlue,
+                                  color: AppTheme.surfaceWhite,
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(alpha: 0.1),
@@ -680,36 +597,62 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                   ],
                                 ),
                                 child: SafeArea(
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const RequestPictoScreen(),
-                                        ),
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.add_circle_outline,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
+                                  child: Row(
+                                    children: [
+                                      // Request picto button (moved to left)
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const RequestPictoScreen(),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                                          label: Text(
                                             localizations.requestPicto,
                                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                           ),
-                                        ],
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppTheme.primaryBlue,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      if (_selectedPictograms.isNotEmpty)
+                                        const SizedBox(width: 12),
+                                      // Done button (moved to right, only show if items are selected)
+                                      if (_selectedPictograms.isNotEmpty)
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: _confirmSelection,
+                                            icon: const Icon(Icons.check, color: Colors.white, size: 20),
+                                            label: Text(
+                                              '${localizations.done} (${_selectedPictograms.length})',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppTheme.accentGreen,
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -832,36 +775,29 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
         : _arasaacService.getStaticImageUrlWithSize(pictogram.id, size: 300); // ARASAAC pictogram - use 300px for speed
     final fallbackIcon = _getIconForKeyword(pictogram.keyword);
     
-    // Use smaller image size (300px) for faster loading in grid view
-    // Only use thumbnail URL - no fallbacks to speed up loading
-    // Also cache to our custom directory when image loads
-    if (pictogram.id > 0) {
-      // ARASAAC pictogram - cache it when displayed with category and keyword
-      _cacheImageToCustomDirectory(pictogram.id, pictogram.category, pictogram.keyword);
-    }
+    // Use smaller image size (300px) for faster loading in grid view (online-only mode)
+    final finalImageUrl = imageUrl.isEmpty ? _arasaacService.getStaticImageUrlWithSize(pictogram.id, size: 300) : imageUrl;
     
-    return CachedNetworkImage(
-      imageUrl: imageUrl.isEmpty ? _arasaacService.getStaticImageUrlWithSize(pictogram.id, size: 300) : imageUrl,
-      // Optimize cache for grid thumbnails (300px for faster loading)
-      maxWidthDiskCache: 300,
-      maxHeightDiskCache: 300,
-      memCacheWidth: 200,
-      memCacheHeight: 200,
-      httpHeaders: const {
+    return Image.network(
+      finalImageUrl,
+      fit: BoxFit.contain,
+      headers: const {
         'Accept': 'image/png,image/*;q=0.8',
         'User-Agent': 'Flutter-App',
       },
-      fit: BoxFit.contain,
-      placeholder: (context, url) => Container(
-        color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
-        child: const Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
+          child: const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+            ),
           ),
-        ),
-      ),
-      errorWidget: (context, url, error) => _buildFallbackIcon(fallbackIcon),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(fallbackIcon),
     );
   }
 
