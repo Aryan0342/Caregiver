@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
-import '../services/arasaac_service.dart';
 import '../providers/language_provider.dart';
 import '../routes/app_routes.dart';
 
@@ -20,9 +19,7 @@ class ClientSessionScreen extends StatefulWidget {
 }
 
 class _ClientSessionScreenState extends State<ClientSessionScreen> {
-  final ArasaacService _arasaacService = ArasaacService();
   int _currentStepIndex = 0;
-  final Map<int, String> _keywordCache = {}; // Cache for fetched keywords
 
   void _nextStep() {
     if (_currentStepIndex < widget.set.pictograms.length - 1) {
@@ -32,38 +29,9 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
     }
   }
 
-  /// Get pictogram keyword, fetching from ARASAAC if needed
-  Future<String> _getPictogramKeyword(Pictogram pictogram) async {
-    // If keyword is already valid, return it
-    if (pictogram.keyword.isNotEmpty && pictogram.keyword != 'Onbekend') {
-      return pictogram.keyword;
-    }
-    
-    // Check cache first
-    if (_keywordCache.containsKey(pictogram.id)) {
-      return _keywordCache[pictogram.id]!;
-    }
-    
-    // Try to fetch keyword from ARASAAC by ID
-    try {
-      final fetchedPictogram = await _arasaacService.getPictogramById(pictogram.id);
-      if (fetchedPictogram != null) {
-        final keyword = fetchedPictogram.keyword;
-        if (keyword.isNotEmpty && keyword != 'Onbekend') {
-          _keywordCache[pictogram.id] = keyword;
-          return keyword;
-        }
-      }
-    } catch (e) {
-      // Silently fail - use stored keyword
-      if (kDebugMode) {
-        debugPrint('Error fetching keyword for pictogram ${pictogram.id}: $e');
-      }
-    }
-    
-    // Last resort: return stored keyword (even if it's "Onbekend")
-    // Don't show "Pictogram {id}" - just show the stored keyword
-    return pictogram.keyword;
+  /// Get pictogram keyword - all pictograms are now custom with stored keywords
+  String _getPictogramKeyword(Pictogram pictogram) {
+    return pictogram.keyword.isNotEmpty ? pictogram.keyword : 'Onbekend';
   }
 
   void _markAsDone() {
@@ -171,67 +139,14 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
                           color: AppTheme.primaryBlueLight,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: FutureBuilder<String>(
-                          future: _getPictogramKeyword(currentPictogram),
-                          builder: (context, snapshot) {
-                            // Always show the stored keyword first, even if it's "Onbekend"
-                            // Only show "..." if we're actively fetching AND have no stored keyword
-                            final storedKeyword = currentPictogram.keyword;
-                            final isFetching = snapshot.connectionState == ConnectionState.waiting;
-                            
-                            // If we have a stored keyword (even if "Onbekend"), show it
-                            if (storedKeyword.isNotEmpty) {
-                              // If fetching and we have a stored keyword, show it (don't show "...")
-                              if (isFetching) {
-                                return Text(
-                                  storedKeyword,
-                                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                        color: AppTheme.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 36,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                );
-                              }
-                              
-                              // Use fetched keyword if available, otherwise use stored
-                              final keyword = snapshot.data ?? storedKeyword;
-                              return Text(
-                                keyword,
-                                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                      color: AppTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 36,
-                                    ),
-                                textAlign: TextAlign.center,
-                              );
-                            }
-                            
-                            // Only show "..." if we have no stored keyword AND are fetching
-                            if (isFetching) {
-                              return Text(
-                                '...',
-                                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                      color: AppTheme.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 36,
-                                    ),
-                                textAlign: TextAlign.center,
-                              );
-                            }
-                            
-                            // Final fallback: use fetched keyword or empty string
-                            final keyword = snapshot.data ?? '';
-                            return Text(
-                              keyword.isEmpty ? '' : keyword,
-                              style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                    color: AppTheme.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 36,
-                                  ),
-                              textAlign: TextAlign.center,
-                            );
-                          },
+                        child: Text(
+                          _getPictogramKeyword(currentPictogram),
+                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 36,
+                              ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
@@ -309,59 +224,14 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
   }
 
   Widget _buildPictogramImage(Pictogram pictogram) {
-    // For custom pictograms, use the imageUrl from the model (Firebase Storage URL)
-    // For ARASAAC pictograms, use network URL directly (online-only mode)
-    if (pictogram.imageUrl.isNotEmpty && pictogram.id < 0) {
-      // Custom pictogram - use stored Firebase Storage URL directly
-      return Image.network(
-        pictogram.imageUrl,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                AppTheme.primaryBlue,
-              ),
-              strokeWidth: 4,
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(pictogram),
-      );
-    }
-    
-    // ARASAAC pictogram - use network URL directly (online-only mode)
-    return _buildNetworkImageWithFallbacks(pictogram);
-  }
-
-  Widget _buildNetworkImageWithFallbacks(Pictogram pictogram) {
-    // Try network with multiple size fallbacks (online-only mode)
-    // Try sizes - start with 1500 which is more commonly available, then try larger/smaller
-    final imageSizes = [1500, 2500, 5000, 1000, 500];
-    return _buildImageWithFallbackSizes(pictogram.id, imageSizes, 0, pictogram);
-  }
-
-  Widget _buildImageWithFallbackSizes(
-    int pictogramId,
-    List<int> sizes,
-    int currentIndex,
-    Pictogram pictogram,
-  ) {
-    if (currentIndex >= sizes.length) {
-      // All sizes failed, show fallback icon
+    // All pictograms are now custom with Cloudinary URLs
+    if (pictogram.imageUrl.isEmpty) {
       return _buildFallbackIcon(pictogram);
     }
 
-    final imageUrl = _arasaacService.getStaticImageUrlWithSize(pictogramId, size: sizes[currentIndex]);
-    
     return Image.network(
-      imageUrl,
+      pictogram.imageUrl, // Cloudinary URL
       fit: BoxFit.contain,
-      headers: const {
-        'Accept': 'image/png,image/*;q=0.8',
-        'User-Agent': 'Flutter-App',
-      },
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return Center(
@@ -373,13 +243,7 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
           ),
         );
       },
-      errorBuilder: (context, error, stackTrace) {
-        // Try next size in the list
-        if (currentIndex < sizes.length - 1) {
-          return _buildImageWithFallbackSizes(pictogramId, sizes, currentIndex + 1, pictogram);
-        }
-        return _buildFallbackIcon(pictogram);
-      },
+      errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(pictogram),
     );
   }
 

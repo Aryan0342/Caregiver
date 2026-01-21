@@ -1,0 +1,31 @@
+FIREBASE EMAIL VERIFICATION - SETTINGS TO COPY & PASTE
+=======================================================
+
+SUBJECT LINE (Dutch):
+---------------------
+Verifieer uw Je Dag in Beeld e-mailadres
+
+SUBJECT LINE (English):
+-----------------------
+Verify your Je Dag in Beeld email address
+
+SENDER NAME:
+------------
+Je Dag in Beeld Support
+
+INSTRUCTIONS:
+-------------
+1. Go to Firebase Console: https://console.firebase.google.com/
+2. Select project: caregiver-cba18
+3. Go to: Authentication → Templates
+4. Click on: "Email address verification"
+5. Copy the HTML from FIREBASE_EMAIL_VERIFICATION_TEMPLATE.html
+6. Paste into "Email Body" field
+7. Update Subject Line and Sender Name (see above)
+8. Click "Save"
+
+IMPORTANT:
+----------
+- Keep the %LINK% placeholder - it's required!
+- Don't remove any %LINK% or %EMAIL% placeholders
+- Test the email after saving

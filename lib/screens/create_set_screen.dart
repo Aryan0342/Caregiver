@@ -4,7 +4,6 @@ import '../theme.dart';
 import '../models/pictogram_model.dart';
 import '../models/set_model.dart';
 import '../services/set_service.dart';
-import '../services/arasaac_service.dart';
 import 'pictogram_picker_screen.dart';
 import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
@@ -18,7 +17,6 @@ class CreateSetScreen extends StatefulWidget {
 
 class _CreateSetScreenState extends State<CreateSetScreen> {
   final _setService = SetService();
-  final _arasaacService = ArasaacService();
   final _nameController = TextEditingController();
   List<Pictogram> _selectedPictograms = [];
   int _currentStep = 1; // 1 = Name input, 2 = Pictogram selection/reorder
@@ -146,7 +144,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
             content: Text(
               isOffline 
                 ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
-                : 'Fout bij opslaan: ${errorMessage.length > 100 ? errorMessage.substring(0, 100) + "..." : errorMessage}',
+                : 'Fout bij opslaan: ${errorMessage.length > 100 ? '${errorMessage.substring(0, 100)}...' : errorMessage}',
             ),
             backgroundColor: isOffline ? AppTheme.accentOrange : Colors.red,
             behavior: SnackBarBehavior.floating,
@@ -506,27 +504,9 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(11),
-              child: Image.network(
-                  // For custom pictograms, use the imageUrl from the model
-                  // For ARASAAC pictograms, use thumbnail URL (500px) for small cards
-                  pictogram.imageUrl.isNotEmpty && pictogram.id < 0
-                      ? pictogram.imageUrl // Custom pictogram
-                      : _arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    // Try preview URL (1000px) as fallback
-                    final previewUrl = _arasaacService.getPreviewUrl(pictogram.id);
-                    if (previewUrl != _arasaacService.getThumbnailUrl(pictogram.id)) {
-                      return Image.network(
-                        previewUrl,
+                child: pictogram.imageUrl.isNotEmpty
+                    ? Image.network(
+                        pictogram.imageUrl, // Cloudinary URL
                         fit: BoxFit.contain,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
@@ -542,16 +522,12 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                           size: 32,
                           color: AppTheme.primaryBlue,
                         ),
-                      );
-                    }
-                    return Icon(
-                      _getIconForKeyword(pictogram.keyword),
-                      size: 32,
-                      color: AppTheme.primaryBlue,
-                    );
-                  },
-                  fit: BoxFit.contain,
-                ),
+                      )
+                    : Icon(
+                        _getIconForKeyword(pictogram.keyword),
+                        size: 32,
+                        color: AppTheme.primaryBlue,
+                      ),
               ),
             ),
             const SizedBox(width: 12),

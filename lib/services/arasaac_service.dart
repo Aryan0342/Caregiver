@@ -2,10 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 import '../models/pictogram_model.dart';
 import 'custom_pictogram_service.dart';
 
@@ -386,7 +383,7 @@ class ArasaacService {
 
       // Add custom pictograms
       try {
-        final customPictograms = await _customPictogramService.getCustomPictogramsByCategory(category.key);
+        final customPictograms = await _customPictogramService.getPictogramsByCategory(category.key);
         if (customPictograms.isNotEmpty) {
           finalResults.addAll(customPictograms);
           if (kDebugMode) {
@@ -636,7 +633,7 @@ class ArasaacService {
         final results = _parseSearchResponse(response.body, category, limit);
 
         try {
-          final allCustomPictograms = await _customPictogramService.getAllCustomPictograms();
+          final allCustomPictograms = await _customPictogramService.getAllPictograms();
           final matchingCustom = allCustomPictograms.where((p) {
             return p.keyword.toLowerCase().contains(keyword.toLowerCase());
           }).toList();

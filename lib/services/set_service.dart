@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
-import '../services/arasaac_service.dart';
 
 /// Service for managing pictogram sets in Firestore
 class SetService {
@@ -102,69 +101,10 @@ class SetService {
     }
   }
 
-  /// Enhance pictograms in a set with proper keywords if they have "Pictogram {id}"
-  /// Only enhances pictograms that need it (have "Pictogram {id}" as keyword)
-  /// Skips enhancement when offline to avoid spamming API with failed requests
+  /// All pictograms are now custom and stored with keywords, so no enhancement needed
   Future<PictogramSet> _enhanceSetPictograms(PictogramSet set) async {
-    // Check if any pictogram needs enhancement
-    final needsEnhancement = set.pictograms.any((p) => 
-      p.keyword.startsWith('Pictogram ') && p.id > 0
-    );
-    
-    if (!needsEnhancement) {
-      // No enhancement needed, return as-is
-      return set;
-    }
-    
-    final arasaacService = ArasaacService();
-    final enhancedPictograms = <Pictogram>[];
-    
-    // Find first pictogram that needs enhancement to test connectivity
-    final firstPictogramToEnhance = set.pictograms.firstWhere(
-      (p) => p.keyword.startsWith('Pictogram ') && p.id > 0,
-      orElse: () => set.pictograms.first,
-    );
-    
-    // Test connectivity with first pictogram
-    bool isOnline = false;
-    try {
-      final testEnhanced = await arasaacService.getPictogramById(firstPictogramToEnhance.id)
-          .timeout(const Duration(seconds: 2));
-      isOnline = testEnhanced != null;
-    } catch (e) {
-      // Network error or timeout - assume offline
-      isOnline = false;
-    }
-    
-    // If offline, return set as-is without enhancement
-    if (!isOnline) {
-      return set;
-    }
-    
-    // Online - enhance all pictograms that need it (in parallel for better performance)
-    final enhancementFutures = set.pictograms.map((pictogram) async {
-      // If keyword is "Pictogram {id}", try to fetch proper keyword
-      if (pictogram.keyword.startsWith('Pictogram ') && pictogram.id > 0) {
-        try {
-          final enhanced = await arasaacService.getPictogramById(pictogram.id);
-          if (enhanced != null && enhanced.keyword.isNotEmpty && enhanced.keyword != 'Onbekend') {
-            // Use enhanced keyword, keep other properties
-            return pictogram.copyWith(
-              keyword: enhanced.keyword,
-              category: enhanced.category,
-            );
-          }
-        } catch (e) {
-          // Silently fail - use original pictogram
-        }
-      }
-      // Keep original pictogram if enhancement failed or not needed
-      return pictogram;
-    });
-    
-    enhancedPictograms.addAll(await Future.wait(enhancementFutures));
-    
-    return set.copyWith(pictograms: enhancedPictograms);
+    // No enhancement needed - all pictograms are custom with proper keywords
+    return set;
   }
 
   /// Get all sets for the current user

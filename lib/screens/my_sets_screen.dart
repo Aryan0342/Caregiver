@@ -3,7 +3,6 @@ import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
 import '../services/set_service.dart';
-import '../services/arasaac_service.dart';
 import 'edit_set_screen.dart';
 import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
@@ -14,7 +13,6 @@ class MySetsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final setService = SetService();
-    final arasaacService = ArasaacService();
     final localizations = LanguageProvider.localizationsOf(context);
 
     return Scaffold(
@@ -146,7 +144,7 @@ class MySetsScreen extends StatelessWidget {
             itemCount: sets.length,
             itemBuilder: (context, index) {
               final set = sets[index];
-              return _buildSetCard(context, set, arasaacService);
+              return _buildSetCard(context, set);
             },
           );
         },
@@ -157,7 +155,6 @@ class MySetsScreen extends StatelessWidget {
   Widget _buildSetCard(
     BuildContext context,
     PictogramSet set,
-    ArasaacService arasaacService,
   ) {
     return Card(
       elevation: 2,
@@ -219,7 +216,6 @@ class MySetsScreen extends StatelessWidget {
                       context,
                       pictogram,
                       index,
-                      arasaacService,
                     );
                   },
                 ),
@@ -330,7 +326,6 @@ class MySetsScreen extends StatelessWidget {
     BuildContext context,
     Pictogram pictogram,
     int index,
-    ArasaacService arasaacService,
   ) {
     return Container(
       width: 64,
@@ -354,28 +349,30 @@ class MySetsScreen extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
-              child: Image.network(
-                // For custom pictograms, use the imageUrl from the model
-                // For ARASAAC pictograms, use thumbnail URL
-                pictogram.imageUrl.isNotEmpty && pictogram.id < 0
-                    ? pictogram.imageUrl // Custom pictogram
-                    : arasaacService.getThumbnailUrl(pictogram.id), // ARASAAC pictogram
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+              child: pictogram.imageUrl.isNotEmpty
+                  ? Image.network(
+                      pictogram.imageUrl, // Cloudinary URL
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        _getIconForKeyword(pictogram.keyword),
+                        size: 22,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    )
+                  : Icon(
+                      _getIconForKeyword(pictogram.keyword),
+                      size: 22,
+                      color: AppTheme.primaryBlue,
                     ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  _getIconForKeyword(pictogram.keyword),
-                  size: 22,
-                  color: AppTheme.primaryBlue,
-                ),
-              ),
             ),
           ),
           const SizedBox(height: 2),

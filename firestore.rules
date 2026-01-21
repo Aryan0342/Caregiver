@@ -67,6 +67,17 @@ service cloud.firestore {
       }
     }
     
+    // Categories collection - app users can read, admins can write
+    match /categories/{categoryId} {
+      // Allow read for authenticated users (app users can view categories)
+      allow read: if request.auth != null;
+      
+      // Allow write only for admin users
+      allow create, update, delete: if request.auth != null && 
+                                      exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                                      get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
     // Custom pictograms collection - admin only
     match /custom_pictograms/{pictogramId} {
       // Allow read for authenticated users (app users can view custom pictograms)
