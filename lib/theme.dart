@@ -15,7 +15,7 @@ class AppTheme {
   static const Color primaryBlueLight = coolGreyBeige; // Light backgrounds
   static const Color primaryBlueDark = darkGreyBrown; // Darker states
   static const Color accentOrange = warmTan; // Secondary actions
-  static const Color accentGreen = mutedGreyBrown; // Success/positive actions (using primary)
+  static const Color accentGreen = Color(0xFF4CAF50); // Success/positive actions - soft green
   static const Color backgroundLight = creamBeige; // Very light background
   static const Color surfaceWhite = Color(0xFFFFFFFF); // Pure white for cards
   static const Color textPrimary = darkGreyBrown; // Dark text for readability
@@ -430,7 +430,7 @@ class AppTheme {
   /// Helper method to get a custom button style for success actions
   static ButtonStyle get greenButtonStyle {
     return ElevatedButton.styleFrom(
-      backgroundColor: mutedGreyBrown,
+      backgroundColor: accentGreen,
       foregroundColor: Colors.white,
       elevation: 2,
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),

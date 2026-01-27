@@ -3,6 +3,7 @@ import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
 import '../providers/language_provider.dart';
+import 'pictogram_picker_screen.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
 /// 
@@ -51,11 +52,14 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         body: SafeArea(
           child: Stack(
             children: [
-              // Main content
-              _buildMainContent(),
+              // Main content (without buttons)
+              _buildMainContentWithoutButtons(),
 
-              // Hidden exit areas (invisible but tappable)
+              // Hidden exit areas (invisible but tappable) - positioned behind buttons
               _buildHiddenExitAreas(),
+
+              // Buttons on top layer to ensure they're clickable
+              _buildActionButtons(),
             ],
           ),
         ),
@@ -63,7 +67,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
-  Widget _buildMainContent() {
+  Widget _buildMainContentWithoutButtons() {
     final localizations = LanguageProvider.localizationsOf(context);
     
     // Use modified sequence if available, otherwise use original
@@ -87,7 +91,6 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
     final currentPictogram = pictograms[_currentStepIndex];
     final isLastStep = _currentStepIndex == pictograms.length - 1;
-    final isFirstStep = _currentStepIndex == 0;
 
     return Column(
       children: [
@@ -100,7 +103,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             },
             child: Container(
               width: double.infinity,
-              margin: const EdgeInsets.all(24),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceWhite,
                 borderRadius: BorderRadius.circular(24),
@@ -115,7 +118,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: Padding(
-                  padding: const EdgeInsets.all(32.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: _buildPictogramImage(currentPictogram),
                 ),
               ),
@@ -155,195 +158,234 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
         const SizedBox(height: 16),
 
-        // Pictograms preview (tiny, under the title) - shows only next 3 pictograms (not current)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: SizedBox(
-            height: 60,
-            child: _getPreviewItemCount(pictograms.length) > 0
-                ? Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(
-                        _getPreviewItemCount(pictograms.length),
-                        (previewIndex) {
-                          // Start from next pictogram (skip current)
-                          final actualIndex = _currentStepIndex + 1 + previewIndex;
-                          if (actualIndex >= pictograms.length) {
-                            return const SizedBox.shrink(); // Safety check
-                          }
-                          
-                          final pictogram = pictograms[actualIndex];
-                          
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: _buildTinyPictogramPreview(
-                              pictogram, 
-                              actualIndex + 1,
-                              isCurrent: false,
-                              isPrevious: false,
-                              isNext: true,
-                            ),
-                          );
-                        },
+        // Pictograms preview (tiny, under the title) - shows only next pictograms (not current)
+        // Only show if there are upcoming pictograms, and only show actual pictograms (up to 3)
+        if (!isLastStep)
+          Builder(
+            builder: (context) {
+              // Calculate how many upcoming pictograms there are (max 3)
+              final remainingCount = pictograms.length - (_currentStepIndex + 1);
+              final previewCount = remainingCount > 3 ? 3 : (remainingCount > 0 ? remainingCount : 0);
+              
+              // Don't show preview bar if there are no upcoming pictograms
+              if (previewCount == 0) {
+                return const SizedBox.shrink();
+              }
+              
+              return Column(
+                children: [
+                  // Label for upcoming pictograms preview
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      LanguageProvider.localizationsOf(context).upcomingPictos,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Preview row with only actual pictograms (no empty boxes)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: SizedBox(
+                      height: 60,
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                            previewCount, // Only show actual pictograms
+                            (previewIndex) {
+                              // Start from next pictogram (skip current)
+                              final actualIndex = _currentStepIndex + 1 + previewIndex;
+                              final pictogram = pictograms[actualIndex];
+                              
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: _buildTinyPictogramPreview(
+                                  pictogram, 
+                                  actualIndex + 1,
+                                  isCurrent: false,
+                                  isPrevious: false,
+                                  isNext: true,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
-                  )
-                : const SizedBox.shrink(),
+                  ),
+                ],
+              );
+            },
           ),
+
+        // Add spacer for buttons area
+        const SizedBox(height: 120),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    final isLastStep = _currentStepIndex == pictograms.length - 1;
+    final isFirstStep = _currentStepIndex == 0;
+
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceWhite,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
-
-        const SizedBox(height: 32),
-
-        // Action buttons - "Terug", "Wijzigen", "Volgende"
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceWhite,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Row(
-              children: [
-                // "Terug" button
-                Expanded(
+        child: SafeArea(
+          child: Row(
+            children: [
+              // "Terug" button
+              Expanded(
+                child: GestureDetector(
+                  onTap: isFirstStep ? null : () {
+                    _previousStep();
+                  },
+                  behavior: HitTestBehavior.opaque,
                   child: Material(
                     color: isFirstStep 
                         ? AppTheme.textSecondary.withValues(alpha: 0.5)
                         : AppTheme.textSecondary,
                     borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      onTap: isFirstStep ? null : () {
-                        _previousStep();
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-                        constraints: const BoxConstraints(minHeight: 56),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.arrow_back, size: 24, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                localizations.back,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.arrow_back, size: 24, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              localizations.back,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
+              ),
 
-                const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-                // "Wijzigen" button
-                Expanded(
+              // "Wijzigen" button
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    _modifySequence();
+                  },
+                  behavior: HitTestBehavior.opaque,
                   child: Material(
                     color: AppTheme.accentOrange,
                     borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      onTap: () {
-                        _modifySequence();
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-                        constraints: const BoxConstraints(minHeight: 56),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.edit, size: 24, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                localizations.modify,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.edit, size: 24, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              localizations.modify,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
+              ),
 
-                const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-                // "Volgende" / "Klaar" button
-                Expanded(
+              // "Volgende" / "Klaar" button
+              Expanded(
+                child: GestureDetector(
+                  onTap: isLastStep ? () {
+                    _exitWithPin();
+                  } : () {
+                    _nextStep();
+                  },
+                  behavior: HitTestBehavior.opaque,
                   child: Material(
                     color: isLastStep 
                         ? AppTheme.accentGreen
                         : AppTheme.primaryBlue,
                     borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      onTap: isLastStep ? () {
-                        _exitWithPin();
-                      } : () {
-                        _nextStep();
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-                        constraints: const BoxConstraints(minHeight: 56),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isLastStep ? Icons.check : Icons.arrow_forward,
-                              size: 24,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                isLastStep ? localizations.done : localizations.next,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isLastStep ? Icons.check : Icons.arrow_forward,
+                            size: 24,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              isLastStep ? localizations.done : localizations.next,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -382,9 +424,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             ),
           ),
         ),
-        // Bottom-left corner (long-press to exit)
+        // Bottom-left corner (long-press to exit) - exclude button area
+        // Buttons are ~120px from bottom, so only capture area above buttons
         Positioned(
-          bottom: 0,
+          bottom: 120,
           left: 0,
           child: GestureDetector(
             onLongPress: _handleExitAttempt,
@@ -395,9 +438,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             ),
           ),
         ),
-        // Bottom-right corner (long-press to exit)
+        // Bottom-right corner (long-press to exit) - exclude button area
         Positioned(
-          bottom: 0,
+          bottom: 120,
           right: 0,
           child: GestureDetector(
             onLongPress: _handleExitAttempt,
@@ -431,12 +474,6 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
-  /// Calculate how many preview items to show (max 3 next, excluding current)
-  int _getPreviewItemCount(int totalPictograms) {
-    // Show only next pictograms (exclude current), max 3
-    final remaining = totalPictograms - (_currentStepIndex + 1);
-    return remaining > 3 ? 3 : (remaining > 0 ? remaining : 0);
-  }
 
   void _nextStep() {
     if (!mounted) return;
@@ -557,11 +594,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     return Center(
       child: Icon(
         icon,
-        size: 120,
+        size: 150,
         color: AppTheme.primaryBlue,
       ),
     );
   }
+
 
   Widget _buildTinyPictogramPreview(
     Pictogram pictogram, 
@@ -736,6 +774,27 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
     });
   }
 
+  Future<void> _addPictograms() async {
+    final selected = await Navigator.push<List<Pictogram>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PictogramPickerScreen(
+          initialSelection: _modifiedSequence,
+          maxSelection: 50, // Allow many pictograms to be added
+        ),
+      ),
+    );
+
+    if (selected != null && selected.isNotEmpty) {
+      setState(() {
+        // Add only the newly selected pictograms (not already in sequence)
+        final existingIds = _modifiedSequence.map((p) => p.id).toSet();
+        final newPictograms = selected.where((p) => !existingIds.contains(p.id)).toList();
+        _modifiedSequence.addAll(newPictograms);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
@@ -751,6 +810,23 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
               localizations.modifySequenceDescription,
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            // Add pictogram button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _addPictograms,
+                icon: const Icon(Icons.add_circle_outline),
+                label: Text(localizations.addPictograms),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(color: AppTheme.primaryBlue),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             Flexible(

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../services/picto_request_service.dart';
+import '../services/category_service.dart';
+import '../services/language_service.dart';
 import '../providers/language_provider.dart';
-import '../models/pictogram_model.dart';
 
 /// Screen for requesting a new pictogram.
 /// 
@@ -20,17 +21,42 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
   final _keywordController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _requestService = PictoRequestService();
+  final _categoryService = CategoryService();
   
   String? _selectedCategory;
+  List<Category> _categories = [];
+  bool _isLoadingCategories = true;
   bool _isSubmitting = false;
   String? _errorMessage;
   String? _successMessage;
+  
+  static const String _notInListValue = '__not_in_list__';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
 
   @override
   void dispose() {
     _keywordController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _categoryService.getAllCategories();
+      setState(() {
+        _categories = categories;
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingCategories = false;
+      });
+    }
   }
 
   Future<void> _submitRequest() async {
@@ -43,6 +69,17 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
         _errorMessage = 'Selecteer een categorie';
       });
       return;
+    }
+
+    // If "not in list" is selected, description is required
+    if (_selectedCategory == _notInListValue) {
+      if (_descriptionController.text.trim().isEmpty) {
+        final localizations = LanguageProvider.localizationsOf(context);
+        setState(() {
+          _errorMessage = localizations.describeCategory;
+        });
+        return;
+      }
     }
 
     setState(() {
@@ -61,12 +98,21 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
         return;
       }
 
+      // If "not in list" is selected, use description as category
+      final categoryToSubmit = _selectedCategory == _notInListValue
+          ? _descriptionController.text.trim()
+          : _selectedCategory!;
+      
+      final descriptionToSubmit = _selectedCategory == _notInListValue
+          ? null
+          : (_descriptionController.text.trim().isEmpty 
+              ? null 
+              : _descriptionController.text.trim());
+
       await _requestService.submitRequest(
         keyword: _keywordController.text.trim(),
-        category: _selectedCategory!,
-        description: _descriptionController.text.trim().isEmpty 
-            ? null 
-            : _descriptionController.text.trim(),
+        category: categoryToSubmit,
+        description: descriptionToSubmit,
         requestedBy: userId,
       );
 
@@ -163,53 +209,81 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
                 const SizedBox(height: 24),
 
                 // Category dropdown
-                DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: localizations.category,
-                    hintText: localizations.selectCategory,
-                    prefixIcon: const Icon(Icons.category),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.surfaceWhite,
-                  ),
-                  style: const TextStyle(fontSize: 18, color: Colors.black),
-                  dropdownColor: AppTheme.surfaceWhite,
-                  menuMaxHeight: 300,
-                  isExpanded: true,
-                  items: PictogramCategory.values.map((category) {
-                    return DropdownMenuItem(
-                      value: category.key,
-                      child: Text(
-                        localizations.getCategoryName(category.key),
-                        style: const TextStyle(color: Colors.black, fontSize: 18),
-                        overflow: TextOverflow.ellipsis,
+                _isLoadingCategories
+                    ? const Center(child: CircularProgressIndicator())
+                    : DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: localizations.category,
+                          hintText: localizations.selectCategory,
+                          prefixIcon: const Icon(Icons.category),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          filled: true,
+                          fillColor: AppTheme.surfaceWhite,
+                        ),
+                        style: const TextStyle(fontSize: 18, color: Colors.black),
+                        dropdownColor: AppTheme.surfaceWhite,
+                        menuMaxHeight: 300,
+                        isExpanded: true,
+                        items: [
+                          // Admin-created categories
+                          ..._categories.map((category) {
+                            final languageService = LanguageProvider.languageServiceOf(context);
+                            final languageCode = languageService.currentLanguage == AppLanguage.dutch ? 'nl' : 'en';
+                            return DropdownMenuItem(
+                              value: category.id,
+                              child: Text(
+                                category.getLocalizedName(languageCode),
+                                style: const TextStyle(color: Colors.black, fontSize: 18),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }),
+                          // "Not in list" option
+                          DropdownMenuItem(
+                            value: _notInListValue,
+                            child: Text(
+                              localizations.notInListDescribe,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value;
+                            _errorMessage = null;
+                            // Clear description if switching away from "not in list"
+                            if (value != _notInListValue) {
+                              _descriptionController.clear();
+                            }
+                          });
+                        },
+                        value: _selectedCategory,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return localizations.fieldRequired;
+                          }
+                          return null;
+                        },
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value;
-                      _errorMessage = null;
-                    });
-                  },
-                  value: _selectedCategory,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return localizations.fieldRequired;
-                    }
-                    return null;
-                  },
-                ),
                 const SizedBox(height: 24),
 
-                // Description field (optional)
+                // Description field (required if "not in list" is selected, otherwise optional)
                 TextFormField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
-                    labelText: localizations.description,
-                    hintText: localizations.enterDescription,
+                    labelText: _selectedCategory == _notInListValue
+                        ? '${localizations.description} *'
+                        : localizations.description,
+                    hintText: _selectedCategory == _notInListValue
+                        ? localizations.describeCategory
+                        : localizations.enterDescription,
                     prefixIcon: const Icon(Icons.description),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -220,6 +294,14 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
                   style: const TextStyle(fontSize: 18),
                   maxLines: 4,
                   textInputAction: TextInputAction.done,
+                  validator: _selectedCategory == _notInListValue
+                      ? (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return localizations.describeCategory;
+                          }
+                          return null;
+                        }
+                      : null,
                 ),
                 const SizedBox(height: 32),
 

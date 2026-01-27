@@ -195,25 +195,41 @@ class _CaregiverProfileSetupScreenState extends State<CaregiverProfileSetupScree
                   isExpanded: true,
                   items: [
                     DropdownMenuItem(
-                      value: 'Parent',
+                      value: 'begeleider',
                       child: Text(
-                        localizations.roleParent,
+                        localizations.roleBegeleider,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
-                      value: 'Teacher',
+                      value: 'persoonlijk begeleider',
                       child: Text(
-                        localizations.roleTeacher,
+                        localizations.rolePersoonlijkBegeleider,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     DropdownMenuItem(
-                      value: 'Therapist',
+                      value: 'orthopedagoog',
                       child: Text(
-                        localizations.roleTherapist,
+                        localizations.roleOrthopedagoog,
+                        style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'ouder',
+                      child: Text(
+                        localizations.roleOuder,
+                        style: const TextStyle(color: Colors.black, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'anders',
+                      child: Text(
+                        localizations.roleAnders,
                         style: const TextStyle(color: Colors.black, fontSize: 18),
                         overflow: TextOverflow.ellipsis,
                       ),

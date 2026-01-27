@@ -120,35 +120,65 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
             Text(localizations.aboutApp),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              localizations.appName,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                localizations.appName,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryBlue,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                localizations.appSubtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                localizations.appDescription,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Divider(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: AppTheme.textSecondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${localizations.version} 1.0.0',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
                   ),
-            ),
-            const SizedBox(height: 8),
-            Text(localizations.appSubtitle),
-            const SizedBox(height: 16),
-            Text(localizations.appDescription),
-            const SizedBox(height: 16),
-            Text(
-              '${localizations.version} 1.0.0',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.image_outlined, size: 16, color: AppTheme.textSecondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      localizations.pictogramsFrom,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                    ),
                   ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              localizations.pictogramsFrom,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -186,19 +216,51 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
             children: [
               Text(
                 localizations.privacyPolicy,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 12),
-              Text(localizations.privacyInfo1),
-              const SizedBox(height: 16),
+              Text(
+                localizations.privacyInfo1,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 20),
               Text(
                 localizations.dataStorage,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryBlue,
+                    ),
               ),
-              const SizedBox(height: 8),
-              Text(localizations.privacyInfo2),
-              Text(localizations.privacyInfo3),
-              Text(localizations.privacyInfo4),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      localizations.privacyInfo2,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      localizations.privacyInfo3,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      localizations.privacyInfo4,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      localizations.privacyInfo4b,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -228,170 +290,186 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
           children: [
-            // Language selector
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  // Language selector
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.language,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.languageLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(languageService.currentLanguage.displayName),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () => _showLanguageSelector(context),
+                    ),
                   ),
-                  child: Icon(
-                    Icons.language,
-                    color: AppTheme.primaryBlue,
+                  
+                  // Change PIN
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.lock_outline,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.changePin,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(localizations.changePinDescription),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.changePin);
+                      },
+                    ),
                   ),
-                ),
-                title: Text(
-                  localizations.languageLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(languageService.currentLanguage.displayName),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () => _showLanguageSelector(context),
+                  
+                  // Over de app (About the app)
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.aboutApp,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(localizations.versionInfo),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () => _showAboutDialog(context),
+                    ),
+                  ),
+                  
+                  // Privacy
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.privacy_tip_outlined,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.privacy,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(localizations.privacyInfo),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () => _showPrivacyDialog(context),
+                    ),
+                  ),
+                  
+                  // Logout
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.logout,
+                          color: Colors.red,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.logout,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                      subtitle: Text(
+                        languageService.currentLanguage == AppLanguage.dutch 
+                          ? 'Uitloggen uit uw account' 
+                          : 'Sign out of your account'
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () => _signOut(context),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            // Change PIN
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.lock_outline,
-                    color: AppTheme.primaryBlue,
-                  ),
-                ),
-                title: Text(
-                  localizations.changePin,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(localizations.changePinDescription),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () {
-                  Navigator.pushNamed(context, AppRoutes.changePin);
-                },
-              ),
-            ),
-
-            // Over de app (About the app)
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: AppTheme.primaryBlue,
-                  ),
-                ),
-                title: Text(
-                  localizations.aboutApp,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(localizations.versionInfo),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () => _showAboutDialog(context),
-              ),
-            ),
-
-            // Privacy
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.privacy_tip_outlined,
-                    color: AppTheme.primaryBlue,
-                  ),
-                ),
-                title: Text(
-                  localizations.privacy,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(localizations.privacyInfo),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () => _showPrivacyDialog(context),
-              ),
-            ),
-
-            // Logout
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.logout,
-                    color: Colors.red,
-                  ),
-                ),
-                title: Text(
-                  localizations.logout,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red,
-                  ),
-                ),
-                subtitle: Text(
-                  languageService.currentLanguage == AppLanguage.dutch 
-                    ? 'Uitloggen uit uw account' 
-                    : 'Sign out of your account'
-                ),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.textSecondary,
-                ),
-                onTap: () => _signOut(context),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: Text(
+                localizations.settingsFeedbackNote,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
               ),
             ),
           ],

@@ -78,15 +78,29 @@ service cloud.firestore {
                                       get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // Custom pictograms collection - admin only
+    // Custom pictograms collection - admin only for full CRUD, users can update usage stats
     match /custom_pictograms/{pictogramId} {
       // Allow read for authenticated users (app users can view custom pictograms)
       allow read: if request.auth != null;
       
-      // Allow write only for admin users
-      allow create, update, delete: if request.auth != null && 
-                                      exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
-                                      get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+      // Allow authenticated users to update only usageCount and lastUsedAt fields
+      // This enables usage tracking when users add pictograms to sets
+      // Check that only usageCount and/or lastUsedAt are being changed
+      allow update: if request.auth != null &&
+                     // Get the set of changed keys
+                     request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['usageCount', 'lastUsedAt']);
+      
+      // Allow create and delete only for admin users
+      allow create, delete: if request.auth != null && 
+                              exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                              get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
+      
+      // Allow admins to do full updates (for managing pictogram data like keyword, category, etc.)
+      // This rule comes after the limited update rule, so admins can update any fields
+      allow update: if request.auth != null && 
+                     exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     // Admin users collection - admin management

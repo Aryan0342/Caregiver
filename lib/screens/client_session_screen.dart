@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../theme.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
@@ -103,7 +102,7 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
                     Expanded(
                       child: Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.all(24),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceWhite,
                           borderRadius: BorderRadius.circular(24),
@@ -118,7 +117,7 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: Padding(
-                            padding: const EdgeInsets.all(32.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: _buildPictogramImage(currentPictogram),
                           ),
                         ),
@@ -254,7 +253,7 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
         children: [
           Icon(
             _getIconForKeyword(pictogram.keyword),
-            size: 120,
+            size: 150,
             color: AppTheme.primaryBlue,
           ),
           const SizedBox(height: 16),

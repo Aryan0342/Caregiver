@@ -41,48 +41,54 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAOLnuJ736V3NU1VA1UId9K_0gg0JG1o54',
-    appId: '1:929615381650:web:2b8dd8de8bbf1689be124b',
-    messagingSenderId: '929615381650',
-    projectId: 'caregiver-cba18',
-    authDomain: 'caregiver-cba18.firebaseapp.com',
-    storageBucket: 'caregiver-cba18.firebasestorage.app',
-    measurementId: 'G-CJZ0BQKF3Z',
+    // TODO: Get Web app configuration from Firebase Console
+    // Firebase Console → Project Settings → Your apps → Web app
+    // If Web app is not registered, register it first, then update these values
+    apiKey: 'PLACEHOLDER_WEB_API_KEY', // ← Get from Firebase Console
+    appId: 'PLACEHOLDER_WEB_APP_ID', // ← Get from Firebase Console (format: 1:PROJECT_NUMBER:web:APP_ID)
+    messagingSenderId: '47836047261',
+    projectId: 'je-dag-in-beeld',
+    authDomain: 'je-dag-in-beeld.firebaseapp.com',
+    storageBucket: 'je-dag-in-beeld.firebasestorage.app',
+    measurementId: 'PLACEHOLDER_MEASUREMENT_ID', // ← Get from Firebase Console (format: G-XXXXXXXXXX)
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAimfqIo6F8afMLQu4jkwKkyijxL6EEhrA',
-    appId: '1:929615381650:android:049fef3cfaec642bbe124b',
-    messagingSenderId: '929615381650',
-    projectId: 'caregiver-cba18',
-    storageBucket: 'caregiver-cba18.firebasestorage.app',
+    apiKey: 'AIzaSyBXIQ3GVR7Z9pIHNU-C-WWcXwP6ocKjo2s',
+    appId: '1:47836047261:android:3b22d44972284e8baaf174',
+    messagingSenderId: '47836047261',
+    projectId: 'je-dag-in-beeld',
+    storageBucket: 'je-dag-in-beeld.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAEkOQycup-JESgrmOqiVwJadjzwI2nbXo',
-    appId: '1:929615381650:ios:e814e977cbca7ee0be124b',
-    messagingSenderId: '929615381650',
-    projectId: 'caregiver-cba18',
-    storageBucket: 'caregiver-cba18.firebasestorage.app',
-    iosBundleId: 'com.example.caregiver',
+    apiKey: 'AIzaSyAi7Xo8su6v2VSvRUmXxc8GVMLdARajbTQ',
+    appId: '1:47836047261:ios:f4c560c38e6c8ec6aaf174',
+    messagingSenderId: '47836047261',
+    projectId: 'je-dag-in-beeld',
+    storageBucket: 'je-dag-in-beeld.firebasestorage.app',
+    iosBundleId: 'com.je-dag-in-beeld.caregiver',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAEkOQycup-JESgrmOqiVwJadjzwI2nbXo',
-    appId: '1:929615381650:ios:e814e977cbca7ee0be124b',
-    messagingSenderId: '929615381650',
-    projectId: 'caregiver-cba18',
-    storageBucket: 'caregiver-cba18.firebasestorage.app',
-    iosBundleId: 'com.example.caregiver',
+    apiKey: 'AIzaSyAi7Xo8su6v2VSvRUmXxc8GVMLdARajbTQ',
+    appId: '1:47836047261:ios:f4c560c38e6c8ec6aaf174',
+    messagingSenderId: '47836047261',
+    projectId: 'je-dag-in-beeld',
+    storageBucket: 'je-dag-in-beeld.firebasestorage.app',
+    iosBundleId: 'com.je-dag-in-beeld.caregiver',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAOLnuJ736V3NU1VA1UId9K_0gg0JG1o54',
-    appId: '1:929615381650:web:277478030da6f986be124b',
-    messagingSenderId: '929615381650',
-    projectId: 'caregiver-cba18',
-    authDomain: 'caregiver-cba18.firebaseapp.com',
-    storageBucket: 'caregiver-cba18.firebasestorage.app',
-    measurementId: 'G-RXV7C7NE4N',
+    // TODO: Get Windows app configuration from Firebase Console
+    // Windows uses Web app configuration. Register Web app if not done, then use same values here
+    // Firebase Console → Project Settings → Your apps → Web app
+    apiKey: 'PLACEHOLDER_WEB_API_KEY', // ← Get from Firebase Console (same as Web)
+    appId: 'PLACEHOLDER_WEB_APP_ID', // ← Get from Firebase Console (same as Web or separate Windows app)
+    messagingSenderId: '47836047261',
+    projectId: 'je-dag-in-beeld',
+    authDomain: 'je-dag-in-beeld.firebaseapp.com',
+    storageBucket: 'je-dag-in-beeld.firebasestorage.app',
+    measurementId: 'PLACEHOLDER_MEASUREMENT_ID', // ← Get from Firebase Console (same as Web)
   );
 }

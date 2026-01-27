@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyAEkOQycup-JESgrmOqiVwJadjzwI2nbXo</string>
+	<string>AIzaSyAi7Xo8su6v2VSvRUmXxc8GVMLdARajbTQ</string>
 	<key>GCM_SENDER_ID</key>
-	<string>929615381650</string>
+	<string>47836047261</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.caregiver</string>
+	<string>com.je-dag-in-beeld.caregiver</string>
 	<key>PROJECT_ID</key>
-	<string>caregiver-cba18</string>
+	<string>je-dag-in-beeld</string>
 	<key>STORAGE_BUCKET</key>
-	<string>caregiver-cba18.firebasestorage.app</string>
+	<string>je-dag-in-beeld.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:929615381650:ios:e814e977cbca7ee0be124b</string>
+	<string>1:47836047261:ios:f4c560c38e6c8ec6aaf174</string>
 </dict>
 </plist>

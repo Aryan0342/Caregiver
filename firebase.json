@@ -7,20 +7,20 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "caregiver-cba18",
-          "appId": "1:929615381650:android:049fef3cfaec642bbe124b",
+          "projectId": "je-dag-in-beeld",
+          "appId": "1:47836047261:android:3b22d44972284e8baaf174",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "dart": {
         "lib/firebase_options.dart": {
-          "projectId": "caregiver-cba18",
+          "projectId": "je-dag-in-beeld",
           "configurations": {
-            "android": "1:929615381650:android:049fef3cfaec642bbe124b",
-            "ios": "1:929615381650:ios:e814e977cbca7ee0be124b",
-            "macos": "1:929615381650:ios:e814e977cbca7ee0be124b",
-            "web": "1:929615381650:web:2b8dd8de8bbf1689be124b",
-            "windows": "1:929615381650:web:277478030da6f986be124b"
+            "android": "1:47836047261:android:3b22d44972284e8baaf174",
+            "ios": "1:47836047261:ios:f4c560c38e6c8ec6aaf174",
+            "macos": "1:47836047261:ios:f4c560c38e6c8ec6aaf174",
+            "web": "PLACEHOLDER_WEB_APP_ID",
+            "windows": "PLACEHOLDER_WEB_APP_ID"
           }
         }
       }

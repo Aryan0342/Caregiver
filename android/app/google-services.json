@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "929615381650",
-    "project_id": "caregiver-cba18",
-    "storage_bucket": "caregiver-cba18.firebasestorage.app"
+    "project_number": "47836047261",
+    "project_id": "je-dag-in-beeld",
+    "storage_bucket": "je-dag-in-beeld.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:929615381650:android:049fef3cfaec642bbe124b",
+        "mobilesdk_app_id": "1:47836047261:android:3b22d44972284e8baaf174",
         "android_client_info": {
-          "package_name": "com.example.caregiver"
+          "package_name": "com.je_dag_in_beeld.caregiver"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAimfqIo6F8afMLQu4jkwKkyijxL6EEhrA"
+          "current_key": "AIzaSyBXIQ3GVR7Z9pIHNU-C-WWcXwP6ocKjo2s"
         }
       ],
       "services": {

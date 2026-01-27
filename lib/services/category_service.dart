@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 /// Service for managing pictogram categories in Firestore.
 /// 
@@ -15,44 +16,103 @@ class CategoryService {
   /// Returns a list of category objects with their metadata
   Future<List<Category>> getCategoriesWithPictograms() async {
     try {
-      // Get all categories
-      final categoriesSnapshot = await _firestore
-          .collection(_collectionName)
-          .where('isActive', isEqualTo: true)
-          .orderBy('name')
-          .get();
+      debugPrint('CategoryService: Fetching categories...');
+      
+      // First, try to get all categories (with or without isActive filter)
+      QuerySnapshot categoriesSnapshot;
+      try {
+        // Try with isActive filter first
+        categoriesSnapshot = await _firestore
+            .collection(_collectionName)
+            .where('isActive', isEqualTo: true)
+            .orderBy('name')
+            .get();
+        debugPrint('CategoryService: Found ${categoriesSnapshot.docs.length} active categories');
+      } catch (e) {
+        debugPrint('CategoryService: isActive filter failed, trying without filter: $e');
+        // If orderBy fails (index not ready), try without orderBy
+        try {
+          categoriesSnapshot = await _firestore
+              .collection(_collectionName)
+              .where('isActive', isEqualTo: true)
+              .get();
+          debugPrint('CategoryService: Found ${categoriesSnapshot.docs.length} active categories (without orderBy)');
+        } catch (e2) {
+          debugPrint('CategoryService: isActive query failed, trying to get all categories: $e2');
+          // If isActive field doesn't exist, get all categories
+          categoriesSnapshot = await _firestore
+              .collection(_collectionName)
+              .get();
+          debugPrint('CategoryService: Found ${categoriesSnapshot.docs.length} total categories');
+        }
+      }
 
       final categories = <Category>[];
 
       // Check each category to see if it has pictograms
       for (final doc in categoriesSnapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
         final categoryId = doc.id;
         
+        debugPrint('CategoryService: Checking category: $categoryId (name: ${data['name'] ?? 'N/A'})');
+        
         // Check if category has at least one active pictogram
-        final pictogramsSnapshot = await _firestore
-            .collection('custom_pictograms')
-            .where('category', isEqualTo: categoryId)
-            .where('isActive', isEqualTo: true)
-            .limit(1)
-            .get();
+        try {
+          final pictogramsSnapshot = await _firestore
+              .collection('custom_pictograms')
+              .where('category', isEqualTo: categoryId)
+              .where('isActive', isEqualTo: true)
+              .limit(1)
+              .get();
 
-        // Only include categories that have at least one pictogram
-        if (pictogramsSnapshot.docs.isNotEmpty) {
-          categories.add(Category(
-            id: categoryId,
-            name: data['name'] as String? ?? '',
-            nameEn: data['nameEn'] as String? ?? '',
-            nameNl: data['nameNl'] as String? ?? '',
-            description: data['description'] as String?,
-            createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-            updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
-          ));
+          debugPrint('CategoryService: Category $categoryId has ${pictogramsSnapshot.docs.length} active pictograms');
+          
+          // Only include categories that have at least one pictogram
+          if (pictogramsSnapshot.docs.isNotEmpty) {
+            categories.add(Category(
+              id: categoryId,
+              name: data['name'] as String? ?? '',
+              nameEn: data['nameEn'] as String? ?? '',
+              nameNl: data['nameNl'] as String? ?? '',
+              description: data['description'] as String?,
+              createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+              updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+            ));
+            debugPrint('CategoryService: Added category $categoryId to list');
+          } else {
+            // Try without isActive filter for pictograms
+            debugPrint('CategoryService: No active pictograms found, trying without isActive filter...');
+            final allPictogramsSnapshot = await _firestore
+                .collection('custom_pictograms')
+                .where('category', isEqualTo: categoryId)
+                .limit(1)
+                .get();
+            
+            if (allPictogramsSnapshot.docs.isNotEmpty) {
+              debugPrint('CategoryService: Found ${allPictogramsSnapshot.docs.length} pictograms (without isActive filter)');
+              categories.add(Category(
+                id: categoryId,
+                name: data['name'] as String? ?? '',
+                nameEn: data['nameEn'] as String? ?? '',
+                nameNl: data['nameNl'] as String? ?? '',
+                description: data['description'] as String?,
+                createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+                updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+              ));
+              debugPrint('CategoryService: Added category $categoryId to list (without isActive filter)');
+            }
+          }
+        } catch (e) {
+          debugPrint('CategoryService: Error checking pictograms for category $categoryId: $e');
+          // Continue to next category
         }
       }
 
+      debugPrint('CategoryService: Returning ${categories.length} categories with pictograms');
       return categories;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('CategoryService: Error in getCategoriesWithPictograms: $e');
+      debugPrint('CategoryService: Stack trace: $stackTrace');
       // Return empty list on error
       return [];
     }

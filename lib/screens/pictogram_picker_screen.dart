@@ -66,6 +66,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     }
   }
 
+  /// Perform search across entire pictogram library (all categories)
+  /// Search is not limited by the currently selected category filter
   Future<void> _performSearch(String query) async {
     setState(() {
       _isSearching = true;
@@ -73,6 +75,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     });
 
     try {
+      // Search all pictograms across all categories, ignoring category filter
       final results = await _pictogramService.searchPictograms(query);
       setState(() {
         _searchResults = results;

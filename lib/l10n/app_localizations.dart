@@ -82,9 +82,16 @@ class AppLocalizations {
   String get profileSetupDescription => _language == AppLanguage.dutch ? 'Vertel ons iets over uzelf' : 'Tell us about yourself';
   String get role => _language == AppLanguage.dutch ? 'Rol' : 'Role';
   String get selectRole => _language == AppLanguage.dutch ? 'Selecteer uw rol' : 'Select your role';
-  String get roleParent => _language == AppLanguage.dutch ? 'Ouder' : 'Parent';
-  String get roleTeacher => _language == AppLanguage.dutch ? 'Leraar' : 'Teacher';
-  String get roleTherapist => _language == AppLanguage.dutch ? 'Therapeut' : 'Therapist';
+  String get roleBegeleider => _language == AppLanguage.dutch ? 'begeleider' : 'Caregiver';
+  String get rolePersoonlijkBegeleider => _language == AppLanguage.dutch ? 'persoonlijk begeleider' : 'Personal caregiver';
+  String get roleOrthopedagoog => _language == AppLanguage.dutch ? 'orthopedagoog' : 'Orthopedagogue';
+  String get roleOuder => _language == AppLanguage.dutch ? 'ouder' : 'Parent';
+  String get roleAnders => _language == AppLanguage.dutch ? 'anders' : 'Other';
+  
+  // Legacy role names (kept for backward compatibility)
+  String get roleParent => roleOuder;
+  String get roleTeacher => roleBegeleider;
+  String get roleTherapist => roleOrthopedagoog;
   String get caregiverName => _language == AppLanguage.dutch ? 'Naam' : 'Name';
   String get enterCaregiverName => _language == AppLanguage.dutch ? 'Voer uw naam in' : 'Enter your name';
   String get caregiverSex => _language == AppLanguage.dutch ? 'Geslacht' : 'Sex';
@@ -205,7 +212,7 @@ class AppLocalizations {
 
   // Create/Edit set screen
   String get editPictogramSet => _language == AppLanguage.dutch ? 'Pictoreeks bewerken' : 'Edit pictogram set';
-  String get giveAName => _language == AppLanguage.dutch ? 'Ochtend ADL' : 'Morning ADL';
+  String get giveAName => _language == AppLanguage.dutch ? 'Bijv: Avondprogramma' : 'For example: evening program';
   String get begin => _language == AppLanguage.dutch ? 'Begin' : 'Begin';
   String get enterName => _language == AppLanguage.dutch ? 'Voer een naam in' : 'Enter a name';
   String get selectedPictograms => _language == AppLanguage.dutch ? 'Geselecteerde pictogrammen' : 'Selected pictograms';
@@ -242,14 +249,19 @@ class AppLocalizations {
   String get offlineModeLabel => _language == AppLanguage.dutch ? 'Offline modus' : 'Offline mode';
   String get aboutApp => _language == AppLanguage.dutch ? 'Over de app' : 'About the app';
   String get privacy => _language == AppLanguage.dutch ? 'Privacy' : 'Privacy';
+  String get settingsFeedbackNote => _language == AppLanguage.dutch
+      ? 'Voor suggesties of verbeteringen van de app kun je een e-mail sturen naar info@jedaginbeeld.nl.'
+      : 'For suggestions or improvements to the app, you can send an email to info@jedaginbeeld.nl.';
   String get offlineModeInfo => _language == AppLanguage.dutch 
       ? 'Pictogrammen worden automatisch opgeslagen voor offline gebruik. U kunt de app gebruiken zonder internetverbinding zodra de pictogrammen zijn geladen.'
       : 'Pictograms are automatically saved for offline use. You can use the app without an internet connection once the pictograms are loaded.';
   String get version => _language == AppLanguage.dutch ? 'Versie' : 'Version';
-  String get pictogramsFrom => _language == AppLanguage.dutch ? 'Pictogrammen van ARASAAC' : 'Pictograms from ARASAAC';
+  String get pictogramsFrom => _language == AppLanguage.dutch 
+      ? 'Pictogrammen worden beheerd door beheerders' 
+      : 'Pictograms are managed by administrators';
   String get appDescription => _language == AppLanguage.dutch
-      ? 'Een app voor het maken en gebruiken van pictogramreeksen voor dagelijkse routines en zorgcommunicatie.'
-      : 'An app for creating and using pictogram sequences for daily routines and healthcare communication.';
+      ? 'Een app voor het maken en gebruiken van pictogramreeksen voor dagelijkse routines en zorgcommunicatie. Alle pictogrammen worden beheerd door beheerders en opgeslagen in de cloud.'
+      : 'An app for creating and using pictogram sequences for daily routines and healthcare communication. All pictograms are managed by administrators and stored in the cloud.';
   String get privacyPolicy => _language == AppLanguage.dutch ? 'Privacybeleid' : 'Privacy Policy';
   String get dataStorage => _language == AppLanguage.dutch ? 'Gegevensopslag:' : 'Data storage:';
   String get offlineUse => _language == AppLanguage.dutch ? 'Offline gebruik:' : 'Offline use:';
@@ -257,20 +269,17 @@ class AppLocalizations {
       ? 'Uw gegevens worden veilig opgeslagen en alleen gebruikt voor de functionaliteit van de app.'
       : 'Your data is stored securely and only used for the app functionality.';
   String get privacyInfo2 => _language == AppLanguage.dutch
-      ? '• Pictogramreeksen worden opgeslagen in Firebase'
-      : '• Pictogram sequences are stored in Firebase';
+      ? '• Pictogramreeksen en gebruikersgegevens worden opgeslagen in Firebase Firestore'
+      : '• Pictogram sequences and user data are stored in Firebase Firestore';
   String get privacyInfo3 => _language == AppLanguage.dutch
-      ? '• Alleen u heeft toegang tot uw eigen reeksen'
-      : '• Only you have access to your own sequences';
+      ? '• Pictogramafbeeldingen worden opgeslagen in Cloudinary'
+      : '• Pictogram images are stored in Cloudinary';
   String get privacyInfo4 => _language == AppLanguage.dutch
+      ? '• Alleen u heeft toegang tot uw eigen reeksen en gegevens'
+      : '• Only you have access to your own sequences and data';
+  String get privacyInfo4b => _language == AppLanguage.dutch
       ? '• Geen gegevens worden gedeeld met derden'
       : '• No data is shared with third parties';
-  String get privacyInfo5 => _language == AppLanguage.dutch
-      ? '• Pictogrammen worden lokaal opgeslagen voor snelle toegang'
-      : '• Pictograms are stored locally for quick access';
-  String get privacyInfo6 => _language == AppLanguage.dutch
-      ? '• U kunt de app offline gebruiken'
-      : '• You can use the app offline';
   String get versionInfo => _language == AppLanguage.dutch ? 'Versie en informatie' : 'Version and information';
   String get privacyInfo => _language == AppLanguage.dutch ? 'Privacybeleid en gegevens' : 'Privacy policy and data';
   String get autoSaved => _language == AppLanguage.dutch ? 'Pictogrammen worden automatisch opgeslagen' : 'Pictograms are automatically saved';
@@ -286,13 +295,16 @@ class AppLocalizations {
   String get requestPicto => _language == AppLanguage.dutch ? 'Vraag een picto aan' : 'Request a picto';
   String get requestPictoDescription => _language == AppLanguage.dutch ? 'Vraag een ontbrekende picto aan' : 'Request a missing picto';
   String get requestPictoSubtitle => _language == AppLanguage.dutch ? 'Beschrijf welke picto u nodig heeft en we voegen deze toe aan de collectie' : 'Describe which picto you need and we will add it to the collection';
-  String get keyword => _language == AppLanguage.dutch ? 'Trefwoord' : 'Keyword';
-  String get enterKeyword => _language == AppLanguage.dutch ? 'Voer trefwoord in' : 'Enter keyword';
+  String get keyword => _language == AppLanguage.dutch ? 'Picto' : 'Picto';
+  String get enterKeyword => _language == AppLanguage.dutch ? 'ontbrekende picto' : 'Missing picto';
+  String get notInListDescribe => _language == AppLanguage.dutch ? 'niet in deze lijst, omschrijf hier onder' : 'not in this list, describe below';
+  String get describeCategory => _language == AppLanguage.dutch ? 'Beschrijf de categorie' : 'Describe the category';
   String get category => _language == AppLanguage.dutch ? 'Categorie' : 'Category';
   String get selectCategory => _language == AppLanguage.dutch ? 'Selecteer categorie' : 'Select category';
   String get description => _language == AppLanguage.dutch ? 'Beschrijving (optioneel)' : 'Description (optional)';
   String get enterDescription => _language == AppLanguage.dutch ? 'Beschrijf wat u zoekt...' : 'Describe what you are looking for...';
   String get submitRequest => _language == AppLanguage.dutch ? 'Aanvraag verzenden' : 'Submit request';
+  String get upcomingPictos => _language == AppLanguage.dutch ? 'Aankomende picto\'s' : 'Upcoming pictos';
   String get categories => _language == AppLanguage.dutch ? 'Categorieën' : 'Categories';
   // ARASAAC Category translations
   String get feeding => _language == AppLanguage.dutch ? 'Voeding' : 'Feeding';
