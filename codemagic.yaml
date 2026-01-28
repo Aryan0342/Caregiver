@@ -36,7 +36,3 @@ workflows:
         notify:
           success: true
           failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: false  # Set to true to auto-submit to TestFlight
-        submit_to_app_store: false    # Set to true to auto-submit to App Store
