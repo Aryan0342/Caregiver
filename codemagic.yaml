@@ -100,9 +100,66 @@ workflows:
               print(f"   - PROVISIONING_PROFILE_SPECIFIER = {uuid}")
           PYTHON_SCRIPT
           cd ..
+      - name: Create export options plist
+        script: |
+          # Get provisioning profile UUID
+          PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -1)
+          if [ -f "$PROVISIONING_PROFILE" ]; then
+            UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i "$PROVISIONING_PROFILE" 2>/dev/null) 2>/dev/null)
+            echo "Provisioning profile UUID: $UUID"
+            # Create export_options.plist
+            cat > export_options.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.je-dag-in-beeld.caregiver</key>
+                  <string>$UUID</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+            echo "✅ Created export_options.plist with provisioning profile UUID: $UUID"
+          else
+            echo "⚠️ No provisioning profile found, creating default export_options.plist"
+            cat > export_options.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+          </dict>
+          </plist>
+          EOF
+          fi
       - name: Flutter build ipa
         script: |
-          flutter build ipa --release
+          flutter build ipa --release --export-options-plist=export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
