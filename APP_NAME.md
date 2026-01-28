@@ -1,10 +1,10 @@
-# App Name: Dag in beeld
+# App Name: Je Dag in Beeld
 
 ## Main Concept
-**Dag in beeld** (Day in picture) is a healthcare pictogram app that helps create visual routines using pictogram series (pictoreeksen).
+**Je Dag in Beeld** (Your day in pictures) is a healthcare pictogram app that helps create visual routines using pictogram series (pictoreeksen).
 
 ## App Identity
-- **Display Name**: "Dag in beeld"
+- **Display Name**: "Je Dag in Beeld"
 - **Subtitle/Tagline**: "pictoreeksen" (pictogram series)
 - **Concept**: Visual daily routines and healthcare communication through pictogram sequences
 
@@ -14,11 +14,11 @@
 - **Bundle IDs**: `com.example.caregiver` (kept for platform compatibility)
 
 ## User-Facing Text
-All user-facing text should use "Dag in beeld" as the app name, with "pictoreeksen" as the subtitle where appropriate.
+All user-facing text should use "Je Dag in Beeld" as the app name, with "pictoreeksen" as the subtitle where appropriate.
 
 ## Future Reference
 When creating new screens or features:
-- Use "Dag in beeld" as the app title
+- Use "Je Dag in Beeld" as the app title
 - Use "pictoreeksen" for pictogram series terminology
 - Maintain the visual concept of showing daily routines as sequences of pictograms
 - Keep the healthcare/accessibility focus with soft blue tones and large, clear UI elements

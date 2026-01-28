@@ -1,0 +1,42 @@
+workflows:
+  ios-production:
+    name: iOS Production Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials  # Reference to your code signing credentials group
+      vars:
+        APP_ID: com.je-dag-in-beeld.caregiver
+        BUNDLE_ID: com.je-dag-in-beeld.caregiver
+    scripts:
+      - name: Get Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod repo update
+          pod install --repo-update
+          cd ..
+      - name: Flutter build ipa
+        script: |
+          flutter build ipa \
+            --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com  # Replace with your email
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false  # Set to true to auto-submit to TestFlight
+        submit_to_app_store: false    # Set to true to auto-submit to App Store

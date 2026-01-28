@@ -293,170 +293,170 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
         child: Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  // Language selector
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.language,
-                          color: AppTheme.primaryBlue,
-                        ),
-                      ),
-                      title: Text(
-                        localizations.languageLabel,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(languageService.currentLanguage.displayName),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onTap: () => _showLanguageSelector(context),
-                    ),
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          children: [
+            // Language selector
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  
-                  // Change PIN
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.lock_outline,
-                          color: AppTheme.primaryBlue,
-                        ),
-                      ),
-                      title: Text(
-                        localizations.changePin,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(localizations.changePinDescription),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.changePin);
-                      },
-                    ),
+                  child: Icon(
+                    Icons.language,
+                    color: AppTheme.primaryBlue,
                   ),
-                  
-                  // Over de app (About the app)
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.info_outline,
-                          color: AppTheme.primaryBlue,
-                        ),
-                      ),
-                      title: Text(
-                        localizations.aboutApp,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(localizations.versionInfo),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onTap: () => _showAboutDialog(context),
-                    ),
+                ),
+                title: Text(
+                  localizations.languageLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(languageService.currentLanguage.displayName),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () => _showLanguageSelector(context),
+              ),
+            ),
+
+            // Change PIN
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  
-                  // Privacy
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.privacy_tip_outlined,
-                          color: AppTheme.primaryBlue,
-                        ),
-                      ),
-                      title: Text(
-                        localizations.privacy,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(localizations.privacyInfo),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onTap: () => _showPrivacyDialog(context),
-                    ),
+                  child: Icon(
+                    Icons.lock_outline,
+                    color: AppTheme.primaryBlue,
                   ),
-                  
-                  // Logout
-                  Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.logout,
-                          color: Colors.red,
-                        ),
-                      ),
-                      title: Text(
-                        localizations.logout,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red,
-                        ),
-                      ),
-                      subtitle: Text(
-                        languageService.currentLanguage == AppLanguage.dutch 
-                          ? 'Uitloggen uit uw account' 
-                          : 'Sign out of your account'
-                      ),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onTap: () => _signOut(context),
+                ),
+                title: Text(
+                  localizations.changePin,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(localizations.changePinDescription),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () {
+                  Navigator.pushNamed(context, AppRoutes.changePin);
+                },
+              ),
+            ),
+
+            // Over de app (About the app)
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+                title: Text(
+                  localizations.aboutApp,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(localizations.versionInfo),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () => _showAboutDialog(context),
+              ),
+            ),
+
+            // Privacy
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlueLight.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.privacy_tip_outlined,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+                title: Text(
+                  localizations.privacy,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(localizations.privacyInfo),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () => _showPrivacyDialog(context),
+              ),
+            ),
+
+            // Logout
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: Colors.red,
+                  ),
+                ),
+                title: Text(
+                  localizations.logout,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+                subtitle: Text(
+                  languageService.currentLanguage == AppLanguage.dutch 
+                    ? 'Uitloggen uit uw account' 
+                    : 'Sign out of your account'
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppTheme.textSecondary,
+                ),
+                onTap: () => _signOut(context),
                     ),
                   ),
                 ],
