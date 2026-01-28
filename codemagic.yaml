@@ -32,6 +32,43 @@ workflows:
           security find-identity -v -p codesigning
           # List provisioning profiles
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles directory found"
+          # Configure Xcode project for automatic signing with team
+          # Team ID from certificate: 2633XR9X9L (Steph van hoffe)
+          cd ios
+          # Use Python to properly add/update DEVELOPMENT_TEAM in Release configuration
+          python3 << 'PYTHON_SCRIPT'
+          import re
+          
+          with open('Runner.xcodeproj/project.pbxproj', 'r') as f:
+              content = f.read()
+          
+          # Find Release configuration (97C147071CF9000F007C117D)
+          # Add DEVELOPMENT_TEAM if it doesn't exist, or update if it does
+          release_pattern = r'(97C147071CF9000F007C117D /\* Release \*/ = \{[^}]*buildSettings = \{)([^}]*)(\};)'
+          
+          def update_release_config(match):
+              header = match.group(1)
+              settings = match.group(2)
+              footer = match.group(3)
+              
+              # Check if DEVELOPMENT_TEAM exists
+              if re.search(r'DEVELOPMENT_TEAM\s*=', settings):
+                  # Update existing
+                  settings = re.sub(r'DEVELOPMENT_TEAM\s*=\s*[^;]+;', 'DEVELOPMENT_TEAM = 2633XR9X9L;', settings)
+              else:
+                  # Add before closing brace
+                  settings = settings.rstrip() + '\n\t\t\t\tDEVELOPMENT_TEAM = 2633XR9X9L;'
+              
+              return header + settings + footer
+          
+          new_content = re.sub(release_pattern, update_release_config, content, flags=re.DOTALL)
+          
+          with open('Runner.xcodeproj/project.pbxproj', 'w') as f:
+              f.write(new_content)
+          
+          print("✅ Updated DEVELOPMENT_TEAM to 2633XR9X9L in Release configuration")
+          PYTHON_SCRIPT
+          cd ..
       - name: Flutter build ipa
         script: |
           flutter build ipa --release
