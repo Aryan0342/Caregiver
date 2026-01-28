@@ -8,8 +8,10 @@ workflows:
       xcode: latest
       cocoapods: default
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.je-dag-in-beeld.caregiver
+        provisioning_profiles:
+          - jedaginbeeld-release-profile
+        certificates:
+          - je-dag-in-beeld-distribution
       vars:
         APP_ID: com.je-dag-in-beeld.caregiver
         BUNDLE_ID: com.je-dag-in-beeld.caregiver
@@ -31,7 +33,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com  # Replace with your email
+          - syedasadullahkazmik@gmail.com  # Replace with your email
         notify:
           success: true
           failure: true
