@@ -3,6 +3,8 @@ workflows:
     name: iOS Production Build
     max_build_duration: 120
     instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Steph van Hoffe (Key: 4UL4ZDDG6S)
     environment:
       flutter: stable
       xcode: latest
