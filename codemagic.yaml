@@ -25,6 +25,13 @@ workflows:
           pod repo update
           pod install --repo-update
           cd ..
+      - name: Set up code signing
+        script: |
+          echo "Setting up code signing..."
+          # List available certificates
+          security find-identity -v -p codesigning
+          # List provisioning profiles
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles directory found"
       - name: Flutter build ipa
         script: |
           flutter build ipa --release
