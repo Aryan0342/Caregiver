@@ -7,8 +7,6 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      groups:
-        - app_store_credentials  # Reference to your code signing credentials group
       vars:
         APP_ID: com.je-dag-in-beeld.caregiver
         BUNDLE_ID: com.je-dag-in-beeld.caregiver
