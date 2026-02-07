@@ -67,6 +67,11 @@ android {
                 // Fallback to debug signing if keystore not configured
                 signingConfig = signingConfigs.getByName("debug")
             }
+            // Workaround: SYMBOL_TABLE avoids "failed to strip debug symbols from native libraries" on AAB build.
+            // FULL can cause strip to fail on some Flutter/NDK setups; SYMBOL_TABLE still gives Play Console symbolication.
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
             // Enable code shrinking and obfuscation for production
             // Note: Set isMinifyEnabled = true if you want to enable ProGuard
             isMinifyEnabled = false
