@@ -39,13 +39,13 @@ class SetService {
       // even when offline. The write is automatically queued and will sync when online.
       // No timeout needed - Firestore handles offline writes gracefully with persistence enabled.
       final docRef = _firestore.collection(_collectionName).doc();
-      
+
       // Set the document data (this queues the write when offline)
       await docRef.set(set.toJson());
-      
+
       // Track usage of pictograms (increment usage count)
       _trackPictogramUsage(set.pictograms);
-      
+
       // Return the document ID (generated client-side, works offline)
       return docRef.id;
     } catch (e) {
@@ -60,7 +60,9 @@ class SetService {
           return docRef.id;
         } catch (cacheError) {
           // If both attempts fail, throw offline message
-          throw Exception('Offline: Wijzigingen worden opgeslagen zodra u weer online bent');
+          throw Exception(
+            'Offline: Wijzigingen worden opgeslagen zodra u weer online bent',
+          );
         }
       }
       throw Exception('Failed to create set: $e');
@@ -75,31 +77,36 @@ class SetService {
 
     try {
       // Get old set to compare pictograms
-      final oldSetDoc = await _firestore.collection(_collectionName).doc(set.id).get();
-      final oldPictograms = oldSetDoc.exists 
-          ? (oldSetDoc.data()?['pictograms'] as List<dynamic>?)
-              ?.map((p) => Pictogram.fromJson(p as Map<String, dynamic>))
-              .toList() ?? []
-          : [];
-      
-      await _firestore
+      final oldSetDoc = await _firestore
           .collection(_collectionName)
           .doc(set.id)
-          .update({
+          .get();
+      final oldPictograms = oldSetDoc.exists
+          ? (oldSetDoc.data()?['pictograms'] as List<dynamic>?)
+                    ?.map((p) => Pictogram.fromJson(p as Map<String, dynamic>))
+                    .toList() ??
+                []
+          : [];
+
+      await _firestore.collection(_collectionName).doc(set.id).update({
         'name': set.name,
         'pictograms': set.pictograms.map((p) => p.toJson()).toList(),
         'updatedAt': DateTime.now().toIso8601String(),
       });
-      
+
       // Track usage of newly added pictograms (compare old vs new)
       final oldIds = oldPictograms.map((p) => p.id).toSet();
-      final newPictograms = set.pictograms.where((p) => !oldIds.contains(p.id)).toList();
+      final newPictograms = set.pictograms
+          .where((p) => !oldIds.contains(p.id))
+          .toList();
       if (newPictograms.isNotEmpty) {
         _trackPictogramUsage(newPictograms);
       }
     } catch (e) {
       if (_isOfflineError(e)) {
-        throw Exception('Offline: Wijzigingen worden opgeslagen zodra u weer online bent');
+        throw Exception(
+          'Offline: Wijzigingen worden opgeslagen zodra u weer online bent',
+        );
       }
       throw Exception('Failed to update set: $e');
     }
@@ -115,9 +122,28 @@ class SetService {
       await _firestore.collection(_collectionName).doc(setId).delete();
     } catch (e) {
       if (_isOfflineError(e)) {
-        throw Exception('Offline: Verwijdering wordt uitgevoerd zodra u weer online bent');
+        throw Exception(
+          'Offline: Verwijdering wordt uitgevoerd zodra u weer online bent',
+        );
       }
       throw Exception('Failed to delete set: $e');
+    }
+  }
+
+  /// Delete all pictogram sets for the current user.
+  /// Used when deleting the account.
+  Future<void> deleteAllSetsForCurrentUser() async {
+    if (_currentUserId == null) return;
+    try {
+      final snapshot = await _firestore
+          .collection(_collectionName)
+          .where('userId', isEqualTo: _currentUserId)
+          .get();
+      for (final doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    } catch (e) {
+      throw Exception('Failed to delete user sets: $e');
     }
   }
 
@@ -144,33 +170,34 @@ class SetService {
         .where('userId', isEqualTo: _currentUserId)
         .snapshots()
         .asyncMap((snapshot) async {
-      try {
-        final sets = snapshot.docs
-            .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
-            .toList();
-        
-        // Enhance pictograms with proper keywords if needed
-        final enhancedSets = await Future.wait(
-          sets.map((set) => _enhanceSetPictograms(set)),
-        );
-        
-        // Sort in memory by createdAt descending (newest first)
-        enhancedSets.sort((a, b) {
-          return b.createdAt.compareTo(a.createdAt);
+          try {
+            final sets = snapshot.docs
+                .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+                .toList();
+
+            // Enhance pictograms with proper keywords if needed
+            final enhancedSets = await Future.wait(
+              sets.map((set) => _enhanceSetPictograms(set)),
+            );
+
+            // Sort in memory by createdAt descending (newest first)
+            enhancedSets.sort((a, b) {
+              return b.createdAt.compareTo(a.createdAt);
+            });
+            return enhancedSets;
+          } catch (e) {
+            // If parsing fails, return empty list
+            return <PictogramSet>[];
+          }
+        })
+        .handleError((error) {
+          // When offline, Firestore will return cached data
+          if (_isOfflineError(error)) {
+            return <PictogramSet>[];
+          }
+          // Re-throw other errors
+          throw error;
         });
-        return enhancedSets;
-      } catch (e) {
-        // If parsing fails, return empty list
-        return <PictogramSet>[];
-      }
-    }).handleError((error) {
-      // When offline, Firestore will return cached data
-      if (_isOfflineError(error)) {
-        return <PictogramSet>[];
-      }
-      // Re-throw other errors
-      throw error;
-    });
   }
 
   /// Get all sets (for client mode - no user filter)
@@ -180,33 +207,34 @@ class SetService {
         .collection(_collectionName)
         .snapshots()
         .asyncMap((snapshot) async {
-      try {
-        final sets = snapshot.docs
-            .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
-            .toList();
-        
-        // Enhance pictograms with proper keywords if needed
-        final enhancedSets = await Future.wait(
-          sets.map((set) => _enhanceSetPictograms(set)),
-        );
-        
-        // Sort in memory by createdAt descending (newest first)
-        enhancedSets.sort((a, b) {
-          return b.createdAt.compareTo(a.createdAt);
+          try {
+            final sets = snapshot.docs
+                .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+                .toList();
+
+            // Enhance pictograms with proper keywords if needed
+            final enhancedSets = await Future.wait(
+              sets.map((set) => _enhanceSetPictograms(set)),
+            );
+
+            // Sort in memory by createdAt descending (newest first)
+            enhancedSets.sort((a, b) {
+              return b.createdAt.compareTo(a.createdAt);
+            });
+            return enhancedSets;
+          } catch (e) {
+            // If parsing fails, return empty list
+            return <PictogramSet>[];
+          }
+        })
+        .handleError((error) {
+          // When offline, Firestore will return cached data
+          if (_isOfflineError(error)) {
+            return <PictogramSet>[];
+          }
+          // Re-throw other errors
+          throw error;
         });
-        return enhancedSets;
-      } catch (e) {
-        // If parsing fails, return empty list
-        return <PictogramSet>[];
-      }
-    }).handleError((error) {
-      // When offline, Firestore will return cached data
-      if (_isOfflineError(error)) {
-        return <PictogramSet>[];
-      }
-      // Re-throw other errors
-      throw error;
-    });
   }
 
   /// Get a single set by ID
@@ -237,26 +265,29 @@ class SetService {
         }
         throw Exception('Offline: Gegevens niet beschikbaar');
       }
-        throw Exception('Failed to get set: $e');
+      throw Exception('Failed to get set: $e');
     }
   }
 
   /// Track pictogram usage by incrementing usage count in Firestore.
-  /// 
+  ///
   /// This is called when pictograms are added to sets to track popularity.
   /// Usage tracking happens asynchronously and won't block set creation.
   void _trackPictogramUsage(List<Pictogram> pictograms) {
     if (pictograms.isEmpty) return;
-    
+
     // Run asynchronously so it doesn't block set creation
-    _pictogramService.getPictogramDocumentIds(pictograms).then((docIdMap) {
-      final docIds = docIdMap.values.toSet().toList();
-      if (docIds.isNotEmpty) {
-        _pictogramService.incrementUsageCountBatch(docIds);
-      }
-    }).catchError((e) {
-      // Log error but don't throw - usage tracking shouldn't break the app
-      // Error is already logged in incrementUsageCountBatch
-    });
+    _pictogramService
+        .getPictogramDocumentIds(pictograms)
+        .then((docIdMap) {
+          final docIds = docIdMap.values.toSet().toList();
+          if (docIds.isNotEmpty) {
+            _pictogramService.incrementUsageCountBatch(docIds);
+          }
+        })
+        .catchError((e) {
+          // Log error but don't throw - usage tracking shouldn't break the app
+          // Error is already logged in incrementUsageCountBatch
+        });
   }
 }

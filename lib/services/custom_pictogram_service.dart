@@ -134,13 +134,12 @@ class CustomPictogramService {
     }
   }
 
-  /// Search pictograms by keyword across the entire library
-  /// 
-  /// Searches all active pictograms regardless of category.
-  /// Handles both Dutch and English keywords with proper case-insensitive matching.
-  /// The search is language-agnostic and works with Dutch keywords stored in Firestore.
-  /// [query] - The search query (can be in any language)
-  /// Returns a list of matching Pictogram objects from all categories
+  /// Search pictograms by keyword across the entire library (all categories).
+  ///
+  /// Fetches from the whole custom_pictograms collection — not limited by any
+  /// selected category. Searches keyword and description (case- and accent-insensitive).
+  /// [query] - The search query (any language)
+  /// Returns matching Pictogram objects from all categories, sorted by keyword.
   Future<List<Pictogram>> searchPictograms(String query) async {
     try {
       final trimmedQuery = query.trim();
@@ -148,20 +147,19 @@ class CustomPictogramService {
         return [];
       }
 
-      debugPrint('Searching for: "$trimmedQuery"');
-      
-      // Search all active pictograms across all categories
+      debugPrint('Searching pictograms (whole DB) for: "$trimmedQuery"');
+
+      // Fetch ALL active pictograms from the entire collection (no category filter).
+      // Query without orderBy to avoid requiring a composite index; we sort in memory.
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('isActive', isEqualTo: true)
-          .orderBy('keyword')
           .get();
 
-      debugPrint('Found ${querySnapshot.docs.length} total active pictograms to search');
+      debugPrint('Fetched ${querySnapshot.docs.length} active pictograms from database');
 
-      // Normalize query for better matching (remove accents, convert to lowercase)
       final normalizedQuery = _normalizeString(trimmedQuery.toLowerCase());
-      
+
       final results = querySnapshot.docs
           .map((doc) {
             final data = doc.data();
@@ -175,26 +173,19 @@ class CustomPictogramService {
             );
           })
           .where((pictogram) {
-            // Normalize keyword and description for comparison
             final normalizedKeyword = _normalizeString(pictogram.keyword.toLowerCase());
             final normalizedDescription = pictogram.description != null
                 ? _normalizeString(pictogram.description!.toLowerCase())
                 : '';
-            
-            // Check if query matches keyword or description (case-insensitive, accent-insensitive)
             final matchesKeyword = normalizedKeyword.contains(normalizedQuery);
-            final matchesDescription = normalizedDescription.isNotEmpty && 
-                                      normalizedDescription.contains(normalizedQuery);
-            
-            if (matchesKeyword || matchesDescription) {
-              debugPrint('Match found: keyword="${pictogram.keyword}" (normalized: "$normalizedKeyword")');
-            }
-            
+            final matchesDescription = normalizedDescription.isNotEmpty &&
+                normalizedDescription.contains(normalizedQuery);
             return matchesKeyword || matchesDescription;
           })
           .toList();
-      
-      debugPrint('Search returned ${results.length} matching pictograms');
+
+      results.sort((a, b) => a.keyword.compareTo(b.keyword));
+      debugPrint('Search returned ${results.length} matching pictograms (from whole DB)');
       return results;
     } catch (e) {
       debugPrint('Error searching pictograms: $e');

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/pictogram_model.dart';
@@ -36,6 +37,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Pictogram> _searchResults = [];
   bool _isSearching = false;
+  Timer? _searchDebounce;
+  static const Duration _searchDebounceDuration = Duration(milliseconds: 350);
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -57,17 +61,19 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   void _onSearchChanged() {
     final query = _searchController.text.trim();
     if (query.isEmpty) {
+      _searchDebounce?.cancel();
       setState(() {
         _isSearching = false;
         _searchResults = [];
       });
-    } else {
-      _performSearch(query);
+      return;
     }
+    setState(() => _isSearching = true);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(_searchDebounceDuration, () => _performSearch(query));
   }
 
-  /// Perform search across entire pictogram library (all categories)
-  /// Search is not limited by the currently selected category filter
+  /// Search across the whole pictogram database (all categories), not the selected category only.
   Future<void> _performSearch(String query) async {
     setState(() {
       _isSearching = true;
@@ -75,13 +81,15 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     });
 
     try {
-      // Search all pictograms across all categories, ignoring category filter
+      // Search entire database (all pictograms, all categories)
       final results = await _pictogramService.searchPictograms(query);
+      if (!mounted) return;
       setState(() {
         _searchResults = results;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Fout bij zoeken. Probeer het opnieuw.';
         _isLoading = false;

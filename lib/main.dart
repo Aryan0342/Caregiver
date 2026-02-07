@@ -22,6 +22,7 @@ import 'screens/security_question_verification_screen.dart';
 import 'screens/email_verification_screen.dart';
 import 'screens/client_mode_entry_screen.dart';
 import 'screens/request_picto_screen.dart';
+import 'screens/profile_screen.dart';
 import 'services/language_service.dart';
 import 'services/setup_service.dart';
 import 'services/pin_auth_service.dart';
@@ -32,7 +33,7 @@ import 'providers/language_provider.dart';
 void main() async {
   // Required: Initialize Flutter bindings before any async operations
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // CRITICAL PATH: Initialize Firebase - must be awaited for auth to work
   // This is required before runApp() because AuthWrapper uses FirebaseAuth
   try {
@@ -53,7 +54,7 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
-  
+
   // Start rendering immediately - Firestore settings will configure in background
   runApp(const MyApp());
 }
@@ -88,7 +89,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations(_languageService.currentLanguage);
-    
+
     return LanguageProvider(
       languageService: _languageService,
       localizations: localizations,
@@ -103,10 +104,7 @@ class _MyAppState extends State<MyApp> {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('en', ''),
-          Locale('nl', ''),
-        ],
+        supportedLocales: const [Locale('en', ''), Locale('nl', '')],
         // Use named routes
         initialRoute: AppRoutes.login,
         routes: {
@@ -115,19 +113,26 @@ class _MyAppState extends State<MyApp> {
           AppRoutes.createSet: (context) => const CreateSetScreen(),
           AppRoutes.mySets: (context) => const MySetsScreen(),
           AppRoutes.settings: (context) => const SettingsScreen(),
-          AppRoutes.caregiverRegistration: (context) => const CaregiverRegistrationScreen(),
-          AppRoutes.caregiverProfileSetup: (context) => const CaregiverProfileSetupScreen(),
-          AppRoutes.createCaregiverPin: (context) => const CreateCaregiverPinScreen(),
+          AppRoutes.caregiverRegistration: (context) =>
+              const CaregiverRegistrationScreen(),
+          AppRoutes.caregiverProfileSetup: (context) =>
+              const CaregiverProfileSetupScreen(),
+          AppRoutes.createCaregiverPin: (context) =>
+              const CreateCaregiverPinScreen(),
           AppRoutes.changePin: (context) => const ChangePinScreen(),
           AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
           AppRoutes.resetPassword: (context) {
-            final email = ModalRoute.of(context)?.settings.arguments as String? ?? '';
+            final email =
+                ModalRoute.of(context)?.settings.arguments as String? ?? '';
             return ResetPasswordScreen(email: email);
           },
           AppRoutes.securityQuestionVerification: (context) {
-            final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
             final email = args?['email'] as String? ?? '';
-            final onVerificationSuccess = args?['onVerificationSuccess'] as Function()? ?? () {};
+            final onVerificationSuccess =
+                args?['onVerificationSuccess'] as Function()? ?? () {};
             return SecurityQuestionVerificationScreen(
               email: email,
               onVerificationSuccess: onVerificationSuccess,
@@ -135,13 +140,13 @@ class _MyAppState extends State<MyApp> {
           },
           AppRoutes.clientMode: (context) => const ClientModeEntryScreen(),
           AppRoutes.requestPicto: (context) => const RequestPictoScreen(),
-          AppRoutes.emailVerification: (context) => const EmailVerificationScreen(),
+          AppRoutes.emailVerification: (context) =>
+              const EmailVerificationScreen(),
+          AppRoutes.profile: (context) => const ProfileScreen(),
         },
         // Fallback for unknown routes
         onUnknownRoute: (settings) {
-          return MaterialPageRoute(
-            builder: (context) => const AuthWrapper(),
-          );
+          return MaterialPageRoute(builder: (context) => const AuthWrapper());
         },
       ),
     );
@@ -204,14 +209,14 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   /// Check if PIN is required and update state
   Future<void> _checkPinRequirement() async {
     if (_isCheckingPin) return;
-    
+
     setState(() {
       _isCheckingPin = true;
     });
 
     try {
       final pinRequired = await _pinAuthService.isPinRequired();
-      
+
       if (mounted) {
         setState(() {
           _shouldShowPin = pinRequired;
@@ -239,22 +244,23 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
         // Show loading while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
         // If user is logged in
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
-          
+
           // FIRST CHECK: Email verification - block all access if not verified
           // Exception: Allow emailVerification screen itself
           final currentRoute = ModalRoute.of(context)?.settings.name;
-          if (!user.emailVerified && currentRoute != AppRoutes.emailVerification) {
+          if (!user.emailVerified &&
+              currentRoute != AppRoutes.emailVerification) {
             if (kDebugMode) {
-              debugPrint('AuthWrapper: Email not verified, routing to EmailVerificationScreen');
+              debugPrint(
+                'AuthWrapper: Email not verified, routing to EmailVerificationScreen',
+              );
             }
             // Reload user to get latest emailVerified status (in case user just verified)
             // Use Future.microtask to handle async reload without blocking
@@ -262,10 +268,14 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
               try {
                 await user.reload();
                 final updatedUser = FirebaseAuth.instance.currentUser;
-                if (mounted && updatedUser != null && updatedUser.emailVerified) {
+                if (mounted &&
+                    updatedUser != null &&
+                    updatedUser.emailVerified) {
                   // Email was verified - trigger rebuild to continue with normal flow
                   if (kDebugMode) {
-                    debugPrint('AuthWrapper: Email verified after reload, continuing...');
+                    debugPrint(
+                      'AuthWrapper: Email verified after reload, continuing...',
+                    );
                   }
                   setState(() {}); // Trigger rebuild to continue flow
                 }
@@ -278,9 +288,10 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
             // Show verification screen while checking
             return const EmailVerificationScreen();
           }
-          
+
           // If on email verification screen but email is now verified, continue
-          if (currentRoute == AppRoutes.emailVerification && user.emailVerified) {
+          if (currentRoute == AppRoutes.emailVerification &&
+              user.emailVerified) {
             // Email verified - navigate to profile setup or home
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -300,18 +311,14 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
             });
             // Show loading while checking
             return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
 
           // If checking PIN, show loading
           if (_isCheckingPin) {
             return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
 
@@ -363,9 +370,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
           // Show loading while navigating
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -381,7 +386,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     // Get current route and navigator before async operations
     final navigator = Navigator.of(context, rootNavigator: false);
     final currentRoute = ModalRoute.of(context)?.settings.name;
-    
+
     // Don't navigate if we're already on a setup screen or home
     if (currentRoute == AppRoutes.caregiverProfileSetup ||
         currentRoute == AppRoutes.createCaregiverPin ||
@@ -393,17 +398,19 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
     // Small delay to allow any ongoing navigation to complete
     await Future.delayed(const Duration(milliseconds: 100));
-    
+
     if (!mounted) return;
 
     // Check if setup is complete
     final isSetupComplete = await _setupService.isSetupComplete();
-    
+
     if (!mounted) return;
-    
+
     // Get route name after async (with mounted check)
-    final routeAfterAsync = mounted ? ModalRoute.of(context)?.settings.name : null;
-    
+    final routeAfterAsync = mounted
+        ? ModalRoute.of(context)?.settings.name
+        : null;
+
     // Only navigate to home if setup is complete and we're not already there
     if (isSetupComplete) {
       if (routeAfterAsync != AppRoutes.home && mounted) {
@@ -411,14 +418,14 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
       }
     } else {
       // Setup not complete - navigate to profile setup only if not already there
-      if (routeAfterAsync != AppRoutes.caregiverProfileSetup && 
+      if (routeAfterAsync != AppRoutes.caregiverProfileSetup &&
           routeAfterAsync != AppRoutes.createCaregiverPin &&
           routeAfterAsync != AppRoutes.caregiverRegistration &&
           mounted) {
         navigator.pushReplacementNamed(AppRoutes.caregiverProfileSetup);
       }
     }
-    
+
     _isCheckingSetup = false;
   }
 }
