@@ -82,9 +82,15 @@ class _EditSetScreenState extends State<EditSetScreen> {
     });
   }
 
+  void _removePictogram(int index) {
+    setState(() {
+      _selectedPictograms.removeAt(index);
+    });
+  }
+
   Future<void> _saveSet() async {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -143,13 +149,13 @@ class _EditSetScreenState extends State<EditSetScreen> {
       if (mounted) {
         final errorMessage = e.toString();
         final isOffline = errorMessage.toLowerCase().contains('offline');
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isOffline 
-                ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
-                : 'Fout bij opslaan: ${errorMessage.length > 100 ? '${errorMessage.substring(0, 100)}...' : errorMessage}',
+              isOffline
+                  ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
+                  : 'Fout bij opslaan: ${errorMessage.length > 100 ? '${errorMessage.substring(0, 100)}...' : errorMessage}',
             ),
             backgroundColor: isOffline ? AppTheme.accentOrange : Colors.red,
             behavior: SnackBarBehavior.floating,
@@ -159,7 +165,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
-        
+
         // If offline, still allow navigation back (data will sync when online)
         if (isOffline) {
           Navigator.pop(context, true);
@@ -177,7 +183,7 @@ class _EditSetScreenState extends State<EditSetScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -189,7 +195,8 @@ class _EditSetScreenState extends State<EditSetScreen> {
           children: [
             // Name input
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: TextFormField(
                 controller: _nameController,
                 style: const TextStyle(fontSize: 18),
@@ -226,7 +233,8 @@ class _EditSetScreenState extends State<EditSetScreen> {
                       icon: const Icon(Icons.add, size: 20),
                       label: Text(localizations.addPictograms),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         minimumSize: const Size(0, 36),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -252,17 +260,20 @@ class _EditSetScreenState extends State<EditSetScreen> {
                                 color: AppTheme.textSecondary,
                               ),
                               const SizedBox(height: 16),
-                          Text(
-                            localizations.noPictogramsSelected,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.textSecondary,
-                                ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _openPictogramPicker,
-                            icon: const Icon(Icons.add),
-                            label: Text(localizations.choosePictograms),
+                              Text(
+                                localizations.noPictogramsSelected,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: _openPictogramPicker,
+                                icon: const Icon(Icons.add),
+                                label: Text(localizations.choosePictograms),
                               ),
                             ],
                           ),
@@ -308,16 +319,18 @@ class _EditSetScreenState extends State<EditSetScreen> {
                           width: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                        : Text(
-                            localizations.save,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
+                      : Text(
+                          localizations.save,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
                 ),
               ),
             ),
@@ -328,102 +341,135 @@ class _EditSetScreenState extends State<EditSetScreen> {
   }
 
   Widget _buildPictogramCard(Pictogram pictogram, int index) {
-    return Card(
-      key: ValueKey(pictogram.id),
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(
-          minHeight: 120,
+    return Dismissible(
+      key: ValueKey('pictogram-${pictogram.id}-$index'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red[400],
+          borderRadius: BorderRadius.circular(16),
         ),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Drag handle
-            Icon(
-              Icons.drag_handle,
-              color: AppTheme.textSecondary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            // Pictogram image
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      onDismissed: (direction) {
+        _removePictogram(index);
+      },
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            minHeight: 120,
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Drag handle
+              Icon(
+                Icons.drag_handle,
+                color: AppTheme.textSecondary,
+                size: 24,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: pictogram.imageUrl.isNotEmpty
-                    ? Image.network(
-                        pictogram.imageUrl, // Cloudinary URL
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Icon(
+              const SizedBox(width: 12),
+              // Pictogram image
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: pictogram.imageUrl.isNotEmpty
+                      ? Image.network(
+                          pictogram.imageUrl, // Cloudinary URL
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryBlue),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            _getIconForKeyword(pictogram.keyword),
+                            size: 32,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        )
+                      : Icon(
                           _getIconForKeyword(pictogram.keyword),
                           size: 32,
                           color: AppTheme.primaryBlue,
                         ),
-                      )
-                    : Icon(
-                        _getIconForKeyword(pictogram.keyword),
-                        size: 32,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Keyword and index
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Keyword - displays localized Dutch keyword from model
+                    Text(
+                      pictogram.keyword,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    // Index number
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
                         color: AppTheme.primaryBlue,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Keyword and index
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Keyword - displays localized Dutch keyword from model
-                  Text(
-                    pictogram.keyword,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      child: Text(
+                        'Stap ${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  // Index number
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Stap ${index + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              // Delete button
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red[400],
+                  size: 24,
+                ),
+                onPressed: () => _removePictogram(index),
+                tooltip: 'Remove',
+                splashRadius: 24,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -435,9 +481,11 @@ class _EditSetScreenState extends State<EditSetScreen> {
       return Icons.access_time;
     } else if (lowerKeyword.contains('aankleden')) {
       return Icons.checkroom;
-    } else if (lowerKeyword.contains('ontbijt') || lowerKeyword.contains('eten')) {
+    } else if (lowerKeyword.contains('ontbijt') ||
+        lowerKeyword.contains('eten')) {
       return Icons.restaurant;
-    } else if (lowerKeyword.contains('tanden') || lowerKeyword.contains('poets')) {
+    } else if (lowerKeyword.contains('tanden') ||
+        lowerKeyword.contains('poets')) {
       return Icons.cleaning_services;
     }
     return Icons.image_outlined;

@@ -109,6 +109,12 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     });
   }
 
+  void _removePictogram(int index) {
+    setState(() {
+      _selectedPictograms.removeAt(index);
+    });
+  }
+
   Future<void> _saveSet() async {
     final localizations = LanguageProvider.localizationsOf(context);
 
@@ -600,104 +606,135 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
   }
 
   Widget _buildPictogramCard(Pictogram pictogram, int index) {
-    return Card(
+    return Dismissible(
       key: ValueKey('pictogram-${pictogram.id}-$index'),
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(
-          minHeight: 120,
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red[400],
+          borderRadius: BorderRadius.circular(16),
         ),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Drag handle
-            Icon(
-              Icons.drag_handle,
-              color: AppTheme.textSecondary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            // Pictogram image
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      onDismissed: (direction) {
+        _removePictogram(index);
+      },
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            minHeight: 120,
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Drag handle
+              Icon(
+                Icons.drag_handle,
+                color: AppTheme.textSecondary,
+                size: 24,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: pictogram.imageUrl.isNotEmpty
-                    ? Image.network(
-                        pictogram.imageUrl, // Cloudinary URL
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppTheme.primaryBlue),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Icon(
+              const SizedBox(width: 12),
+              // Pictogram image
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: pictogram.imageUrl.isNotEmpty
+                      ? Image.network(
+                          pictogram.imageUrl, // Cloudinary URL
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryBlue),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            _getIconForKeyword(pictogram.keyword),
+                            size: 32,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        )
+                      : Icon(
                           _getIconForKeyword(pictogram.keyword),
                           size: 32,
                           color: AppTheme.primaryBlue,
                         ),
-                      )
-                    : Icon(
-                        _getIconForKeyword(pictogram.keyword),
-                        size: 32,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Keyword and index
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Keyword - displays localized Dutch keyword from model
+                    Text(
+                      pictogram.keyword,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    // Index number
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
                         color: AppTheme.primaryBlue,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Keyword and index
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Keyword - displays localized Dutch keyword from model
-                  Text(
-                    pictogram.keyword,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      child: Text(
+                        'Stap ${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  // Index number
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Stap ${index + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              // Delete button
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red[400],
+                  size: 24,
+                ),
+                onPressed: () => _removePictogram(index),
+                tooltip: 'Remove',
+                splashRadius: 24,
+              ),
+            ],
+          ),
         ),
       ),
     );
