@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
 import '../l10n/app_localizations.dart';
+import '../services/language_service.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
@@ -55,6 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeScreen(
       BuildContext context, AppLocalizations localizations, String userName) {
+    final languageService = LanguageProvider.languageServiceOf(context);
+    final flagEmoji =
+        languageService.currentLanguage == AppLanguage.dutch ? '🇳🇱' : '🇺🇸';
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
@@ -73,14 +78,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 100,
                     fit: BoxFit.contain,
                   ),
-                  // Settings button in top right
-                  IconButton(
-                    icon: const Icon(Icons.settings_rounded),
-                    tooltip: localizations.settings,
-                    color: AppTheme.textSecondary,
-                    onPressed: () {
-                      Navigator.pushNamed(context, AppRoutes.settings);
-                    },
+                  // Language flag and settings button in top right
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        flagEmoji,
+                        style: const TextStyle(fontSize: 22),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.settings_rounded),
+                        tooltip: localizations.settings,
+                        color: AppTheme.textSecondary,
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.settings);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -129,8 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       constraints:
                           BoxConstraints(minHeight: constraints.maxHeight),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
+                          const SizedBox(height: 70),
                           // Primary action: "Nieuwe pictoreeks" (Blue button)
                           _buildMainActionButton(
                             context,

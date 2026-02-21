@@ -15,6 +15,8 @@ class AppLocalizations {
   // Common
   String get close => _language == AppLanguage.dutch ? 'Sluiten' : 'Close';
   String get save => _language == AppLanguage.dutch ? 'Opslaan' : 'Save';
+  String get savePermanently =>
+      _language == AppLanguage.dutch ? 'Permanent Opslaan' : 'Save Permanently';
   String get cancel => _language == AppLanguage.dutch ? 'Annuleren' : 'Cancel';
   String get edit => _language == AppLanguage.dutch ? 'Bewerken' : 'Edit';
   String get delete =>
@@ -398,12 +400,23 @@ class AppLocalizations {
   String get createNewSet => _language == AppLanguage.dutch
       ? 'Maak een nieuwe pictogramreeks'
       : 'Create a new pictogram sequence';
-  String get namingGuide => _language == AppLanguage.dutch
-      ? 'Naamgeving van je pictoreeks'
-      : 'Name your picture set';
+  String get namingGuide => _language == AppLanguage.dutch ? 'Naam van je pictoreeks' : 'name of your icon series';
   String get myPictogramSets => _language == AppLanguage.dutch
       ? 'Opgeslagen pictoreeksen'
-      : 'Saved pictogram sets';
+      : 'Saved icon sets';
+  String get savedSets =>
+      _language == AppLanguage.dutch ? 'Opgeslagen pictoreeksen' : 'Saved sets';
+  String get recentAutoSaved =>
+      _language == AppLanguage.dutch ? 'Laatste 5 pictoreeksen' : 'Last 5 sets';
+  String get importPictogramSet => _language == AppLanguage.dutch
+      ? '🔗 pictoreeks importeren'
+      : '🔗 Import set';
+  String get noAutoSavedSets => _language == AppLanguage.dutch
+      ? 'Geen recente auto-opgeslagen pictoreeksen'
+      : 'No recent auto-saved sets';
+  String get autoSavedExplanation => _language == AppLanguage.dutch
+      ? 'Auto-opgeslagen pictoreeksen verschijnen hier wanneer je pictoreeksen start'
+      : 'Auto-saved sets appear here as you start sequences';
   String get exportPdf =>
       _language == AppLanguage.dutch ? 'Exporteren als PDF' : 'Export as PDF';
   String get shareSet => _language == AppLanguage.dutch
@@ -413,8 +426,8 @@ class AppLocalizations {
       ? 'Pictoreeks importeren'
       : 'Import pictogram set';
   String get pasteShareLink => _language == AppLanguage.dutch
-      ? 'Plak een deel-link of code'
-      : 'Paste a share link or code';
+      ? 'plak een importeer-link'
+      : 'Paste an import link';
   String get importAction =>
       _language == AppLanguage.dutch ? 'Importeren' : 'Import';
   String get importSuccess => _language == AppLanguage.dutch
@@ -486,6 +499,8 @@ class AppLocalizations {
   String get startPictoreeks => _language == AppLanguage.dutch
       ? 'Pictoreeks starten'
       : 'Start pictoreeks';
+  String get startSequence =>
+      _language == AppLanguage.dutch ? 'Pictoreeks starten' : 'Start sequence';
 
   // Client session screen
   String get nextStep =>

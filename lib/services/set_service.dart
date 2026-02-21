@@ -77,28 +77,26 @@ class SetService {
 
     try {
       // Get old set to compare pictograms
-      final oldSetDoc = await _firestore
-          .collection(_collectionName)
-          .doc(set.id)
-          .get();
+      final oldSetDoc =
+          await _firestore.collection(_collectionName).doc(set.id).get();
       final oldPictograms = oldSetDoc.exists
           ? (oldSetDoc.data()?['pictograms'] as List<dynamic>?)
-                    ?.map((p) => Pictogram.fromJson(p as Map<String, dynamic>))
-                    .toList() ??
-                []
+                  ?.map((p) => Pictogram.fromJson(p as Map<String, dynamic>))
+                  .toList() ??
+              []
           : [];
 
       await _firestore.collection(_collectionName).doc(set.id).update({
         'name': set.name,
         'pictograms': set.pictograms.map((p) => p.toJson()).toList(),
+        'isAutoSaved': set.isAutoSaved,
         'updatedAt': DateTime.now().toIso8601String(),
       });
 
       // Track usage of newly added pictograms (compare old vs new)
       final oldIds = oldPictograms.map((p) => p.id).toSet();
-      final newPictograms = set.pictograms
-          .where((p) => !oldIds.contains(p.id))
-          .toList();
+      final newPictograms =
+          set.pictograms.where((p) => !oldIds.contains(p.id)).toList();
       if (newPictograms.isNotEmpty) {
         _trackPictogramUsage(newPictograms);
       }
@@ -170,34 +168,79 @@ class SetService {
         .where('userId', isEqualTo: _currentUserId)
         .snapshots()
         .asyncMap((snapshot) async {
-          try {
-            final sets = snapshot.docs
-                .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
-                .toList();
+      try {
+        final sets = snapshot.docs
+            .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+            .where((set) => !set.isAutoSaved)
+            .toList();
 
-            // Enhance pictograms with proper keywords if needed
-            final enhancedSets = await Future.wait(
-              sets.map((set) => _enhanceSetPictograms(set)),
-            );
+        // Enhance pictograms with proper keywords if needed
+        final enhancedSets = await Future.wait(
+          sets.map((set) => _enhanceSetPictograms(set)),
+        );
 
-            // Sort in memory by createdAt descending (newest first)
-            enhancedSets.sort((a, b) {
-              return b.createdAt.compareTo(a.createdAt);
-            });
-            return enhancedSets;
-          } catch (e) {
-            // If parsing fails, return empty list
-            return <PictogramSet>[];
-          }
-        })
-        .handleError((error) {
-          // When offline, Firestore will return cached data
-          if (_isOfflineError(error)) {
-            return <PictogramSet>[];
-          }
-          // Re-throw other errors
-          throw error;
+        // Sort in memory by createdAt descending (newest first)
+        enhancedSets.sort((a, b) {
+          return b.createdAt.compareTo(a.createdAt);
         });
+        return enhancedSets;
+      } catch (e) {
+        // If parsing fails, return empty list
+        return <PictogramSet>[];
+      }
+    }).handleError((error) {
+      // When offline, Firestore will return cached data
+      if (_isOfflineError(error)) {
+        return <PictogramSet>[];
+      }
+      // Re-throw other errors
+      throw error;
+    });
+  }
+
+  /// Get auto-saved pictogram sets (last 5, without names)
+  /// These are sets that were created and played but not saved with a name
+  /// Limited to 5 most recent; oldest auto-saves are removed when limit reached
+  Stream<List<PictogramSet>> getAutoSavedSets() {
+    if (_currentUserId == null) {
+      return Stream.value([]);
+    }
+
+    return _firestore
+        .collection(_collectionName)
+        .where('userId', isEqualTo: _currentUserId)
+        .where('isAutoSaved', isEqualTo: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      try {
+        final sets = snapshot.docs
+            .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+            .toList();
+
+        // Enhance pictograms with proper keywords if needed
+        final enhancedSets = await Future.wait(
+          sets.map((set) => _enhanceSetPictograms(set)),
+        );
+
+        // Sort in memory by createdAt descending (newest first)
+        enhancedSets.sort((a, b) {
+          return b.createdAt.compareTo(a.createdAt);
+        });
+
+        // Keep only the last 5
+        return enhancedSets.take(5).toList();
+      } catch (e) {
+        // If parsing fails, return empty list
+        return <PictogramSet>[];
+      }
+    }).handleError((error) {
+      // When offline, Firestore will return cached data
+      if (_isOfflineError(error)) {
+        return <PictogramSet>[];
+      }
+      // Re-throw other errors
+      throw error;
+    });
   }
 
   /// Get all sets (for client mode - no user filter)
@@ -207,34 +250,33 @@ class SetService {
         .collection(_collectionName)
         .snapshots()
         .asyncMap((snapshot) async {
-          try {
-            final sets = snapshot.docs
-                .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
-                .toList();
+      try {
+        final sets = snapshot.docs
+            .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+            .toList();
 
-            // Enhance pictograms with proper keywords if needed
-            final enhancedSets = await Future.wait(
-              sets.map((set) => _enhanceSetPictograms(set)),
-            );
+        // Enhance pictograms with proper keywords if needed
+        final enhancedSets = await Future.wait(
+          sets.map((set) => _enhanceSetPictograms(set)),
+        );
 
-            // Sort in memory by createdAt descending (newest first)
-            enhancedSets.sort((a, b) {
-              return b.createdAt.compareTo(a.createdAt);
-            });
-            return enhancedSets;
-          } catch (e) {
-            // If parsing fails, return empty list
-            return <PictogramSet>[];
-          }
-        })
-        .handleError((error) {
-          // When offline, Firestore will return cached data
-          if (_isOfflineError(error)) {
-            return <PictogramSet>[];
-          }
-          // Re-throw other errors
-          throw error;
+        // Sort in memory by createdAt descending (newest first)
+        enhancedSets.sort((a, b) {
+          return b.createdAt.compareTo(a.createdAt);
         });
+        return enhancedSets;
+      } catch (e) {
+        // If parsing fails, return empty list
+        return <PictogramSet>[];
+      }
+    }).handleError((error) {
+      // When offline, Firestore will return cached data
+      if (_isOfflineError(error)) {
+        return <PictogramSet>[];
+      }
+      // Re-throw other errors
+      throw error;
+    });
   }
 
   /// Get a single set by ID
@@ -277,17 +319,14 @@ class SetService {
     if (pictograms.isEmpty) return;
 
     // Run asynchronously so it doesn't block set creation
-    _pictogramService
-        .getPictogramDocumentIds(pictograms)
-        .then((docIdMap) {
-          final docIds = docIdMap.values.toSet().toList();
-          if (docIds.isNotEmpty) {
-            _pictogramService.incrementUsageCountBatch(docIds);
-          }
-        })
-        .catchError((e) {
-          // Log error but don't throw - usage tracking shouldn't break the app
-          // Error is already logged in incrementUsageCountBatch
-        });
+    _pictogramService.getPictogramDocumentIds(pictograms).then((docIdMap) {
+      final docIds = docIdMap.values.toSet().toList();
+      if (docIds.isNotEmpty) {
+        _pictogramService.incrementUsageCountBatch(docIds);
+      }
+    }).catchError((e) {
+      // Log error but don't throw - usage tracking shouldn't break the app
+      // Error is already logged in incrementUsageCountBatch
+    });
   }
 }

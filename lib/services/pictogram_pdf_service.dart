@@ -23,14 +23,15 @@ class PictogramPdfService {
             style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 16),
-          pw.Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          pw.GridView(
+            crossAxisCount: 3,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.85,
             children: List.generate(set.pictograms.length, (index) {
               final pictogram = set.pictograms[index];
               final image = images[index];
               return pw.Container(
-                width: 120,
                 padding: const pw.EdgeInsets.all(8),
                 decoration: pw.BoxDecoration(
                   border: pw.Border.all(width: 1, color: PdfColors.grey300),

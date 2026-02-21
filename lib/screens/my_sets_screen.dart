@@ -12,8 +12,15 @@ import '../providers/language_provider.dart';
 
 enum _SetMenuAction { exportPdf, shareLink }
 
-class MySetsScreen extends StatelessWidget {
+class MySetsScreen extends StatefulWidget {
   const MySetsScreen({super.key});
+
+  @override
+  State<MySetsScreen> createState() => _MySetsScreenState();
+}
+
+class _MySetsScreenState extends State<MySetsScreen> {
+  int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -28,113 +35,159 @@ class MySetsScreen extends StatelessWidget {
         title: Text(localizations.myPictogramSets),
         backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.link_rounded),
-            tooltip: localizations.importSet,
-            onPressed: () => _showImportDialog(context, shareService),
-          ),
-        ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: StreamBuilder<List<PictogramSet>>(
-        stream: setService.getUserSets(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (snapshot.hasError) {
-            final errorMessage = snapshot.error.toString();
-            final isOffline = errorMessage.toLowerCase().contains('offline') ||
-                errorMessage.toLowerCase().contains('network') ||
-                errorMessage.toLowerCase().contains('unavailable');
-            final isIndexBuilding = errorMessage
-                    .toLowerCase()
-                    .contains('index') &&
-                (errorMessage.toLowerCase().contains('building') ||
-                    errorMessage.toLowerCase().contains('failed-precondition'));
-
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isOffline
-                          ? Icons.cloud_off
-                          : isIndexBuilding
-                              ? Icons.hourglass_empty
-                              : Icons.error_outline,
-                      size: 64,
-                      color: isOffline
-                          ? AppTheme.accentOrange
-                          : isIndexBuilding
-                              ? AppTheme.primaryBlue
-                              : AppTheme.textSecondary,
-                    ),
-                    const SizedBox(height: 16),
-                    Builder(
-                      builder: (context) {
-                        final localizations =
-                            LanguageProvider.localizationsOf(context);
-                        return Column(
-                          children: [
-                            Text(
-                              isOffline
-                                  ? localizations.offlineModeMessage
-                                  : isIndexBuilding
-                                      ? localizations.indexBuilding
-                                      : localizations.errorLoadingSets,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              isOffline
-                                  ? localizations.offlineMessage
-                                  : isIndexBuilding
-                                      ? localizations.indexBuildingMessage
-                                      : errorMessage.length > 200
-                                          ? errorMessage.substring(0, 200) +
-                                              "..."
-                                          : errorMessage,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+      body: Column(
+        children: [
+          // Tab buttons
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Row(
+              children: [
+                // Tab 1: Saved sets
+                Expanded(
+                  child: _buildTabButton(
+                    context,
+                    0,
+                    localizations.savedSets,
+                  ),
                 ),
-              ),
-            );
-          }
+                const SizedBox(width: 8),
+                // Tab 2: Last 5 auto-saved sets
+                Expanded(
+                  child: _buildTabButton(
+                    context,
+                    1,
+                    localizations.recentAutoSaved,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Tab 3: Import
+                Expanded(
+                  child: _buildTabButton(
+                    context,
+                    2,
+                    localizations.importPictogramSet,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Tab content
+          Expanded(
+            child: _buildTabContent(
+              context,
+              setService,
+              pdfService,
+              shareService,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          final sets = snapshot.data ?? [];
+  Widget _buildTabButton(BuildContext context, int tabIndex, String label) {
+    final isSelected = _selectedTabIndex == tabIndex;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTabIndex = tabIndex;
+        });
+      },
+      child: Container(
+        height: 60,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? AppTheme.primaryBlue : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? AppTheme.primaryBlue : AppTheme.textSecondary,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
 
-          if (sets.isEmpty) {
-            return Center(
+  Widget _buildTabContent(
+    BuildContext context,
+    SetService setService,
+    PictogramPdfService pdfService,
+    SetShareService shareService,
+  ) {
+    if (_selectedTabIndex == 0) {
+      return _buildSavedSetsTab(context, setService, pdfService, shareService);
+    } else if (_selectedTabIndex == 1) {
+      return _buildAutoSavedTab(context, setService, pdfService, shareService);
+    } else {
+      return _buildImportTab(context, shareService);
+    }
+  }
+
+  Widget _buildSavedSetsTab(
+    BuildContext context,
+    SetService setService,
+    PictogramPdfService pdfService,
+    SetShareService shareService,
+  ) {
+    return StreamBuilder<List<PictogramSet>>(
+      stream: setService.getUserSets(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          final errorMessage = snapshot.error.toString();
+          final isOffline = errorMessage.toLowerCase().contains('offline') ||
+              errorMessage.toLowerCase().contains('network') ||
+              errorMessage.toLowerCase().contains('unavailable');
+          final isIndexBuilding = errorMessage
+                  .toLowerCase()
+                  .contains('index') &&
+              (errorMessage.toLowerCase().contains('building') ||
+                  errorMessage.toLowerCase().contains('failed-precondition'));
+
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.folder_outlined,
-                    size: 80,
-                    color: AppTheme.textSecondary,
+                    isOffline
+                        ? Icons.cloud_off
+                        : isIndexBuilding
+                            ? Icons.hourglass_empty
+                            : Icons.error_outline,
+                    size: 64,
+                    color: isOffline
+                        ? AppTheme.accentOrange
+                        : isIndexBuilding
+                            ? AppTheme.primaryBlue
+                            : AppTheme.textSecondary,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   Builder(
                     builder: (context) {
                       final localizations =
@@ -142,16 +195,29 @@ class MySetsScreen extends StatelessWidget {
                       return Column(
                         children: [
                           Text(
-                            localizations.noSets,
-                            style: Theme.of(context).textTheme.headlineMedium,
+                            isOffline
+                                ? localizations.offlineModeMessage
+                                : isIndexBuilding
+                                    ? localizations.indexBuilding
+                                    : localizations.errorLoadingSets,
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            localizations.createFirstSet,
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: AppTheme.textSecondary,
-                                    ),
+                            isOffline
+                                ? localizations.offlineMessage
+                                : isIndexBuilding
+                                    ? localizations.indexBuildingMessage
+                                    : errorMessage.length > 200
+                                        ? errorMessage.substring(0, 200) + "..."
+                                        : errorMessage,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       );
@@ -159,23 +225,197 @@ class MySetsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: sets.length,
-            itemBuilder: (context, index) {
-              final set = sets[index];
-              return _buildSetCard(
-                context,
-                set,
-                pdfService,
-                shareService,
-              );
-            },
+            ),
           );
-        },
+        }
+
+        final sets = snapshot.data ?? [];
+
+        if (sets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.folder_outlined,
+                  size: 80,
+                  color: AppTheme.textSecondary,
+                ),
+                const SizedBox(height: 24),
+                Builder(
+                  builder: (context) {
+                    final localizations =
+                        LanguageProvider.localizationsOf(context);
+                    return Column(
+                      children: [
+                        Text(
+                          localizations.noSets,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          localizations.createFirstSet,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          itemCount: sets.length,
+          itemBuilder: (context, index) {
+            final set = sets[index];
+            return _buildSetCard(
+              context,
+              set,
+              pdfService,
+              shareService,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAutoSavedTab(
+    BuildContext context,
+    SetService setService,
+    PictogramPdfService pdfService,
+    SetShareService shareService,
+  ) {
+    return StreamBuilder<List<PictogramSet>>(
+      stream: setService.getAutoSavedSets(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final autoSavedSets = snapshot.data ?? [];
+
+        if (autoSavedSets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.history,
+                  size: 80,
+                  color: AppTheme.textSecondary,
+                ),
+                const SizedBox(height: 24),
+                Builder(
+                  builder: (context) {
+                    final localizations =
+                        LanguageProvider.localizationsOf(context);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          Text(
+                            localizations.noAutoSavedSets,
+                            style: Theme.of(context).textTheme.headlineMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            localizations.autoSavedExplanation,
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          itemCount: autoSavedSets.length,
+          itemBuilder: (context, index) {
+            final set = autoSavedSets[index];
+            return _buildSetCard(
+              context,
+              set,
+              pdfService,
+              shareService,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildImportTab(
+    BuildContext context,
+    SetShareService shareService,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.link_rounded,
+              size: 80,
+              color: AppTheme.primaryBlue,
+            ),
+            const SizedBox(height: 24),
+            Builder(
+              builder: (context) {
+                final localizations = LanguageProvider.localizationsOf(context);
+                return Column(
+                  children: [
+                    Text(
+                      localizations.importSet,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      localizations.pasteShareLink,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.add_link),
+                      label: Text(localizations.importPictogramSet),
+                      onPressed: () => _showImportDialog(context, shareService),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -207,7 +447,7 @@ class MySetsScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        set.name,
+                        set.name.isEmpty ? 'Auto-saved set' : set.name,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -282,118 +522,165 @@ class MySetsScreen extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   itemCount: set.pictograms.length,
                   itemBuilder: (context, index) {
-                    final pictogram = set.pictograms[index];
                     return _buildPictogramPreview(
                       context,
-                      pictogram,
+                      set.pictograms[index],
                       index,
                     );
                   },
                 ),
-              )
-            else
-              Container(
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Builder(
-                    builder: (context) {
-                      final localizations =
-                          LanguageProvider.localizationsOf(context);
-                      return Text(
-                        localizations.noPictograms,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
-                      );
-                    },
-                  ),
-                ),
               ),
-
             const SizedBox(height: 12),
 
             // Action buttons
-            Row(
-              children: [
-                // Edit button
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditSetScreen(set: set),
-                        ),
-                      ).then((saved) {
-                        if (saved == true) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Builder(
-                                builder: (context) => Text(
-                                    LanguageProvider.localizationsOf(context)
-                                        .setUpdated),
-                              ),
-                              backgroundColor: AppTheme.accentGreen,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+            if (set.isAutoSaved)
+              // Auto-saved set buttons: Save Permanently + Start
+              Row(
+                children: [
+                  // Save Permanently button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.save, size: 18),
+                      label: Builder(
+                        builder: (context) {
+                          final localizations =
+                              LanguageProvider.localizationsOf(context);
+                          return Text(
+                            localizations.savePermanently,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 12),
                           );
-                        }
-                      });
-                    },
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: Builder(
-                      builder: (context) => Text(
-                        LanguageProvider.localizationsOf(context).edit,
-                        style: const TextStyle(fontSize: 14),
+                        },
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 12),
-                      side: BorderSide(color: AppTheme.primaryBlue, width: 2),
-                      minimumSize: const Size(0, 40),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Pictoreeks starten button
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ClientModeSessionScreen(set: set),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.play_arrow, size: 18),
-                    label: Builder(
-                      builder: (context) => Text(
-                        LanguageProvider.localizationsOf(context)
-                            .startPictoreeks,
-                        style: const TextStyle(fontSize: 14),
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 12),
-                      backgroundColor: AppTheme.accentGreen,
-                      minimumSize: const Size(0, 40),
+                      onPressed: () => _savePermanently(context, set),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  // Start button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.play_arrow, size: 18),
+                      label: Builder(
+                        builder: (context) {
+                          final localizations =
+                              LanguageProvider.localizationsOf(context);
+                          return Text(
+                            localizations.startSequence,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 12),
+                          );
+                        },
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ClientModeSessionScreen(set: set),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              )
+            else
+              // Regular saved set buttons: Edit + Start
+              Row(
+                children: [
+                  // Edit button
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: Builder(
+                        builder: (context) {
+                          final localizations =
+                              LanguageProvider.localizationsOf(context);
+                          return Text(
+                            localizations.edit,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 12),
+                          );
+                        },
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditSetScreen(set: set),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 12),
+                        side: BorderSide(color: AppTheme.primaryBlue, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Start button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.play_arrow, size: 18),
+                      label: Builder(
+                        builder: (context) {
+                          final localizations =
+                              LanguageProvider.localizationsOf(context);
+                          return Text(
+                            localizations.startSequence,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 12),
+                          );
+                        },
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ClientModeSessionScreen(set: set),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -524,7 +811,7 @@ class MySetsScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(11),
               child: pictogram.imageUrl.isNotEmpty
                   ? Image.network(
-                      pictogram.imageUrl, // Cloudinary URL
+                      pictogram.imageUrl,
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -595,5 +882,97 @@ class MySetsScreen extends StatelessWidget {
       return Icons.school;
     }
     return Icons.image_outlined;
+  }
+
+  Future<void> _savePermanently(BuildContext context, PictogramSet set) async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final nameController = TextEditingController();
+
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(localizations.namingGuide),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            hintText: localizations.giveAName,
+            prefixIcon: const Icon(Icons.label_outline),
+          ),
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(localizations.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final enteredName = nameController.text.trim();
+              if (enteredName.isNotEmpty) {
+                Navigator.of(context).pop(enteredName);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(localizations.selectAtLeastOne),
+                    backgroundColor: AppTheme.accentOrange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+            ),
+            child: Text(
+              localizations.save,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (name != null && name.isNotEmpty && context.mounted) {
+      try {
+        final setService = SetService();
+        // Update the set with the new name and mark as not auto-saved
+        final updatedSet = set.copyWith(
+          name: name,
+          isAutoSaved: false,
+        );
+        await setService.updateSet(updatedSet);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${localizations.save}: $name'),
+              backgroundColor: AppTheme.accentGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(localizations.importFailed),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+      nameController.dispose();
+    }
   }
 }

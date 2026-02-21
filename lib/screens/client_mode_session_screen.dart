@@ -781,6 +781,12 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
     });
   }
 
+  void _removePictogram(int index) {
+    setState(() {
+      _modifiedSequence.removeAt(index);
+    });
+  }
+
   Future<void> _addPictograms() async {
     final selected = await Navigator.push<List<Pictogram>>(
       context,
@@ -869,7 +875,7 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
 
   Widget _buildPictogramListItem(Pictogram pictogram, int index) {
     return Card(
-      key: ValueKey(pictogram.id),
+      key: ValueKey('${pictogram.id}-$index'),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Container(
@@ -913,7 +919,19 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text('Stap ${index + 1}'),
-        trailing: const Icon(Icons.drag_handle),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: Colors.red[400],
+              splashRadius: 20,
+              onPressed: () => _removePictogram(index),
+              tooltip: LanguageProvider.localizationsOf(context).delete,
+            ),
+            const Icon(Icons.drag_handle),
+          ],
+        ),
       ),
     );
   }

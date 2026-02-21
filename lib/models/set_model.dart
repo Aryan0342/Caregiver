@@ -8,6 +8,7 @@ class PictogramSet {
   final List<Pictogram> pictograms;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final bool isAutoSaved;
 
   const PictogramSet({
     required this.id,
@@ -16,6 +17,7 @@ class PictogramSet {
     required this.pictograms,
     required this.createdAt,
     this.updatedAt,
+    this.isAutoSaved = false,
   });
 
   /// Create a copy with updated values
@@ -26,6 +28,7 @@ class PictogramSet {
     List<Pictogram>? pictograms,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isAutoSaved,
   }) {
     return PictogramSet(
       id: id ?? this.id,
@@ -34,6 +37,7 @@ class PictogramSet {
       pictograms: pictograms ?? this.pictograms,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isAutoSaved: isAutoSaved ?? this.isAutoSaved,
     );
   }
 
@@ -45,6 +49,7 @@ class PictogramSet {
       'pictograms': pictograms.map((p) => p.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'isAutoSaved': isAutoSaved,
     };
   }
 
@@ -62,6 +67,7 @@ class PictogramSet {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
+      isAutoSaved: json['isAutoSaved'] as bool? ?? false,
     );
   }
 

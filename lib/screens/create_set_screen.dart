@@ -6,6 +6,7 @@ import '../models/set_model.dart';
 import '../services/set_service.dart';
 import 'pictogram_picker_screen.dart';
 import 'client_mode_session_screen.dart';
+import 'my_sets_screen.dart';
 import '../providers/language_provider.dart';
 
 class CreateSetScreen extends StatefulWidget {
@@ -180,7 +181,12 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
             ),
           ),
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MySetsScreen(),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -207,7 +213,12 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
         // If offline or timeout, still allow navigation back (data will sync when online)
         if (isOffline) {
           // Firestore will queue the write when online
-          Navigator.pop(context, true);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MySetsScreen(),
+            ),
+          );
         }
       }
     } finally {
@@ -294,24 +305,51 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       return;
     }
 
-    // Create a temporary PictogramSet (not saved) and navigate to client mode
+    // Create and save as auto-saved set before starting
+    _saveAutoAndStart();
+  }
+
+  Future<void> _saveAutoAndStart() async {
+    final setService = SetService();
+
+    // Create a temporary PictogramSet as auto-saved
     final tempSet = PictogramSet(
-      id: 'temp_${DateTime.now().millisecondsSinceEpoch}', // Temporary ID
-      name: _nameController.text.trim().isEmpty
-          ? 'Tijdelijke pictoreeks'
-          : _nameController.text.trim(),
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      name: '', // Empty name for auto-saved sets
       userId: FirebaseAuth.instance.currentUser?.uid ?? 'temp',
       pictograms: _selectedPictograms,
       createdAt: DateTime.now(),
+      isAutoSaved: true, // Mark as auto-saved
     );
 
-    // Navigate to client mode session screen (doesn't save the set)
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ClientModeSessionScreen(set: tempSet),
-      ),
-    );
+    try {
+      // Save to Firestore
+      final savedId = await setService.createSet(tempSet);
+
+      if (savedId != null && mounted) {
+        // Update the set with the actual saved ID
+        final savedSet = tempSet.copyWith(id: savedId);
+
+        // Navigate to client mode session screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ClientModeSessionScreen(set: savedSet),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error auto-saving set: $e');
+      // Fallback: navigate without saving
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ClientModeSessionScreen(set: tempSet),
+          ),
+        );
+      }
+    }
   }
 
   @override

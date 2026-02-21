@@ -27,7 +27,6 @@ class _SettingsScreenContent extends StatefulWidget {
 class _SettingsScreenContentState extends State<_SettingsScreenContent> {
   /// Open donate link in browser
   Future<void> _openDonateLink(BuildContext context) async {
-    final localizations = LanguageProvider.localizationsOf(context);
     final url = Uri.parse('https://www.jedaginbeeld.nl/doneren/');
 
     try {
@@ -53,7 +52,7 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error opening link: $e'),
+            content: Text('Error opening link: ${e.toString()}'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
