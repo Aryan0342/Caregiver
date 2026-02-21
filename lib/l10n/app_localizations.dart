@@ -384,6 +384,11 @@ class AppLocalizations {
   String get createPictogramSeries => _language == AppLanguage.dutch
       ? 'Pictoreeks Maken'
       : 'Create Pictogram Series';
+  String get welcomeMessage =>
+      _language == AppLanguage.dutch ? 'Welkom' : 'Welcome';
+  String get guideSubtitle => _language == AppLanguage.dutch
+      ? 'Start een nieuwe pictoreeks of open een bestaande en breng je dag in beeld.'
+      : 'Start a new pictogram set or open an existing one and visualize your day.';
   String get togetherStepByStep => _language == AppLanguage.dutch
       ? 'Samen stap voor stap'
       : 'Together step by step';
@@ -510,6 +515,11 @@ class AppLocalizations {
       _language == AppLanguage.dutch ? 'Offline modus' : 'Offline mode';
   String get aboutApp =>
       _language == AppLanguage.dutch ? 'Over de app' : 'About the app';
+  String get donateNow =>
+      _language == AppLanguage.dutch ? 'Doneer nu' : 'Donate now';
+  String get donateDescription => _language == AppLanguage.dutch
+      ? 'Ondersteun onze missie'
+      : 'Support our mission';
   String get privacy => _language == AppLanguage.dutch ? 'Privacy' : 'Privacy';
   String get deleteAccount =>
       _language == AppLanguage.dutch ? 'Account verwijderen' : 'Delete account';

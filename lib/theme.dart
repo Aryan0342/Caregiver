@@ -4,18 +4,28 @@ import 'package:flutter/material.dart';
 /// large buttons, and clear typography. Designed to be calm, modern, and accessible.
 class AppTheme {
   // Color palette - neutral earth tones
-  static const Color creamBeige = Color(0xFFF0E5D5); // Very light creamy beige - backgrounds
-  static const Color warmTan = Color(0xFFD6BF99); // Medium warm tan - secondary actions
-  static const Color mutedGreyBrown = Color(0xFF9A8C84); // Medium-dark muted grey-brown - primary
-  static const Color coolGreyBeige = Color(0xFFC2BAB1); // Light-medium cool grey-beige - containers
-  static const Color darkGreyBrown = Color(0xFF776E67); // Dark rich grey-brown - text and dark accents
-  
+  static const Color creamBeige =
+      Color(0xFFF0E5D5); // Very light creamy beige - backgrounds
+  static const Color warmTan =
+      Color(0xFFD6BF99); // Medium warm tan - secondary actions
+  static const Color mutedGreyBrown =
+      Color(0xFF9A8C84); // Medium-dark muted grey-brown - primary
+  static const Color coolGreyBeige =
+      Color(0xFFC2BAB1); // Light-medium cool grey-beige - containers
+  static const Color darkGreyBrown =
+      Color(0xFF776E67); // Dark rich grey-brown - text and dark accents
+
   // Legacy color names for backward compatibility (mapped to new palette)
   static const Color primaryBlue = mutedGreyBrown; // Primary actions
   static const Color primaryBlueLight = coolGreyBeige; // Light backgrounds
   static const Color primaryBlueDark = darkGreyBrown; // Darker states
   static const Color accentOrange = warmTan; // Secondary actions
-  static const Color accentGreen = Color(0xFF4CAF50); // Success/positive actions - soft green
+  static const Color accentGreen =
+      Color(0xFF4CAF50); // Success/positive actions - soft green
+  static const Color accentGreenDark =
+      Color(0xFF388E3C); // Darker green for finish/complete actions
+  static const Color accentRed =
+      Color(0xFFE74C3C); // Red for back/cancel actions
   static const Color backgroundLight = creamBeige; // Very light background
   static const Color surfaceWhite = Color(0xFFFFFFFF); // Pure white for cards
   static const Color textPrimary = darkGreyBrown; // Dark text for readability
@@ -27,7 +37,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      
+
       // Color scheme
       colorScheme: const ColorScheme.light(
         primary: mutedGreyBrown,
@@ -179,7 +189,8 @@ class AppTheme {
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-          minimumSize: const Size(120, 64), // Increased from 56 to 64 for better accessibility
+          minimumSize: const Size(
+              120, 64), // Increased from 56 to 64 for better accessibility
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16), // Rounded corners
           ),
@@ -272,7 +283,8 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Increased vertical spacing
+        margin: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 12), // Increased vertical spacing
       ),
 
       // Input decoration theme
@@ -299,7 +311,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFE74C3C), width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20), // Increased padding
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24, vertical: 20), // Increased padding
         hintStyle: const TextStyle(
           color: textSecondary,
           fontSize: 18, // Increased from 16 to 18

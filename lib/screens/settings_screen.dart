@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme.dart';
 import '../services/language_service.dart';
 import '../providers/language_provider.dart';
@@ -24,6 +25,46 @@ class _SettingsScreenContent extends StatefulWidget {
 }
 
 class _SettingsScreenContentState extends State<_SettingsScreenContent> {
+  /// Open donate link in browser
+  Future<void> _openDonateLink(BuildContext context) async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final url = Uri.parse('https://www.jedaginbeeld.nl/doneren/');
+
+    try {
+      // Launch URL directly without checking - platformDefault lets the OS decide
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.platformDefault,
+      );
+
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open donate page'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening link: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   /// Handle user logout with error handling.
   Future<void> _signOut(BuildContext context) async {
     try {
@@ -125,17 +166,17 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
               Text(
                 localizations.appName,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryBlue,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 localizations.appSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                  fontStyle: FontStyle.italic,
-                ),
+                      color: AppTheme.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -157,8 +198,8 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                     child: Text(
                       '${localizations.version} 1.0.0',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
+                            color: AppTheme.textSecondary,
+                          ),
                     ),
                   ),
                 ],
@@ -176,8 +217,8 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                     child: Text(
                       localizations.pictogramsFrom,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
+                            color: AppTheme.textSecondary,
+                          ),
                     ),
                   ),
                 ],
@@ -232,9 +273,9 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
               Text(
                 localizations.dataStorage,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryBlue,
+                    ),
               ),
               const SizedBox(height: 12),
               Padding(
@@ -493,6 +534,42 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                         color: AppTheme.textSecondary,
                       ),
                       onTap: () => _showPrivacyDialog(context),
+                    ),
+                  ),
+
+                  // Donate Now
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentOrange.withValues(
+                            alpha: 0.2,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.favorite_outline,
+                          color: AppTheme.accentOrange,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.donateNow,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(localizations.donateDescription),
+                      trailing: Icon(
+                        Icons.open_in_new,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () => _openDonateLink(context),
                     ),
                   ),
 

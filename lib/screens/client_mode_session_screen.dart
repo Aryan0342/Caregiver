@@ -6,7 +6,7 @@ import '../providers/language_provider.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
-/// 
+///
 /// Features:
 /// - Full-screen pictogram view
 /// - No back button
@@ -23,7 +23,8 @@ class ClientModeSessionScreen extends StatefulWidget {
   });
 
   @override
-  State<ClientModeSessionScreen> createState() => _ClientModeSessionScreenState();
+  State<ClientModeSessionScreen> createState() =>
+      _ClientModeSessionScreenState();
 }
 
 class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
@@ -33,6 +34,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+
     // Disable back button completely, but allow AppBar back button
     return PopScope(
       canPop: false, // Prevent back button and navigation gestures
@@ -48,6 +51,26 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               Navigator.pop(context);
             },
           ),
+          actions: [
+            // Modify button in top right
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton.icon(
+                icon: Icon(Icons.edit, color: AppTheme.accentOrange, size: 20),
+                label: Text(
+                  localizations.modify,
+                  style: TextStyle(
+                    color: AppTheme.accentOrange,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: () {
+                  _modifySequence();
+                },
+              ),
+            ),
+          ],
         ),
         body: SafeArea(
           child: Stack(
@@ -69,10 +92,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   Widget _buildMainContentWithoutButtons() {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     // Use modified sequence if available, otherwise use original
     final pictograms = _modifiedSequence ?? widget.set.pictograms;
-    
+
     if (pictograms.isEmpty) {
       return Center(
         child: Column(
@@ -98,9 +121,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         Expanded(
           child: GestureDetector(
             // Tap anywhere on pictogram to go to next step
-            onTap: isLastStep ? null : () {
-              _nextStep();
-            },
+            onTap: isLastStep
+                ? null
+                : () {
+                    _nextStep();
+                  },
             child: Container(
               width: double.infinity,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -164,14 +189,17 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           Builder(
             builder: (context) {
               // Calculate how many upcoming pictograms there are (max 3)
-              final remainingCount = pictograms.length - (_currentStepIndex + 1);
-              final previewCount = remainingCount > 3 ? 3 : (remainingCount > 0 ? remainingCount : 0);
-              
+              final remainingCount =
+                  pictograms.length - (_currentStepIndex + 1);
+              final previewCount = remainingCount > 3
+                  ? 3
+                  : (remainingCount > 0 ? remainingCount : 0);
+
               // Don't show preview bar if there are no upcoming pictograms
               if (previewCount == 0) {
                 return const SizedBox.shrink();
               }
-              
+
               return Column(
                 children: [
                   // Label for upcoming pictograms preview
@@ -200,13 +228,15 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                             previewCount, // Only show actual pictograms
                             (previewIndex) {
                               // Start from next pictogram (skip current)
-                              final actualIndex = _currentStepIndex + 1 + previewIndex;
+                              final actualIndex =
+                                  _currentStepIndex + 1 + previewIndex;
                               final pictogram = pictograms[actualIndex];
-                              
+
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 child: _buildTinyPictogramPreview(
-                                  pictogram, 
+                                  pictogram,
                                   actualIndex + 1,
                                   isCurrent: false,
                                   isPrevious: false,
@@ -255,70 +285,34 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         child: SafeArea(
           child: Row(
             children: [
-              // "Terug" button
+              // "Vorige" button (was "Terug")
               Expanded(
                 child: GestureDetector(
-                  onTap: isFirstStep ? null : () {
-                    _previousStep();
-                  },
+                  onTap: isFirstStep
+                      ? null
+                      : () {
+                          _previousStep();
+                        },
                   behavior: HitTestBehavior.opaque,
                   child: Material(
-                    color: isFirstStep 
-                        ? AppTheme.textSecondary.withValues(alpha: 0.5)
-                        : AppTheme.textSecondary,
+                    color: isFirstStep
+                        ? AppTheme.accentRed.withValues(alpha: 0.5)
+                        : AppTheme.accentRed,
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 18, horizontal: 8),
                       constraints: const BoxConstraints(minHeight: 56),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.arrow_back, size: 24, color: Colors.white),
+                          const Icon(Icons.arrow_back,
+                              size: 24, color: Colors.white),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              localizations.back,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // "Wijzigen" button
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    _modifySequence();
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Material(
-                    color: AppTheme.accentOrange,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-                      constraints: const BoxConstraints(minHeight: 56),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.edit, size: 24, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              localizations.modify,
+                              localizations.previous,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -340,20 +334,23 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               // "Volgende" / "Klaar" button
               Expanded(
                 child: GestureDetector(
-                  onTap: isLastStep ? () {
-                    _exitWithPin();
-                  } : () {
-                    _nextStep();
-                  },
+                  onTap: isLastStep
+                      ? () {
+                          _exitWithPin();
+                        }
+                      : () {
+                          _nextStep();
+                        },
                   behavior: HitTestBehavior.opaque,
                   child: Material(
-                    color: isLastStep 
-                        ? AppTheme.accentGreen
-                        : AppTheme.primaryBlue,
+                    color: isLastStep
+                        ? AppTheme.accentGreenDark
+                        : AppTheme.accentGreen,
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 18, horizontal: 8),
                       constraints: const BoxConstraints(minHeight: 56),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -366,7 +363,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              isLastStep ? localizations.done : localizations.next,
+                              isLastStep
+                                  ? localizations.done
+                                  : localizations.next,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -474,10 +473,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
-
   void _nextStep() {
     if (!mounted) return;
-    
+
     final pictograms = _modifiedSequence ?? widget.set.pictograms;
     if (_currentStepIndex < pictograms.length - 1) {
       setState(() {
@@ -495,8 +493,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   }
 
   void _modifySequence() async {
-    final currentSequence = _modifiedSequence ?? List<Pictogram>.from(widget.set.pictograms);
-    
+    final currentSequence =
+        _modifiedSequence ?? List<Pictogram>.from(widget.set.pictograms);
+
     // Show dialog to modify sequence
     final result = await showDialog<List<Pictogram>>(
       context: context,
@@ -505,18 +504,19 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         currentIndex: _currentStepIndex,
       ),
     );
-    
+
     if (result != null) {
       setState(() {
         _modifiedSequence = result;
         // Reset to first step after modification
         _currentStepIndex = 0;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Volgorde tijdelijk gewijzigd. Wijzigingen worden niet opgeslagen.'),
+            content: Text(
+                'Volgorde tijdelijk gewijzigd. Wijzigingen worden niet opgeslagen.'),
             backgroundColor: AppTheme.accentOrange,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
@@ -546,7 +546,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   /// Exit client mode (no PIN required since PIN was verified to enter)
   Future<void> _exitWithPin() async {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     // Show completion message and exit (PIN was already verified to enter client mode)
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -586,7 +586,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           ),
         );
       },
-      errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(_getIconForKeyword(pictogram.keyword)),
+      errorBuilder: (context, error, stackTrace) =>
+          _buildFallbackIcon(_getIconForKeyword(pictogram.keyword)),
     );
   }
 
@@ -600,9 +601,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
-
   Widget _buildTinyPictogramPreview(
-    Pictogram pictogram, 
+    Pictogram pictogram,
     int stepNumber, {
     bool isCurrent = false,
     bool isPrevious = false,
@@ -615,9 +615,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     } else if (isPrevious) {
       borderColor = AppTheme.textSecondary; // Gray for previous (completed)
     } else {
-      borderColor = AppTheme.primaryBlue.withValues(alpha: 0.3); // Blue for next
+      borderColor =
+          AppTheme.primaryBlue.withValues(alpha: 0.3); // Blue for next
     }
-    
+
     // Determine background opacity based on state
     double backgroundAlpha;
     if (isCurrent) {
@@ -627,7 +628,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     } else {
       backgroundAlpha = 0.2; // Normal for next
     }
-    
+
     return Container(
       width: 50,
       height: 50,
@@ -658,7 +659,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppTheme.primaryBlue),
                             ),
                           ),
                         );
@@ -682,10 +684,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: isCurrent 
-                      ? AppTheme.accentGreen 
-                      : isPrevious 
-                          ? AppTheme.textSecondary 
+                  color: isCurrent
+                      ? AppTheme.accentGreen
+                      : isPrevious
+                          ? AppTheme.textSecondary
                           : AppTheme.primaryBlue,
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -725,15 +727,20 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   IconData _getIconForKeyword(String keyword) {
     final lowerKeyword = keyword.toLowerCase();
-    if (lowerKeyword.contains('eten') || lowerKeyword.contains('drink') || lowerKeyword.contains('food')) {
+    if (lowerKeyword.contains('eten') ||
+        lowerKeyword.contains('drink') ||
+        lowerKeyword.contains('food')) {
       return Icons.restaurant;
     } else if (lowerKeyword.contains('toilet') || lowerKeyword.contains('wc')) {
       return Icons.wc;
-    } else if (lowerKeyword.contains('slapen') || lowerKeyword.contains('bed')) {
+    } else if (lowerKeyword.contains('slapen') ||
+        lowerKeyword.contains('bed')) {
       return Icons.bed;
-    } else if (lowerKeyword.contains('spelen') || lowerKeyword.contains('spel')) {
+    } else if (lowerKeyword.contains('spelen') ||
+        lowerKeyword.contains('spel')) {
       return Icons.toys;
-    } else if (lowerKeyword.contains('buiten') || lowerKeyword.contains('buiten')) {
+    } else if (lowerKeyword.contains('buiten') ||
+        lowerKeyword.contains('buiten')) {
       return Icons.park;
     } else {
       return Icons.image_outlined;
@@ -789,7 +796,8 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
       setState(() {
         // Add only the newly selected pictograms (not already in sequence)
         final existingIds = _modifiedSequence.map((p) => p.id).toSet();
-        final newPictograms = selected.where((p) => !existingIds.contains(p.id)).toList();
+        final newPictograms =
+            selected.where((p) => !existingIds.contains(p.id)).toList();
         _modifiedSequence.addAll(newPictograms);
       });
     }
@@ -798,7 +806,7 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return AlertDialog(
       title: Text(localizations.modifySequence),
       content: SizedBox(
@@ -882,7 +890,8 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
                       return Center(
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              AppTheme.primaryBlue),
                         ),
                       );
                     },

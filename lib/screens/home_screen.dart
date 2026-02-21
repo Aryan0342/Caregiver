@@ -1,23 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme.dart';
 import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
+import '../l10n/app_localizations.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 ///
 /// Matches the reference design with:
-/// - Large header title and subtitle
+/// - Large header title with personalized welcome message
+/// - Subtitle guiding users to create or open pictogram sets
 /// - Two prominent action buttons (New Series, My Series)
 /// - Settings icon in top right corner
 /// - Clean, caregiver-friendly, child-safe UI
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
 
+    // Get user name from Firestore profile
+    final user = FirebaseAuth.instance.currentUser;
+    String userName = 'there';
+
+    if (user != null) {
+      return FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('caregivers')
+            .doc(user.uid)
+            .get(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data?.exists == true) {
+            final data = snapshot.data?.data() as Map<String, dynamic>?;
+            userName = data?['name'] ?? user.email?.split('@')[0] ?? 'there';
+          } else {
+            userName = user.email?.split('@')[0] ?? 'there';
+          }
+
+          return _buildHomeScreen(context, localizations, userName);
+        },
+      );
+    }
+
+    return _buildHomeScreen(context, localizations, userName);
+  }
+
+  Widget _buildHomeScreen(
+      BuildContext context, AppLocalizations localizations, String userName) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
@@ -49,15 +86,15 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // Main heading section: Title only
+            // Main heading section: Welcome title and subtitle
             Padding(
-              padding: const EdgeInsets.fromLTRB(24.0, 48.0, 24.0, 48.0),
+              padding: const EdgeInsets.fromLTRB(24.0, 48.0, 24.0, 24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Main title: "Pictoreeks Maken"
+                  // Welcome title with user name
                   Text(
-                    localizations.createPictogramSeries,
+                    '${localizations.welcomeMessage} $userName,',
                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimary,
@@ -65,6 +102,18 @@ class HomeScreen extends StatelessWidget {
                           height: 1.2,
                           letterSpacing: 0.5,
                         ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  // Subtitle describing the actions
+                  Text(
+                    localizations.guideSubtitle,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,6 +34,12 @@ import 'providers/language_provider.dart';
 void main() async {
   // Required: Initialize Flutter bindings before any async operations
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock orientation to portrait mode only
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // CRITICAL PATH: Initialize Firebase - must be awaited for auth to work
   // This is required before runApp() because AuthWrapper uses FirebaseAuth
@@ -127,9 +134,8 @@ class _MyAppState extends State<MyApp> {
             return ResetPasswordScreen(email: email);
           },
           AppRoutes.securityQuestionVerification: (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
+            final args = ModalRoute.of(context)?.settings.arguments
+                as Map<String, dynamic>?;
             final email = args?['email'] as String? ?? '';
             final onVerificationSuccess =
                 args?['onVerificationSuccess'] as Function()? ?? () {};
@@ -407,9 +413,8 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     if (!mounted) return;
 
     // Get route name after async (with mounted check)
-    final routeAfterAsync = mounted
-        ? ModalRoute.of(context)?.settings.name
-        : null;
+    final routeAfterAsync =
+        mounted ? ModalRoute.of(context)?.settings.name : null;
 
     // Only navigate to home if setup is complete and we're not already there
     if (isSetupComplete) {
