@@ -393,9 +393,30 @@ class AppLocalizations {
   String get createNewSet => _language == AppLanguage.dutch
       ? 'Maak een nieuwe pictogramreeks'
       : 'Create a new pictogram sequence';
+  String get namingGuide => _language == AppLanguage.dutch
+      ? 'Naamgeving van je pictoreeks'
+      : 'Name your picture set';
   String get myPictogramSets => _language == AppLanguage.dutch
       ? 'Opgeslagen pictoreeksen'
       : 'Saved pictogram sets';
+  String get exportPdf =>
+      _language == AppLanguage.dutch ? 'Exporteren als PDF' : 'Export as PDF';
+  String get shareSet => _language == AppLanguage.dutch
+      ? 'Pictoreeks delen'
+      : 'Share pictogram set';
+  String get importSet => _language == AppLanguage.dutch
+      ? 'Pictoreeks importeren'
+      : 'Import pictogram set';
+  String get pasteShareLink => _language == AppLanguage.dutch
+      ? 'Plak een deel-link of code'
+      : 'Paste a share link or code';
+  String get importAction =>
+      _language == AppLanguage.dutch ? 'Importeren' : 'Import';
+  String get importSuccess => _language == AppLanguage.dutch
+      ? 'Pictoreeks geimporteerd'
+      : 'Pictogram set imported';
+  String get importFailed =>
+      _language == AppLanguage.dutch ? 'Importeren mislukt' : 'Import failed';
   String get singleUsePictoreeks => _language == AppLanguage.dutch
       ? 'Eenmalige pictoreeks'
       : 'Single-use pictoreeks';
@@ -576,7 +597,7 @@ class AppLocalizations {
 
   // Pictogram picker
   String get selectPictograms =>
-      _language == AppLanguage.dutch ? 'Selecteer Picto\'s' : 'Select Picto\'s';
+      _language == AppLanguage.dutch ? 'Jouw Pictoreeks' : 'Your Picture Set';
   String get searchPictograms => _language == AppLanguage.dutch
       ? 'Zoek Picto\'s...'
       : 'Search Picto\'s...';
@@ -701,6 +722,8 @@ class AppLocalizations {
       ? 'Laad meer Picto\'s'
       : 'Load more Picto\'s';
   String get name => _language == AppLanguage.dutch ? 'Naam' : 'Name';
+  String get preview =>
+      _language == AppLanguage.dutch ? 'Voorbeeld' : 'Preview';
 
   // Error messages
   String get offlineChangesQueued => _language == AppLanguage.dutch

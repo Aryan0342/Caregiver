@@ -9,7 +9,12 @@ import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
 
 class CreateSetScreen extends StatefulWidget {
-  const CreateSetScreen({super.key});
+  final List<Pictogram>? initialPictograms;
+
+  const CreateSetScreen({
+    super.key,
+    this.initialPictograms,
+  });
 
   @override
   State<CreateSetScreen> createState() => _CreateSetScreenState();
@@ -18,9 +23,24 @@ class CreateSetScreen extends StatefulWidget {
 class _CreateSetScreenState extends State<CreateSetScreen> {
   final _setService = SetService();
   final _nameController = TextEditingController();
-  List<Pictogram> _selectedPictograms = [];
-  int _currentStep = 1; // 1 = Name input, 2 = Pictogram selection/reorder
+  late List<Pictogram> _selectedPictograms = [];
+  late int _currentStep;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // If initial pictograms are provided, start from step 2
+    // Otherwise start from step 1 (naming)
+    if (widget.initialPictograms != null &&
+        widget.initialPictograms!.isNotEmpty) {
+      _selectedPictograms = List.from(widget.initialPictograms!);
+      _currentStep = 2; // Skip the naming step
+    } else {
+      _selectedPictograms = [];
+      _currentStep = 1; // Show naming step
+    }
+  }
 
   @override
   void dispose() {
@@ -44,8 +64,20 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       return;
     }
 
+    // If we have pre-selected pictograms, save directly
+    // Otherwise go to Step 2 (pictogram selection)
+    if (_selectedPictograms.isNotEmpty) {
+      _saveSet();
+    } else {
+      setState(() {
+        _currentStep = 2;
+      });
+    }
+  }
+
+  void _goToNamingStep() {
     setState(() {
-      _currentStep = 2;
+      _currentStep = 1;
     });
   }
 
@@ -79,7 +111,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
 
   Future<void> _saveSet() async {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     if (_selectedPictograms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -92,6 +124,17 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
         ),
       );
       return;
+    }
+
+    // If name is empty, ask user for a name
+    if (_nameController.text.trim().isEmpty) {
+      if (!mounted) return;
+
+      final name = await _showNameDialog(context);
+      if (name == null || name.isEmpty) {
+        return; // User cancelled
+      }
+      _nameController.text = name;
     }
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -137,14 +180,14 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       if (mounted) {
         final errorMessage = e.toString();
         final isOffline = errorMessage.toLowerCase().contains('offline') ||
-                         errorMessage.toLowerCase().contains('timeout');
-        
+            errorMessage.toLowerCase().contains('timeout');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isOffline 
-                ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
-                : 'Fout bij opslaan: ${errorMessage.length > 100 ? '${errorMessage.substring(0, 100)}...' : errorMessage}',
+              isOffline
+                  ? 'Offline: Wijzigingen worden opgeslagen zodra u weer online bent'
+                  : 'Fout bij opslaan: ${errorMessage.length > 100 ? '${errorMessage.substring(0, 100)}...' : errorMessage}',
             ),
             backgroundColor: isOffline ? AppTheme.accentOrange : Colors.red,
             behavior: SnackBarBehavior.floating,
@@ -154,7 +197,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
-        
+
         // If offline or timeout, still allow navigation back (data will sync when online)
         if (isOffline) {
           // Firestore will queue the write when online
@@ -170,9 +213,67 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     }
   }
 
+  Future<String?> _showNameDialog(BuildContext context) async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final nameController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(localizations.name),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            hintText: localizations.giveAName,
+            prefixIcon: const Icon(Icons.label_outline),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              Navigator.pop(context, value.trim());
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(localizations.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(localizations.enterName),
+                    backgroundColor: AppTheme.accentOrange,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, name);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+            ),
+            child: Text(
+              localizations.save,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _startWithClient() {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     if (_selectedPictograms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -190,8 +291,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     // Create a temporary PictogramSet (not saved) and navigate to client mode
     final tempSet = PictogramSet(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}', // Temporary ID
-      name: _nameController.text.trim().isEmpty 
-          ? 'Tijdelijke pictoreeks' 
+      name: _nameController.text.trim().isEmpty
+          ? 'Tijdelijke pictoreeks'
           : _nameController.text.trim(),
       userId: FirebaseAuth.instance.currentUser?.uid ?? 'temp',
       pictograms: _selectedPictograms,
@@ -215,7 +316,9 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
         title: Builder(
           builder: (context) {
             final localizations = LanguageProvider.localizationsOf(context);
-            return Text(_currentStep == 1 ? localizations.newPictogramSet : localizations.selectPictograms);
+            return Text(_currentStep == 1
+                ? localizations.newPictogramSet
+                : localizations.selectPictograms);
           },
         ),
         backgroundColor: AppTheme.primaryBlue,
@@ -240,61 +343,73 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
 
   Widget _buildStep1() {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Icon - circular add button with blue background
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryBlue,
-                shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Icon - save icon
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.save,
+                  size: 60,
+                  color: Colors.white,
+                ),
               ),
-              child: const Icon(
-                Icons.add,
-                size: 60,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-            // Input field
-            TextFormField(
-              controller: _nameController,
-              style: const TextStyle(fontSize: 18),
-              decoration: InputDecoration(
-                labelText: localizations.name,
-                hintText: localizations.giveAName,
-                prefixIcon: const Icon(Icons.label_outline, size: 28),
-              ),
-              textInputAction: TextInputAction.done,
-              onFieldSubmitted: (_) => _goToStep2(),
-            ),
-            const SizedBox(height: 32),
-
-            // Begin button
-            ElevatedButton(
-              onPressed: _goToStep2,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                minimumSize: const Size(double.infinity, 64),
-              ),
-              child: Text(
-                localizations.begin,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+              // Helper text
+              Text(
+                localizations.namingGuide,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.grey[600],
                     ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+
+              // Input field
+              TextFormField(
+                controller: _nameController,
+                style: const TextStyle(fontSize: 18),
+                decoration: InputDecoration(
+                  labelText: localizations.name,
+                  hintText: localizations.giveAName,
+                  prefixIcon: const Icon(Icons.label_outline, size: 28),
+                ),
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _goToStep2(),
+              ),
+              const SizedBox(height: 32),
+
+              // Save button
+              ElevatedButton(
+                onPressed: _goToStep2,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBlue,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  minimumSize: const Size(double.infinity, 64),
+                ),
+                child: Text(
+                  localizations.save,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -302,7 +417,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
 
   Widget _buildStep2() {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return SafeArea(
       child: Column(
         children: [
@@ -328,7 +443,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                     icon: const Icon(Icons.add, size: 20),
                     label: Text(localizations.addPictograms),
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -358,10 +474,14 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                             ),
                             const SizedBox(height: 16),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
                               child: Text(
                                 localizations.noPictogramsSelected,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
                                       color: AppTheme.textSecondary,
                                     ),
                                 textAlign: TextAlign.center,
@@ -420,11 +540,15 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                          const Icon(Icons.play_arrow,
+                              color: Colors.white, size: 24),
                           const SizedBox(width: 8),
                           Text(
                             localizations.startWithClient,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -438,7 +562,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isSaving ? null : _saveSet,
+                      onPressed: _isSaving ? null : _goToNamingStep,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.warmTan,
                         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -450,12 +574,16 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                               width: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : Text(
                               localizations.saveSet,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -513,7 +641,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                           return Center(
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppTheme.primaryBlue),
                             ),
                           );
                         },
@@ -550,7 +679,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                   const SizedBox(height: 8),
                   // Index number
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryBlue,
                       borderRadius: BorderRadius.circular(8),
@@ -579,9 +709,11 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       return Icons.access_time;
     } else if (lowerKeyword.contains('aankleden')) {
       return Icons.checkroom;
-    } else if (lowerKeyword.contains('ontbijt') || lowerKeyword.contains('eten')) {
+    } else if (lowerKeyword.contains('ontbijt') ||
+        lowerKeyword.contains('eten')) {
       return Icons.restaurant;
-    } else if (lowerKeyword.contains('tanden') || lowerKeyword.contains('poets')) {
+    } else if (lowerKeyword.contains('tanden') ||
+        lowerKeyword.contains('poets')) {
       return Icons.cleaning_services;
     }
     return Icons.image_outlined;

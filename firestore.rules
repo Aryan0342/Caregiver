@@ -20,6 +20,19 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                        request.auth.uid == resource.data.userId;
     }
+
+    // Pictogram set share links
+    match /pictogram_set_shares/{shareId} {
+      // Allow authenticated users to create share links
+      allow create: if request.auth != null &&
+                     request.resource.data.createdBy == request.auth.uid;
+
+      // Allow authenticated users to read share links for import
+      allow read: if request.auth != null;
+
+      // No updates or deletes from clients
+      allow update, delete: if false;
+    }
     
     // Caregivers collection - users can only access their own profile
     match /caregivers/{caregiverId} {

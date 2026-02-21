@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
+import 'pictogram_picker_screen.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
-/// 
+///
 /// Matches the reference design with:
 /// - Large header title and subtitle
 /// - Two prominent action buttons (New Series, My Series)
@@ -16,7 +17,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
@@ -47,7 +48,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Main heading section: Title only
             Padding(
               padding: const EdgeInsets.fromLTRB(24.0, 48.0, 24.0, 48.0),
@@ -68,38 +69,54 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Main action buttons section - centered vertically
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Primary action: "Nieuwe pictoreeks" (Blue button)
-                    _buildMainActionButton(
-                      context,
-                      icon: Icons.add_rounded,
-                      title: localizations.newPictogramSet,
-                      color: AppTheme.primaryBlue,
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.createSet);
-                      },
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Primary action: "Nieuwe pictoreeks" (Blue button)
+                          _buildMainActionButton(
+                            context,
+                            icon: Icons.add_rounded,
+                            title: localizations.newPictogramSet,
+                            color: AppTheme.primaryBlue,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PictogramPickerScreen(
+                                    maxSelection: 20,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Secondary action: "Opgeslagen pictoreeksen" (Orange button)
+                          _buildMainActionButton(
+                            context,
+                            icon: Icons.folder_rounded,
+                            title: localizations.myPictogramSets,
+                            color: AppTheme.accentOrange,
+                            onTap: () {
+                              Navigator.pushNamed(context, AppRoutes.mySets);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 24),
-                    
-                    // Secondary action: "Opgeslagen pictoreeksen" (Orange button)
-                    _buildMainActionButton(
-                      context,
-                      icon: Icons.folder_rounded,
-                      title: localizations.myPictogramSets,
-                      color: AppTheme.accentOrange,
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.mySets);
-                      },
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -109,7 +126,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Build a large, prominent action button for primary actions.
-  /// 
+  ///
   /// Features:
   /// - Full-width button with large touch target
   /// - Rounded corners (20px radius)
@@ -172,5 +189,4 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
 }

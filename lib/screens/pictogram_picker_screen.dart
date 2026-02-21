@@ -8,6 +8,7 @@ import '../services/language_service.dart';
 import '../theme.dart';
 import '../providers/language_provider.dart';
 import 'request_picto_screen.dart';
+import 'create_set_screen.dart';
 
 class PictogramPickerScreen extends StatefulWidget {
   final List<Pictogram>? initialSelection;
@@ -26,7 +27,7 @@ class PictogramPickerScreen extends StatefulWidget {
 class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   final CustomPictogramService _pictogramService = CustomPictogramService();
   final CategoryService _categoryService = CategoryService();
-  
+
   final Map<String, List<Pictogram>> _pictogramsByCategory = {};
   final Set<Pictogram> _selectedPictograms = {};
   List<Category> _categories = [];
@@ -70,7 +71,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     }
     setState(() => _isSearching = true);
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(_searchDebounceDuration, () => _performSearch(query));
+    _searchDebounce =
+        Timer(_searchDebounceDuration, () => _performSearch(query));
   }
 
   /// Search across the whole pictogram database (all categories), not the selected category only.
@@ -105,7 +107,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
 
     try {
       final categories = await _categoryService.getCategoriesWithPictograms();
-      
+
       if (categories.isEmpty) {
         setState(() {
           _categories = [];
@@ -147,10 +149,13 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     });
 
     try {
-      debugPrint('Loading pictograms for category: ${category.id} (${category.name})');
-      final pictograms = await _pictogramService.getPictogramsByCategory(category.id);
-      debugPrint('Loaded ${pictograms.length} pictograms for category ${category.id}');
-      
+      debugPrint(
+          'Loading pictograms for category: ${category.id} (${category.name})');
+      final pictograms =
+          await _pictogramService.getPictogramsByCategory(category.id);
+      debugPrint(
+          'Loaded ${pictograms.length} pictograms for category ${category.id}');
+
       setState(() {
         _pictogramsByCategory[category.id] = pictograms;
         _isLoading = false;
@@ -201,19 +206,27 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   }
 
   void _confirmSelection() {
-    Navigator.pop(context, _selectedPictograms.toList());
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateSetScreen(
+          initialPictograms: _selectedPictograms.toList(),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
     final languageService = LanguageProvider.languageServiceOf(context);
-    final languageCode = languageService.currentLanguage == AppLanguage.dutch ? 'nl' : 'en';
-    
+    final languageCode =
+        languageService.currentLanguage == AppLanguage.dutch ? 'nl' : 'en';
+
     // Show search results if searching, otherwise show category pictograms
-    final currentPictograms = _isSearching 
-        ? _searchResults 
-        : (_selectedCategory != null 
+    final currentPictograms = _isSearching
+        ? _searchResults
+        : (_selectedCategory != null
             ? (_pictogramsByCategory[_selectedCategory!.id] ?? [])
             : []);
 
@@ -283,27 +296,37 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                     // Category tabs
                     Container(
                       height: 60,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: _categories.map((category) {
-                          final isSelected = _selectedCategory?.id == category.id;
+                          final isSelected =
+                              _selectedCategory?.id == category.id;
                           return Padding(
                             padding: const EdgeInsets.only(right: 12),
                             child: FilterChip(
-                              label: Text(category.getLocalizedName(languageCode)),
+                              label:
+                                  Text(category.getLocalizedName(languageCode)),
                               selected: isSelected,
                               onSelected: (_) => _onCategoryChanged(category),
                               selectedColor: AppTheme.primaryBlue,
                               backgroundColor: AppTheme.primaryBlueLight,
                               checkmarkColor: Colors.white,
                               side: BorderSide(
-                                color: isSelected ? Colors.transparent : AppTheme.primaryBlue.withValues(alpha: 0.5),
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : AppTheme.primaryBlue
+                                        .withValues(alpha: 0.5),
                                 width: 1,
                               ),
                               labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : AppTheme.textPrimary,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.textPrimary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                             ),
                           );
@@ -328,7 +351,9 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                       const SizedBox(height: 16),
                                       Text(
                                         _errorMessage!,
-                                        style: Theme.of(context).textTheme.bodyLarge,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge,
                                         textAlign: TextAlign.center,
                                       ),
                                       const SizedBox(height: 16),
@@ -346,17 +371,21 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                               : currentPictograms.isEmpty
                                   ? Center(
                                       child: Text(
-                                        _isSearching 
+                                        _isSearching
                                             ? 'Geen pictogrammen gevonden'
                                             : 'Geen pictogrammen in deze categorie',
-                                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge
+                                            ?.copyWith(
                                               color: AppTheme.textSecondary,
                                             ),
                                       ),
                                     )
                                   : GridView.builder(
                                       padding: const EdgeInsets.all(16),
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: 3,
                                         crossAxisSpacing: 16,
                                         mainAxisSpacing: 16,
@@ -364,17 +393,21 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                       ),
                                       itemCount: currentPictograms.length,
                                       itemBuilder: (context, index) {
-                                        final pictogram = currentPictograms[index];
-                                        final isSelected = _selectedPictograms.contains(pictogram);
+                                        final pictogram =
+                                            currentPictograms[index];
+                                        final isSelected = _selectedPictograms
+                                            .contains(pictogram);
 
-                                        return _buildPictogramCard(pictogram, isSelected);
+                                        return _buildPictogramCard(
+                                            pictogram, isSelected);
                                       },
                                     ),
                     ),
                     // Bottom bar with Done and Request picto buttons
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppTheme.surfaceWhite,
                         boxShadow: [
@@ -395,21 +428,27 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const RequestPictoScreen(),
+                                      builder: (context) =>
+                                          const RequestPictoScreen(),
                                     ),
                                   );
                                 },
-                                icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 20),
+                                icon: const Icon(Icons.add_circle_outline,
+                                    color: Colors.white, size: 20),
                                 label: Text(
                                   localizations.requestPicto,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
                                       ),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryBlue,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -423,7 +462,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: _confirmSelection,
-                                  icon: const Icon(Icons.check, color: Colors.white, size: 20),
+                                  icon: const Icon(Icons.check,
+                                      color: Colors.white, size: 20),
                                   label: Text(
                                     '${localizations.done} (${_selectedPictograms.length})',
                                     style: const TextStyle(
@@ -434,7 +474,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppTheme.accentGreen,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -534,7 +575,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
           ),
         );
       },
-      errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(_getIconForKeyword(pictogram.keyword)),
+      errorBuilder: (context, error, stackTrace) =>
+          _buildFallbackIcon(_getIconForKeyword(pictogram.keyword)),
     );
   }
 
@@ -551,15 +593,18 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
 
   IconData _getIconForKeyword(String keyword) {
     final lowerKeyword = keyword.toLowerCase();
-    
+
     // Map keywords to Material icons
     if (lowerKeyword.contains('wakker') || lowerKeyword.contains('opstaan')) {
       return Icons.access_time;
-    } else if (lowerKeyword.contains('aankleden') || lowerKeyword.contains('kleren')) {
+    } else if (lowerKeyword.contains('aankleden') ||
+        lowerKeyword.contains('kleren')) {
       return Icons.checkroom;
-    } else if (lowerKeyword.contains('ontbijt') || lowerKeyword.contains('eten')) {
+    } else if (lowerKeyword.contains('ontbijt') ||
+        lowerKeyword.contains('eten')) {
       return Icons.restaurant;
-    } else if (lowerKeyword.contains('tanden') || lowerKeyword.contains('poets')) {
+    } else if (lowerKeyword.contains('tanden') ||
+        lowerKeyword.contains('poets')) {
       return Icons.cleaning_services;
     } else if (lowerKeyword.contains('school')) {
       return Icons.school;
@@ -573,26 +618,32 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       return Icons.eco;
     } else if (lowerKeyword.contains('water')) {
       return Icons.water_drop;
-    } else if (lowerKeyword.contains('wassen') || lowerKeyword.contains('douche')) {
+    } else if (lowerKeyword.contains('wassen') ||
+        lowerKeyword.contains('douche')) {
       return Icons.shower;
     } else if (lowerKeyword.contains('handen')) {
       return Icons.wash;
-    } else if (lowerKeyword.contains('haar') || lowerKeyword.contains('kammen')) {
+    } else if (lowerKeyword.contains('haar') ||
+        lowerKeyword.contains('kammen')) {
       return Icons.content_cut;
     } else if (lowerKeyword.contains('medicijn')) {
       return Icons.medication;
-    } else if (lowerKeyword.contains('blij') || lowerKeyword.contains('gelukkig')) {
+    } else if (lowerKeyword.contains('blij') ||
+        lowerKeyword.contains('gelukkig')) {
       return Icons.sentiment_very_satisfied;
-    } else if (lowerKeyword.contains('verdriet') || lowerKeyword.contains('droevig')) {
+    } else if (lowerKeyword.contains('verdriet') ||
+        lowerKeyword.contains('droevig')) {
       return Icons.sentiment_very_dissatisfied;
     } else if (lowerKeyword.contains('boos')) {
       return Icons.sentiment_dissatisfied;
-    } else if (lowerKeyword.contains('bang') || lowerKeyword.contains('angst')) {
+    } else if (lowerKeyword.contains('bang') ||
+        lowerKeyword.contains('angst')) {
       return Icons.sentiment_very_dissatisfied;
-    } else if (lowerKeyword.contains('vermoeid') || lowerKeyword.contains('moe')) {
+    } else if (lowerKeyword.contains('vermoeid') ||
+        lowerKeyword.contains('moe')) {
       return Icons.bedtime;
     }
-    
+
     // Default icon
     return Icons.image_outlined;
   }
