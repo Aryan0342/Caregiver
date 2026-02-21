@@ -29,7 +29,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   final CategoryService _categoryService = CategoryService();
 
   final Map<String, List<Pictogram>> _pictogramsByCategory = {};
-  final Set<Pictogram> _selectedPictograms = {};
+  final List<Pictogram> _selectedPictograms = [];
   List<Category> _categories = [];
   Category? _selectedCategory;
   bool _isLoading = false;
@@ -169,27 +169,36 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     }
   }
 
-  void _toggleSelection(Pictogram pictogram) {
+  int _selectedCount(Pictogram pictogram) {
+    return _selectedPictograms.where((item) => item == pictogram).length;
+  }
+
+  void _addSelection(Pictogram pictogram) {
     setState(() {
-      if (_selectedPictograms.contains(pictogram)) {
-        _selectedPictograms.remove(pictogram);
+      if (_selectedPictograms.length < widget.maxSelection) {
+        _selectedPictograms.add(pictogram);
       } else {
-        if (_selectedPictograms.length < widget.maxSelection) {
-          _selectedPictograms.add(pictogram);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Maximum ${widget.maxSelection} pictogrammen geselecteerd',
-              ),
-              backgroundColor: AppTheme.accentOrange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Maximum ${widget.maxSelection} pictogrammen geselecteerd',
             ),
-          );
-        }
+            backgroundColor: AppTheme.accentOrange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  void _removeSelection(Pictogram pictogram) {
+    setState(() {
+      final index = _selectedPictograms.indexOf(pictogram);
+      if (index != -1) {
+        _selectedPictograms.removeAt(index);
       }
     });
   }
@@ -395,11 +404,15 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                       itemBuilder: (context, index) {
                                         final pictogram =
                                             currentPictograms[index];
-                                        final isSelected = _selectedPictograms
-                                            .contains(pictogram);
+                                        final selectedCount =
+                                            _selectedCount(pictogram);
+                                        final isSelected = selectedCount > 0;
 
                                         return _buildPictogramCard(
-                                            pictogram, isSelected);
+                                          pictogram,
+                                          isSelected,
+                                          selectedCount,
+                                        );
                                       },
                                     ),
                     ),
@@ -491,7 +504,11 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
     );
   }
 
-  Widget _buildPictogramCard(Pictogram pictogram, bool isSelected) {
+  Widget _buildPictogramCard(
+    Pictogram pictogram,
+    bool isSelected,
+    int selectedCount,
+  ) {
     return Card(
       elevation: isSelected ? 4 : 2,
       shape: RoundedRectangleBorder(
@@ -502,7 +519,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
         ),
       ),
       child: InkWell(
-        onTap: () => _toggleSelection(pictogram),
+        onTap: () => _addSelection(pictogram),
+        onLongPress: () => _removeSelection(pictogram),
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
@@ -537,15 +555,19 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                 top: 8,
                 right: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryBlue,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 16,
+                  child: Text(
+                    '$selectedCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

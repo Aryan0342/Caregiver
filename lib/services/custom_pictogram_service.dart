@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/pictogram_model.dart';
 
 /// Service for managing custom pictograms stored in Firestore.
-/// 
+///
 /// All pictograms are now custom pictograms uploaded by admins via the admin panel.
 /// Images are stored in Cloudinary and URLs are stored in Firestore.
 class CustomPictogramService {
@@ -14,28 +14,29 @@ class CustomPictogramService {
   static const String _collectionName = 'custom_pictograms';
 
   /// Fetch pictograms by category, ordered alphabetically by keyword.
-  /// 
+  ///
   /// [categoryId] - The category ID to fetch pictograms for
   /// Returns a list of Pictogram objects sorted alphabetically by keyword
   Future<List<Pictogram>> getPictogramsByCategory(String categoryId) async {
     try {
       debugPrint('Fetching pictograms for category ID: $categoryId');
-      
+
       // Fetch all pictograms for the category
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('category', isEqualTo: categoryId)
           .where('isActive', isEqualTo: true)
           .get();
-      
+
       debugPrint('Query returned ${querySnapshot.docs.length} documents');
 
       // Map to Pictogram objects
       final pictograms = querySnapshot.docs.map((doc) {
         final data = doc.data();
-        
-        debugPrint('Pictogram: id=${doc.id}, keyword=${data['keyword']}, category=${data['category']}');
-        
+
+        debugPrint(
+            'Pictogram: id=${doc.id}, keyword=${data['keyword']}, category=${data['category']}');
+
         return Pictogram(
           id: _parsePictogramId(doc.id), // Negative ID for custom pictograms
           keyword: data['keyword'] as String? ?? 'Onbekend',
@@ -44,11 +45,12 @@ class CustomPictogramService {
           description: data['description'] as String?,
         );
       }).toList();
-      
+
       // Sort alphabetically by keyword (ascending)
       pictograms.sort((a, b) => a.keyword.compareTo(b.keyword));
-      
-      debugPrint('Returning ${pictograms.length} pictograms for category $categoryId (sorted alphabetically)');
+
+      debugPrint(
+          'Returning ${pictograms.length} pictograms for category $categoryId (sorted alphabetically)');
       return pictograms;
     } catch (e) {
       // Return empty list on error, but log detailed error
@@ -62,19 +64,19 @@ class CustomPictogramService {
   }
 
   /// Increment usage count for a pictogram when it's used in a set.
-  /// 
+  ///
   /// [pictogramId] - The Firestore document ID of the pictogram
   /// This is called when a pictogram is added to a set to track popularity
   Future<void> incrementUsageCount(String pictogramId) async {
     try {
       final docRef = _firestore.collection(_collectionName).doc(pictogramId);
-      
+
       // Use FieldValue.increment to atomically increment the count
       await docRef.update({
         'usageCount': FieldValue.increment(1),
         'lastUsedAt': FieldValue.serverTimestamp(),
       });
-      
+
       debugPrint('Incremented usage count for pictogram: $pictogramId');
     } catch (e) {
       // Log error but don't throw - usage tracking shouldn't break the app
@@ -83,15 +85,15 @@ class CustomPictogramService {
   }
 
   /// Increment usage count for multiple pictograms (batch operation).
-  /// 
+  ///
   /// [pictogramIds] - List of Firestore document IDs
   /// This is more efficient when adding multiple pictograms to a set
   Future<void> incrementUsageCountBatch(List<String> pictogramIds) async {
     if (pictogramIds.isEmpty) return;
-    
+
     try {
       final batch = _firestore.batch();
-      
+
       for (final pictogramId in pictogramIds) {
         final docRef = _firestore.collection(_collectionName).doc(pictogramId);
         batch.update(docRef, {
@@ -99,9 +101,10 @@ class CustomPictogramService {
           'lastUsedAt': FieldValue.serverTimestamp(),
         });
       }
-      
+
       await batch.commit();
-      debugPrint('Incremented usage count for ${pictogramIds.length} pictograms');
+      debugPrint(
+          'Incremented usage count for ${pictogramIds.length} pictograms');
     } catch (e) {
       // Log error but don't throw - usage tracking shouldn't break the app
       debugPrint('Error incrementing usage count batch: $e');
@@ -109,7 +112,7 @@ class CustomPictogramService {
   }
 
   /// Fetch all pictograms.
-  /// 
+  ///
   /// Returns a list of all active pictograms
   Future<List<Pictogram>> getAllPictograms() async {
     try {
@@ -156,36 +159,36 @@ class CustomPictogramService {
           .where('isActive', isEqualTo: true)
           .get();
 
-      debugPrint('Fetched ${querySnapshot.docs.length} active pictograms from database');
+      debugPrint(
+          'Fetched ${querySnapshot.docs.length} active pictograms from database');
 
       final normalizedQuery = _normalizeString(trimmedQuery.toLowerCase());
 
-      final results = querySnapshot.docs
-          .map((doc) {
-            final data = doc.data();
-            final keyword = data['keyword'] as String? ?? 'Onbekend';
-            return Pictogram(
-              id: _parsePictogramId(doc.id),
-              keyword: keyword,
-              category: data['category'] as String? ?? '',
-              imageUrl: data['imageUrl'] as String? ?? '',
-              description: data['description'] as String?,
-            );
-          })
-          .where((pictogram) {
-            final normalizedKeyword = _normalizeString(pictogram.keyword.toLowerCase());
-            final normalizedDescription = pictogram.description != null
-                ? _normalizeString(pictogram.description!.toLowerCase())
-                : '';
-            final matchesKeyword = normalizedKeyword.contains(normalizedQuery);
-            final matchesDescription = normalizedDescription.isNotEmpty &&
-                normalizedDescription.contains(normalizedQuery);
-            return matchesKeyword || matchesDescription;
-          })
-          .toList();
+      final results = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        final keyword = data['keyword'] as String? ?? 'Onbekend';
+        return Pictogram(
+          id: _parsePictogramId(doc.id),
+          keyword: keyword,
+          category: data['category'] as String? ?? '',
+          imageUrl: data['imageUrl'] as String? ?? '',
+          description: data['description'] as String?,
+        );
+      }).where((pictogram) {
+        final normalizedKeyword =
+            _normalizeString(pictogram.keyword.toLowerCase());
+        final normalizedDescription = pictogram.description != null
+            ? _normalizeString(pictogram.description!.toLowerCase())
+            : '';
+        final matchesKeyword = normalizedKeyword.contains(normalizedQuery);
+        final matchesDescription = normalizedDescription.isNotEmpty &&
+            normalizedDescription.contains(normalizedQuery);
+        return matchesKeyword || matchesDescription;
+      }).toList();
 
       results.sort((a, b) => a.keyword.compareTo(b.keyword));
-      debugPrint('Search returned ${results.length} matching pictograms (from whole DB)');
+      debugPrint(
+          'Search returned ${results.length} matching pictograms (from whole DB)');
       return results;
     } catch (e) {
       debugPrint('Error searching pictograms: $e');
@@ -215,6 +218,7 @@ class CustomPictogramService {
         .replaceAll('û', 'u')
         .replaceAll('ü', 'u')
         .replaceAll('ÿ', 'y')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
         .trim();
   }
 
@@ -230,7 +234,7 @@ class CustomPictogramService {
   }
 
   /// Get Firestore document ID from a Pictogram.
-  /// 
+  ///
   /// Since Pictogram.id is negative for custom pictograms, we need to reverse it.
   /// For non-numeric document IDs, we query Firestore by imageUrl (which should be unique).
   /// [pictogram] - The Pictogram to find the document ID for
@@ -240,11 +244,12 @@ class CustomPictogramService {
       // If the ID is negative, try to reverse it
       if (pictogram.id < 0) {
         final positiveId = -pictogram.id;
-        
+
         // Try to parse as document ID (if it was originally numeric)
         try {
           final docId = positiveId.toString();
-          final doc = await _firestore.collection(_collectionName).doc(docId).get();
+          final doc =
+              await _firestore.collection(_collectionName).doc(docId).get();
           if (doc.exists) {
             return docId;
           }
@@ -252,7 +257,7 @@ class CustomPictogramService {
           // Not a numeric ID, continue to query by imageUrl
         }
       }
-      
+
       // If reverse parsing didn't work, query by imageUrl (should be unique)
       if (pictogram.imageUrl.isNotEmpty) {
         final querySnapshot = await _firestore
@@ -260,12 +265,12 @@ class CustomPictogramService {
             .where('imageUrl', isEqualTo: pictogram.imageUrl)
             .limit(1)
             .get();
-        
+
         if (querySnapshot.docs.isNotEmpty) {
           return querySnapshot.docs.first.id;
         }
       }
-      
+
       // Fallback: query by keyword and category
       if (pictogram.keyword.isNotEmpty && pictogram.category.isNotEmpty) {
         final querySnapshot = await _firestore
@@ -274,12 +279,12 @@ class CustomPictogramService {
             .where('category', isEqualTo: pictogram.category)
             .limit(1)
             .get();
-        
+
         if (querySnapshot.docs.isNotEmpty) {
           return querySnapshot.docs.first.id;
         }
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('Error getting document ID for pictogram: $e');
@@ -288,29 +293,31 @@ class CustomPictogramService {
   }
 
   /// Get Firestore document IDs for multiple pictograms (batch lookup).
-  /// 
+  ///
   /// More efficient than calling getPictogramDocumentId multiple times.
   /// [pictograms] - List of Pictograms to find document IDs for
   /// Returns a map of Pictogram.id -> document ID
-  Future<Map<int, String>> getPictogramDocumentIds(List<Pictogram> pictograms) async {
+  Future<Map<int, String>> getPictogramDocumentIds(
+      List<Pictogram> pictograms) async {
     final result = <int, String>{};
-    
+
     if (pictograms.isEmpty) return result;
-    
+
     try {
       // Group by imageUrl for efficient querying
       final imageUrlMap = <String, List<Pictogram>>{};
       final keywordCategoryMap = <String, List<Pictogram>>{};
-      
+
       for (final pictogram in pictograms) {
         if (pictogram.imageUrl.isNotEmpty) {
           imageUrlMap.putIfAbsent(pictogram.imageUrl, () => []).add(pictogram);
-        } else if (pictogram.keyword.isNotEmpty && pictogram.category.isNotEmpty) {
+        } else if (pictogram.keyword.isNotEmpty &&
+            pictogram.category.isNotEmpty) {
           final key = '${pictogram.keyword}|${pictogram.category}';
           keywordCategoryMap.putIfAbsent(key, () => []).add(pictogram);
         }
       }
-      
+
       // Query by imageUrl (most reliable)
       for (final entry in imageUrlMap.entries) {
         final querySnapshot = await _firestore
@@ -318,7 +325,7 @@ class CustomPictogramService {
             .where('imageUrl', isEqualTo: entry.key)
             .limit(1)
             .get();
-        
+
         if (querySnapshot.docs.isNotEmpty) {
           final docId = querySnapshot.docs.first.id;
           for (final pictogram in entry.value) {
@@ -326,7 +333,7 @@ class CustomPictogramService {
           }
         }
       }
-      
+
       // Query by keyword+category for pictograms without imageUrl
       for (final entry in keywordCategoryMap.entries) {
         final parts = entry.key.split('|');
@@ -337,7 +344,7 @@ class CustomPictogramService {
               .where('category', isEqualTo: parts[1])
               .limit(1)
               .get();
-          
+
           if (querySnapshot.docs.isNotEmpty) {
             final docId = querySnapshot.docs.first.id;
             for (final pictogram in entry.value) {
@@ -348,7 +355,7 @@ class CustomPictogramService {
           }
         }
       }
-      
+
       return result;
     } catch (e) {
       debugPrint('Error getting document IDs for pictograms: $e');
@@ -357,7 +364,7 @@ class CustomPictogramService {
   }
 
   /// Check if a pictogram ID is a custom pictogram.
-  /// 
+  ///
   /// All pictograms are now custom pictograms (negative IDs).
   static bool isCustomPictogram(int id) {
     return id < 0;

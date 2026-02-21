@@ -601,7 +601,7 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
 
   Widget _buildPictogramCard(Pictogram pictogram, int index) {
     return Card(
-      key: ValueKey(pictogram.id),
+      key: ValueKey('pictogram-${pictogram.id}-$index'),
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
