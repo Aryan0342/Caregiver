@@ -370,51 +370,53 @@ class _MySetsScreenState extends State<MySetsScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.link_rounded,
-              size: 80,
-              color: AppTheme.primaryBlue,
-            ),
-            const SizedBox(height: 24),
-            Builder(
-              builder: (context) {
-                final localizations = LanguageProvider.localizationsOf(context);
-                return Column(
-                  children: [
-                    Text(
-                      localizations.importSet,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      localizations.pasteShareLink,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppTheme.textSecondary,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.link_rounded,
+                size: 80,
+                color: AppTheme.primaryBlue,
+              ),
+              const SizedBox(height: 24),
+              Builder(
+                builder: (context) {
+                  final localizations = LanguageProvider.localizationsOf(context);
+                  return Column(
+                    children: [
+                      Text(
+                        localizations.importSet,
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        localizations.pasteShareLink,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.add_link),
+                        label: Text(localizations.importPictogramSet),
+                        onPressed: () => _showImportDialog(context, shareService),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
                           ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.add_link),
-                      label: Text(localizations.importPictogramSet),
-                      onPressed: () => _showImportDialog(context, shareService),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
