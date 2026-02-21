@@ -382,7 +382,8 @@ class _MySetsScreenState extends State<MySetsScreen> {
               const SizedBox(height: 24),
               Builder(
                 builder: (context) {
-                  final localizations = LanguageProvider.localizationsOf(context);
+                  final localizations =
+                      LanguageProvider.localizationsOf(context);
                   return Column(
                     children: [
                       Text(
@@ -401,7 +402,8 @@ class _MySetsScreenState extends State<MySetsScreen> {
                       ElevatedButton.icon(
                         icon: const Icon(Icons.add_link),
                         label: Text(localizations.importPictogramSet),
-                        onPressed: () => _showImportDialog(context, shareService),
+                        onPressed: () =>
+                            _showImportDialog(context, shareService),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
                           foregroundColor: Colors.white,
