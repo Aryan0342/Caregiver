@@ -388,9 +388,11 @@ class AppLocalizations {
       : 'Create Pictogram Series';
   String get welcomeMessage =>
       _language == AppLanguage.dutch ? 'Welkom' : 'Welcome';
+  String get pictoLibrary =>
+      _language == AppLanguage.dutch ? 'Pictotheek' : 'Picto library';
   String get guideSubtitle => _language == AppLanguage.dutch
-      ? 'Start een nieuwe pictoreeks of open een bestaande en breng je dag in beeld.'
-      : 'Start a new pictogram set or open an existing one and visualize your day.';
+      ? 'Maak een nieuwe pictoreeks of open een bestaande en breng je dag in beeld.'
+      : 'Create a new pictogram set or open an existing one and visualize your day.';
   String get togetherStepByStep => _language == AppLanguage.dutch
       ? 'Samen stap voor stap'
       : 'Together step by step';
@@ -400,7 +402,9 @@ class AppLocalizations {
   String get createNewSet => _language == AppLanguage.dutch
       ? 'Maak een nieuwe pictogramreeks'
       : 'Create a new pictogram sequence';
-  String get namingGuide => _language == AppLanguage.dutch ? 'Naam van je pictoreeks' : 'name of your icon series';
+  String get namingGuide => _language == AppLanguage.dutch
+      ? 'Naam van je pictoreeks'
+      : 'name of your icon series';
   String get myPictogramSets => _language == AppLanguage.dutch
       ? 'Opgeslagen pictoreeksen'
       : 'Saved icon sets';
@@ -408,9 +412,8 @@ class AppLocalizations {
       _language == AppLanguage.dutch ? 'Opgeslagen pictoreeksen' : 'Saved sets';
   String get recentAutoSaved =>
       _language == AppLanguage.dutch ? 'Laatste 5 pictoreeksen' : 'Last 5 sets';
-  String get importPictogramSet => _language == AppLanguage.dutch
-      ? '🔗 pictoreeks importeren'
-      : '🔗 Import set';
+  String get importPictogramSet =>
+      _language == AppLanguage.dutch ? 'pictoreeks importeren' : 'Import set';
   String get noAutoSavedSets => _language == AppLanguage.dutch
       ? 'Geen recente auto-opgeslagen pictoreeksen'
       : 'No recent auto-saved sets';

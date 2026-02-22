@@ -54,20 +54,29 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           actions: [
             // Modify button in top right
             Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: TextButton.icon(
-                icon: Icon(Icons.edit, color: AppTheme.accentOrange, size: 20),
-                label: Text(
-                  localizations.modify,
-                  style: TextStyle(
-                    color: AppTheme.accentOrange,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: GestureDetector(
+                  onTap: () {
+                    _modifySequence();
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_rounded,
+                          color: AppTheme.accentOrange, size: 24),
+                      const SizedBox(width: 4),
+                      Text(
+                        localizations.modify,
+                        style: TextStyle(
+                          color: AppTheme.accentOrange,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                onPressed: () {
-                  _modifySequence();
-                },
               ),
             ),
           ],
@@ -813,124 +822,127 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
 
-    return AlertDialog(
-      title: Text(localizations.modifySequence),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              localizations.modifySequenceDescription,
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            // Add pictogram button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _addPictograms,
-                icon: const Icon(Icons.add_circle_outline),
-                label: Text(localizations.addPictograms),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: BorderSide(color: AppTheme.primaryBlue),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: 700, maxWidth: 800),
+        child: AlertDialog(
+          title: Text(localizations.modifySequence),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                localizations.modifySequenceDescription,
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              // Add pictogram button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _addPictograms,
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: Text(localizations.addPictograms),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: AppTheme.primaryBlue),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Flexible(
-              child: ReorderableListView.builder(
-                shrinkWrap: true,
-                itemCount: _modifiedSequence.length,
-                onReorder: _reorderPictogram,
-                itemBuilder: (context, index) {
-                  final pictogram = _modifiedSequence[index];
-                  return _buildPictogramListItem(pictogram, index);
-                },
+              const SizedBox(height: 16),
+              Flexible(
+                child: ReorderableListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _modifiedSequence.length,
+                  onReorder: _reorderPictogram,
+                  itemBuilder: (context, index) {
+                    final pictogram = _modifiedSequence[index];
+                    return _buildPictogramListItem(pictogram, index);
+                  },
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(localizations.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(_modifiedSequence),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentOrange,
+              ),
+              child: Text(localizations.save),
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(localizations.cancel),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_modifiedSequence),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accentOrange,
-          ),
-          child: Text(localizations.save),
-        ),
-      ],
     );
   }
 
   Widget _buildPictogramListItem(Pictogram pictogram, int index) {
-    return Card(
+    return Dismissible(
       key: ValueKey('${pictogram.id}-$index'),
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(7),
-            child: pictogram.imageUrl.isNotEmpty
-                ? Image.network(
-                    pictogram.imageUrl, // Cloudinary URL
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.primaryBlue),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Icon(
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        color: Colors.red[400],
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+      ),
+      onDismissed: (_) => _removePictogram(index),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: pictogram.imageUrl.isNotEmpty
+                  ? Image.network(
+                      pictogram.imageUrl, // Cloudinary URL
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                AppTheme.primaryBlue),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.image_outlined,
+                        size: 24,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    )
+                  : Icon(
                       Icons.image_outlined,
                       size: 24,
                       color: AppTheme.primaryBlue,
                     ),
-                  )
-                : Icon(
-                    Icons.image_outlined,
-                    size: 24,
-                    color: AppTheme.primaryBlue,
-                  ),
-          ),
-        ),
-        title: Text(
-          pictogram.keyword,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text('Stap ${index + 1}'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              color: Colors.red[400],
-              splashRadius: 20,
-              onPressed: () => _removePictogram(index),
-              tooltip: LanguageProvider.localizationsOf(context).delete,
             ),
-            const Icon(Icons.drag_handle),
-          ],
+          ),
+          title: Text(
+            pictogram.keyword,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+            maxLines: 3,
+            overflow: TextOverflow.visible,
+            softWrap: true,
+          ),
+          subtitle: Text('Stap ${index + 1}'),
+          trailing: const Icon(Icons.drag_handle),
         ),
       ),
     );

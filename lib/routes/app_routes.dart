@@ -18,4 +18,5 @@ class AppRoutes {
   static const String requestPicto = '/request-picto';
   static const String emailVerification = '/email-verification';
   static const String profile = '/profile';
+  static const String pictoLibrary = '/picto-library';
 }

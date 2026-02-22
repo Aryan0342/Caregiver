@@ -24,6 +24,7 @@ import 'screens/email_verification_screen.dart';
 import 'screens/client_mode_entry_screen.dart';
 import 'screens/request_picto_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/picto_library_screen.dart';
 import 'services/language_service.dart';
 import 'services/setup_service.dart';
 import 'services/pin_auth_service.dart';
@@ -149,6 +150,7 @@ class _MyAppState extends State<MyApp> {
           AppRoutes.emailVerification: (context) =>
               const EmailVerificationScreen(),
           AppRoutes.profile: (context) => const ProfileScreen(),
+          AppRoutes.pictoLibrary: (context) => const PictoLibraryScreen(),
         },
         // Fallback for unknown routes
         onUnknownRoute: (settings) {

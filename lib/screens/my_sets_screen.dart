@@ -702,7 +702,35 @@ class _MySetsScreenState extends State<MySetsScreen> {
 
     try {
       if (action == _SetMenuAction.exportPdf) {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: Card(
+              margin: const EdgeInsets.all(32),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: AppTheme.primaryBlue),
+                    const SizedBox(height: 16),
+                    Text(
+                      'PDF genereren...',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
         await pdfService.printSet(set);
+
+        // Close loading indicator
+        if (context.mounted) Navigator.of(context).pop();
         return;
       }
 

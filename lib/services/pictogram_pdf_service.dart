@@ -18,49 +18,53 @@ class PictogramPdfService {
     doc.addPage(
       pw.MultiPage(
         build: (context) => [
-          pw.Text(
-            set.name,
-            style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(left: 40, bottom: 20),
+            child: pw.Text(
+              set.name,
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
           ),
-          pw.SizedBox(height: 16),
-          pw.GridView(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.85,
-            children: List.generate(set.pictograms.length, (index) {
-              final pictogram = set.pictograms[index];
-              final image = images[index];
-              return pw.Container(
-                padding: const pw.EdgeInsets.all(8),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(width: 1, color: PdfColors.grey300),
-                  borderRadius: pw.BorderRadius.circular(8),
-                ),
-                child: pw.Column(
-                  mainAxisSize: pw.MainAxisSize.min,
-                  children: [
-                    if (image != null)
-                      pw.Image(image,
-                          width: 72, height: 72, fit: pw.BoxFit.contain)
-                    else
-                      pw.Container(
-                        width: 72,
-                        height: 72,
-                        color: PdfColors.grey200,
-                      ),
-                    pw.SizedBox(height: 6),
-                    pw.Text(
-                      pictogram.keyword,
-                      textAlign: pw.TextAlign.center,
-                      style: const pw.TextStyle(fontSize: 10),
+          ...List.generate(set.pictograms.length, (index) {
+            final pictogram = set.pictograms[index];
+            final image = images[index];
+            return pw.Padding(
+              padding:
+                  const pw.EdgeInsets.only(bottom: 8, left: 100, right: 100),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  if (image != null)
+                    pw.Image(image,
+                        width: 80, height: 80, fit: pw.BoxFit.contain)
+                  else
+                    pw.Container(
+                      width: 80,
+                      height: 80,
+                      color: PdfColors.grey200,
                     ),
-                  ],
-                ),
-              );
-            }),
-          ),
+                  pw.SizedBox(width: 12),
+                  pw.Expanded(
+                    child: pw.Text(
+                      pictogram.keyword,
+                      style: const pw.TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.center,
+          margin: const pw.EdgeInsets.only(bottom: 8),
+          child: pw.Text(
+            'Je Dag in Beeld - jedaginbeeld.nl',
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
       ),
     );
 
@@ -73,7 +77,10 @@ class PictogramPdfService {
         try {
           final uri = Uri.tryParse(pictogram.imageUrl);
           if (uri == null) return null;
-          final response = await http.get(uri);
+          final response = await http.get(uri).timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => http.Response('', 408),
+              );
           if (response.statusCode != 200) return null;
           return pw.MemoryImage(response.bodyBytes);
         } catch (_) {
