@@ -175,22 +175,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
 
   void _addSelection(Pictogram pictogram) {
     setState(() {
-      if (_selectedPictograms.length < widget.maxSelection) {
-        _selectedPictograms.add(pictogram);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Maximum ${widget.maxSelection} pictogrammen geselecteerd',
-            ),
-            backgroundColor: AppTheme.accentOrange,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
+      _selectedPictograms.add(pictogram);
     });
   }
 
