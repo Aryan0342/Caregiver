@@ -193,12 +193,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.library_books_rounded,
-                                      color: AppTheme.accentOrange, size: 24),
+                                      color: AppTheme.primaryBlue, size: 24),
                                   const SizedBox(width: 8),
                                   Text(
                                     localizations.pictoLibrary,
                                     style: TextStyle(
-                                      color: AppTheme.accentOrange,
+                                      color: AppTheme.primaryBlue,
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
                                     ),
