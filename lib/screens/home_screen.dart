@@ -84,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         flagEmoji,
-                        style: const TextStyle(fontSize: 22),
+                        style: const TextStyle(fontSize: 16),
                       ),
                       const SizedBox(width: 6),
                       IconButton(
@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppTheme.textSecondary,
                           fontSize: 16,
                           height: 1.5,
+                          fontStyle: FontStyle.italic,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -176,6 +177,35 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () {
                               Navigator.pushNamed(context, AppRoutes.mySets);
                             },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Tertiary action: "Gehele pictotheek" (Text button style)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                  context, AppRoutes.pictoLibrary);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.library_books_rounded,
+                                      color: AppTheme.accentOrange, size: 24),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    localizations.pictoLibrary,
+                                    style: TextStyle(
+                                      color: AppTheme.accentOrange,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
