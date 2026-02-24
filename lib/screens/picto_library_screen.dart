@@ -27,6 +27,7 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
   String? _currentScrollLetter;
   bool _showScrollIndicator = false;
   Timer? _scrollIndicatorTimer;
+  final GlobalKey _letterIndexKey = GlobalKey();
 
   // Map to store the index position of each letter
   final Map<String, int> _letterIndexMap = {};
@@ -231,14 +232,13 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
       // Calculate scroll position
       final position = rowIndex * (itemHeight + mainAxisSpacing);
 
-      _scrollController.animateTo(
-        position,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
+      // Use jumpTo for instant scrolling during drag
+      _scrollController.jumpTo(
+        position.clamp(0.0, _scrollController.position.maxScrollExtent),
       );
 
-      // Reset selected letter after animation
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      // Reset selected letter after a short delay
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           setState(() {
             _selectedLetter = null;
@@ -246,6 +246,41 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
         }
       });
     }
+  }
+
+  void _handleLetterDrag(Offset globalPosition) {
+    final renderObject = _letterIndexKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox) return;
+
+    final localPosition = renderObject.globalToLocal(globalPosition);
+    final itemHeight = renderObject.size.height / _alphabet.length;
+    final index =
+        (localPosition.dy / itemHeight).floor().clamp(0, _alphabet.length - 1);
+    final letter = _alphabet[index];
+
+    _updateScrollIndicator(letter);
+
+    if (_letterIndexMap.containsKey(letter)) {
+      _scrollToLetter(letter);
+    }
+  }
+
+  void _updateScrollIndicator(String letter) {
+    if (_currentScrollLetter == letter && _showScrollIndicator) return;
+
+    setState(() {
+      _currentScrollLetter = letter;
+      _showScrollIndicator = true;
+    });
+
+    _scrollIndicatorTimer?.cancel();
+    _scrollIndicatorTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() {
+          _showScrollIndicator = false;
+        });
+      }
+    });
   }
 
   @override
@@ -539,37 +574,45 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
       right: 0,
       top: 80,
       bottom: 0,
-      child: Container(
-        width: 24,
-        color: Colors.transparent,
-        child: ListView.builder(
-          itemCount: _alphabet.length,
-          itemBuilder: (context, index) {
-            final letter = _alphabet[index];
-            final hasContent = _letterIndexMap.containsKey(letter);
-            final isSelected = _selectedLetter == letter;
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragStart: (details) =>
+            _handleLetterDrag(details.globalPosition),
+        onVerticalDragUpdate: (details) =>
+            _handleLetterDrag(details.globalPosition),
+        onTapDown: (details) => _handleLetterDrag(details.globalPosition),
+        child: Container(
+          key: _letterIndexKey,
+          width: 24,
+          color: Colors.transparent,
+          child: Column(
+            children: _alphabet.map((letter) {
+              final hasContent = _letterIndexMap.containsKey(letter);
+              final isSelected = _selectedLetter == letter;
 
-            return GestureDetector(
-              onTap: hasContent ? () => _scrollToLetter(letter) : null,
-              child: Container(
-                height: 20,
-                alignment: Alignment.center,
-                child: Text(
-                  letter,
-                  style: TextStyle(
-                    fontSize: isSelected ? 14 : 11,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: hasContent
-                        ? (isSelected
-                            ? AppTheme.primaryBlue
-                            : AppTheme.textPrimary)
-                        : AppTheme.textSecondary.withOpacity(0.3),
+              return Expanded(
+                child: GestureDetector(
+                  onTap: hasContent ? () => _scrollToLetter(letter) : null,
+                  child: Container(
+                    alignment: Alignment.center,
+                    child: Text(
+                      letter,
+                      style: TextStyle(
+                        fontSize: isSelected ? 14 : 11,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: hasContent
+                            ? (isSelected
+                                ? AppTheme.primaryBlue
+                                : AppTheme.textPrimary)
+                            : AppTheme.textSecondary.withOpacity(0.3),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
