@@ -7,7 +7,7 @@ import '../services/language_service.dart';
 import '../providers/language_provider.dart';
 
 /// Screen for requesting a new pictogram.
-/// 
+///
 /// Allows users to request missing pictograms that they need.
 class RequestPictoScreen extends StatefulWidget {
   const RequestPictoScreen({super.key});
@@ -22,14 +22,14 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
   final _descriptionController = TextEditingController();
   final _requestService = PictoRequestService();
   final _categoryService = CategoryService();
-  
+
   String? _selectedCategory;
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
   bool _isSubmitting = false;
   String? _errorMessage;
   String? _successMessage;
-  
+
   static const String _notInListValue = '__not_in_list__';
 
   @override
@@ -48,14 +48,23 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
   Future<void> _loadCategories() async {
     try {
       final categories = await _categoryService.getAllCategories();
-      setState(() {
-        _categories = categories;
-        _isLoadingCategories = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingCategories = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isLoadingCategories = false;
+        });
+      }
+      // Debug: print category count
+      debugPrint('RequestPictoScreen: Loaded ${categories.length} categories');
+    } catch (e, stackTrace) {
+      debugPrint('RequestPictoScreen: Error loading categories: $e');
+      debugPrint('RequestPictoScreen: Stack trace: $stackTrace');
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+          _errorMessage = 'Failed to load categories: $e';
+        });
+      }
     }
   }
 
@@ -102,11 +111,11 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
       final categoryToSubmit = _selectedCategory == _notInListValue
           ? _descriptionController.text.trim()
           : _selectedCategory!;
-      
+
       final descriptionToSubmit = _selectedCategory == _notInListValue
           ? null
-          : (_descriptionController.text.trim().isEmpty 
-              ? null 
+          : (_descriptionController.text.trim().isEmpty
+              ? null
               : _descriptionController.text.trim());
 
       await _requestService.submitRequest(
@@ -145,7 +154,7 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -211,67 +220,160 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
                 // Category dropdown
                 _isLoadingCategories
                     ? const Center(child: CircularProgressIndicator())
-                    : DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          labelText: localizations.category,
-                          hintText: localizations.selectCategory,
-                          prefixIcon: const Icon(Icons.category),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          filled: true,
-                          fillColor: AppTheme.surfaceWhite,
-                        ),
-                        style: const TextStyle(fontSize: 18, color: Colors.black),
-                        dropdownColor: AppTheme.surfaceWhite,
-                        menuMaxHeight: 300,
-                        isExpanded: true,
-                        items: [
-                          // Admin-created categories
-                          ..._categories.map((category) {
-                            final languageService = LanguageProvider.languageServiceOf(context);
-                            final languageCode = languageService.currentLanguage == AppLanguage.dutch ? 'nl' : 'en';
-                            return DropdownMenuItem(
-                              value: category.id,
-                              child: Text(
-                                category.getLocalizedName(languageCode),
-                                style: const TextStyle(color: Colors.black, fontSize: 18),
-                                overflow: TextOverflow.ellipsis,
+                    : _categories.isEmpty
+                        ? Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border:
+                                      Border.all(color: Colors.orange.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.warning,
+                                        color: Colors.orange.shade700),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'No categories available. Please contact admin.',
+                                        style: TextStyle(
+                                            color: Colors.orange.shade900),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          }),
-                          // "Not in list" option
-                          DropdownMenuItem(
-                            value: _notInListValue,
-                            child: Text(
-                              localizations.notInListDescribe,
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 18,
-                                fontStyle: FontStyle.italic,
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                decoration: InputDecoration(
+                                  labelText: localizations.category,
+                                  hintText: localizations.selectCategory,
+                                  prefixIcon: const Icon(Icons.category),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  filled: true,
+                                  fillColor: AppTheme.surfaceWhite,
+                                ),
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.black),
+                                dropdownColor: AppTheme.surfaceWhite,
+                                items: [
+                                  DropdownMenuItem(
+                                    value: _notInListValue,
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.7,
+                                      child: Text(
+                                        localizations.notInListDescribe,
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedCategory = value;
+                                    _errorMessage = null;
+                                  });
+                                },
+                                value: _selectedCategory,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return localizations.fieldRequired;
+                                  }
+                                  return null;
+                                },
                               ),
-                              overflow: TextOverflow.ellipsis,
+                            ],
+                          )
+                        : DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: localizations.category,
+                              hintText: localizations.selectCategory,
+                              prefixIcon: const Icon(Icons.category),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.surfaceWhite,
                             ),
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.black),
+                            dropdownColor: AppTheme.surfaceWhite,
+                            menuMaxHeight: 300,
+                            isExpanded: true,
+                            items: [
+                              // Admin-created categories
+                              ..._categories.map((category) {
+                                final languageService =
+                                    LanguageProvider.languageServiceOf(context);
+                                final languageCode =
+                                    languageService.currentLanguage ==
+                                            AppLanguage.dutch
+                                        ? 'nl'
+                                        : 'en';
+                                return DropdownMenuItem(
+                                  value: category.id,
+                                  child: SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.7,
+                                    child: Text(
+                                      category.getLocalizedName(languageCode),
+                                      style: const TextStyle(
+                                          color: Colors.black, fontSize: 16),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                );
+                              }),
+                              // "Not in list" option
+                              DropdownMenuItem(
+                                value: _notInListValue,
+                                child: SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.7,
+                                  child: Text(
+                                    localizations.notInListDescribe,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategory = value;
+                                _errorMessage = null;
+                                // Clear description if switching away from "not in list"
+                                if (value != _notInListValue) {
+                                  _descriptionController.clear();
+                                }
+                              });
+                            },
+                            value: _selectedCategory,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return localizations.fieldRequired;
+                              }
+                              return null;
+                            },
                           ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCategory = value;
-                            _errorMessage = null;
-                            // Clear description if switching away from "not in list"
-                            if (value != _notInListValue) {
-                              _descriptionController.clear();
-                            }
-                          });
-                        },
-                        value: _selectedCategory,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return localizations.fieldRequired;
-                          }
-                          return null;
-                        },
-                      ),
                 const SizedBox(height: 24),
 
                 // Description field (required if "not in list" is selected, otherwise optional)
@@ -313,7 +415,8 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -340,11 +443,13 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.accentGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.accentGreen.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: AppTheme.accentGreen.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle, color: AppTheme.accentGreen),
+                        const Icon(Icons.check_circle,
+                            color: AppTheme.accentGreen),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -377,7 +482,8 @@ class _RequestPictoScreenState extends State<RequestPictoScreen> {
                             width: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
