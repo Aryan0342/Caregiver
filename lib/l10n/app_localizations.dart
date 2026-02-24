@@ -575,6 +575,9 @@ class AppLocalizations {
       ? 'Pictogrammen worden automatisch opgeslagen voor offline gebruik. U kunt de app gebruiken zonder internetverbinding zodra de pictogrammen zijn geladen.'
       : 'Pictograms are automatically saved for offline use. You can use the app without an internet connection once the pictograms are loaded.';
   String get version => _language == AppLanguage.dutch ? 'Versie' : 'Version';
+  String get copyrightNotice => _language == AppLanguage.dutch
+      ? 'Alle pictogrammen in de app Je Dag in Beeld zijn auteursrechtelijk beschermd. Het is toegestaan deze pictogrammen te gebruiken voor persoonlijke en niet-commerciële doeleinden, zoals thuisgebruik, onderwijs of zorgondersteuning.\n\nCommercieel gebruik, verspreiding, verkoop, aanpassing of opname in andere producten of diensten is niet toegestaan zonder voorafgaande schriftelijke toestemming.\n\nVoor zakelijke toepassingen of andere vormen van commercieel gebruik kunt u contact opnemen via: info@jedaginbeeld.nl'
+      : 'All pictograms in the Je Dag in Beeld app are protected by copyright. These pictograms may be used for personal and non-commercial purposes, such as home use, education, or care support.\n\nCommercial use, distribution, sale, modification, or inclusion in other products or services is not permitted without prior written permission.\n\nFor business applications or other forms of commercial use, please contact: info@jedaginbeeld.nl';
   String get pictogramsFrom => _language == AppLanguage.dutch
       ? 'Pictogrammen worden beheerd door beheerders'
       : 'Pictograms are managed by administrators';
@@ -813,8 +816,7 @@ class AppLocalizations {
       _language == AppLanguage.dutch ? 'verwijderd' : 'deleted';
   String get deleteFailed =>
       _language == AppLanguage.dutch ? 'Verwijderen mislukt' : 'Delete failed';
-  String get failed =>
-      _language == AppLanguage.dutch ? 'mislukt' : 'failed';
+  String get failed => _language == AppLanguage.dutch ? 'mislukt' : 'failed';
 }
 
 // Helper to get localizations from context

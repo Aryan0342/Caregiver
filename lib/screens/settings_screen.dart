@@ -185,6 +185,13 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
               const SizedBox(height: 16),
               Divider(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
               const SizedBox(height: 12),
+              Text(
+                localizations.copyrightNotice,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Icon(
@@ -195,26 +202,7 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${localizations.version} 1.0.1',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.image_outlined,
-                    size: 16,
-                    color: AppTheme.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      localizations.pictogramsFrom,
+                      '${localizations.version} 1.0.2',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.textSecondary,
                           ),
