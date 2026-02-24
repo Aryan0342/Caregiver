@@ -82,9 +82,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        flagEmoji,
-                        style: const TextStyle(fontSize: 16),
+                      GestureDetector(
+                        onTap: () => _showLanguageSelector(context),
+                        child: Text(
+                          flagEmoji,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ),
                       const SizedBox(width: 6),
                       IconButton(
@@ -120,17 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  // Subtitle describing the actions
-                  Text(
-                    localizations.guideSubtitle,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontSize: 16,
-                          height: 1.5,
-                          fontStyle: FontStyle.italic,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
+                  // Subtitle describing the actions - last 5 words italicized
+                  _buildSubtitleWithPartialItalics(
+                      context, localizations.guideSubtitle),
                 ],
               ),
             ),
@@ -281,6 +276,86 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Build subtitle text with only the last 5 words italicized
+  Widget _buildSubtitleWithPartialItalics(BuildContext context, String text) {
+    final words = text.split(' ');
+    final regularWords =
+        words.length > 5 ? words.sublist(0, words.length - 5) : [];
+    final italicWords =
+        words.length > 5 ? words.sublist(words.length - 5) : words;
+
+    final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: AppTheme.textSecondary,
+          fontSize: 16,
+          height: 1.5,
+        );
+
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          if (regularWords.isNotEmpty)
+            TextSpan(
+              text: '${regularWords.join(' ')} ',
+              style: baseStyle,
+            ),
+          TextSpan(
+            text: italicWords.join(' '),
+            style: baseStyle?.copyWith(fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  /// Show language selector dialog
+  void _showLanguageSelector(BuildContext context) {
+    final languageService =
+        LanguageProvider.of(context)?.languageService ?? LanguageService();
+    final localizations = LanguageProvider.localizationsOf(context);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.language, color: AppTheme.primaryBlue),
+            const SizedBox(width: 12),
+            Text(localizations.languageLabel),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: AppLanguage.values.map((language) {
+            return RadioListTile<AppLanguage>(
+              title: Text(language.displayName),
+              value: language,
+              groupValue: languageService.currentLanguage,
+              onChanged: (value) {
+                if (value != null) {
+                  languageService.setLanguage(value);
+                  Navigator.of(context).pop();
+                }
+              },
+              activeColor: AppTheme.primaryBlue,
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              localizations.close,
+              style: TextStyle(color: AppTheme.primaryBlue),
+            ),
+          ),
+        ],
       ),
     );
   }
