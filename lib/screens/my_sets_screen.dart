@@ -10,7 +10,7 @@ import 'edit_set_screen.dart';
 import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
 
-enum _SetMenuAction { exportPdf, shareLink }
+enum _SetMenuAction { exportPdf, shareLink, delete }
 
 class MySetsScreen extends StatefulWidget {
   const MySetsScreen({super.key});
@@ -511,6 +511,20 @@ class _MySetsScreenState extends State<MySetsScreen> {
                           ],
                         ),
                       ),
+                      PopupMenuItem(
+                        value: _SetMenuAction.delete,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.delete,
+                                size: 18, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Text(
+                              localizations.delete,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      ),
                     ];
                   },
                 ),
@@ -734,8 +748,97 @@ class _MySetsScreenState extends State<MySetsScreen> {
         return;
       }
 
-      final link = await shareService.createShareLink(set);
-      await Share.share('${set.name}\n$link');
+      if (action == _SetMenuAction.shareLink) {
+        final link = await shareService.createShareLink(set);
+        try {
+          final result = await Share.share(
+            '${set.name}\n$link',
+            subject: localizations.shareSet,
+          );
+          if (result.status == ShareResultStatus.dismissed) {
+            // User dismissed the share sheet, no error
+            return;
+          }
+        } on Exception catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content:
+                    Text('${localizations.shareSet} ${localizations.failed}: $e'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          return;
+        }
+      } else if (action == _SetMenuAction.delete) {
+        // Show confirmation dialog
+        final shouldDelete = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                title: Text(localizations.delete),
+                content: Text(
+                  '${localizations.areYouSure} ${set.name}?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      localizations.cancel,
+                      style: TextStyle(color: AppTheme.primaryBlue),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(
+                      localizations.delete,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+
+        if (shouldDelete && context.mounted) {
+          try {
+            await SetService().deleteSet(set.id);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${set.name} ${localizations.deleted}'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+              setState(() {});
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(localizations.deleteFailed),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }
+          }
+        }
+        return;
+      }
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
