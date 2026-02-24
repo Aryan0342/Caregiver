@@ -29,6 +29,10 @@ class LanguageProvider extends InheritedWidget {
 
   @override
   bool updateShouldNotify(LanguageProvider oldWidget) {
-    return languageService.currentLanguage != oldWidget.languageService.currentLanguage;
+    // Compare the localizations objects directly instead of the language service
+    // This ensures that when a new localizations object is created with updated language,
+    // dependents are properly notified to rebuild
+    return localizations.currentLanguage !=
+        oldWidget.localizations.currentLanguage;
   }
 }

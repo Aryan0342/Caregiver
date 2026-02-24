@@ -6,6 +6,9 @@ class AppLocalizations {
 
   AppLocalizations(AppLanguage language) : _language = language;
 
+  // Expose the current language for comparison in LanguageProvider
+  AppLanguage get currentLanguage => _language;
+
   // App name
   String get appName =>
       _language == AppLanguage.dutch ? 'Je Dag in Beeld' : 'Your Day in View';
@@ -802,6 +805,16 @@ class AppLocalizations {
   String get passwordMinLength => _language == AppLanguage.dutch
       ? 'Wachtwoord moet minimaal 6 tekens lang zijn'
       : 'Password must be at least 6 characters long';
+
+  // Delete confirmation and messages
+  String get areYouSure =>
+      _language == AppLanguage.dutch ? 'Weet u zeker?' : 'Are you sure?';
+  String get deleted =>
+      _language == AppLanguage.dutch ? 'verwijderd' : 'deleted';
+  String get deleteFailed =>
+      _language == AppLanguage.dutch ? 'Verwijderen mislukt' : 'Delete failed';
+  String get failed =>
+      _language == AppLanguage.dutch ? 'mislukt' : 'failed';
 }
 
 // Helper to get localizations from context
