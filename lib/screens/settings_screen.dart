@@ -202,7 +202,7 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${localizations.version} 1.0.2',
+                      '${localizations.version} 1.1.1',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.textSecondary,
                           ),
