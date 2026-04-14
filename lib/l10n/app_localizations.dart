@@ -394,8 +394,35 @@ class AppLocalizations {
   String get pictoLibrary =>
       _language == AppLanguage.dutch ? 'Pictotheek' : 'Picto library';
   String get guideSubtitle => _language == AppLanguage.dutch
-      ? 'Maak een nieuwe pictoreeks of open een bestaande en breng je dag in beeld.'
+      ? 'Voeg cliënten toe aan je cliëntgroep, maak een nieuwe pictoreeks of open een bestaande en breng Je Dag in Beeld.'
       : 'Create a new pictogram set or open an existing one and visualize your day.';
+  String get myClients =>
+      _language == AppLanguage.dutch ? 'Mijn cliënten' : 'My clients';
+  String get createNewClient => _language == AppLanguage.dutch
+      ? 'Nieuwe cliënt toevoegen'
+      : 'Create a new client';
+  String get addClient =>
+      _language == AppLanguage.dutch ? 'Cliënt toevoegen' : 'Add client';
+  String get noClientsYet =>
+      _language == AppLanguage.dutch ? 'Nog geen cliënten' : 'No clients yet';
+  String get noClientsAvailable => _language == AppLanguage.dutch
+      ? 'Geen cliënten beschikbaar'
+      : 'No clients available';
+  String get switchClient =>
+      _language == AppLanguage.dutch ? 'Wijzig cliënt' : 'Change client';
+  String get switchClientActionLabel =>
+      _language == AppLanguage.dutch ? 'Wijziging cliënt' : 'Change client';
+  String get chooseClient => _language == AppLanguage.dutch ? 'Kies' : 'Select';
+  String get activeClient =>
+      _language == AppLanguage.dutch ? 'Actieve cliënt' : 'Active client';
+  String get tapToSwitch =>
+      _language == AppLanguage.dutch ? 'Tik om te wisselen' : 'Tap to switch';
+  String get swipeThroughClients => _language == AppLanguage.dutch
+      ? 'Swipe om een andere cliënt te kiezen'
+      : 'Swipe through the clients.';
+  String get swipeChooseAnotherClient => _language == AppLanguage.dutch
+      ? 'Swipe om een andere cliënt te kiezen'
+      : 'Swipe to choose another client';
   String get togetherStepByStep => _language == AppLanguage.dutch
       ? 'Samen stap voor stap'
       : 'Together step by step';

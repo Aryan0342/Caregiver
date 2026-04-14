@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme.dart';
 
 /// Base PIN entry screen with large number buttons.
-/// 
+///
 /// Provides a reusable PIN entry interface with:
 /// - Large number buttons (0-9)
 /// - Backspace button
@@ -20,6 +20,10 @@ class PinEntryScreen extends StatefulWidget {
   final Function(String)? onError;
   final VoidCallback? onBack;
   final VoidCallback? onForgotPin;
+  final IconData? biometricIcon;
+  final String? biometricLabel;
+  final bool showUsePinButton;
+  final VoidCallback? onUsePin;
 
   const PinEntryScreen({
     super.key,
@@ -33,6 +37,10 @@ class PinEntryScreen extends StatefulWidget {
     this.onError,
     this.onBack,
     this.onForgotPin,
+    this.biometricIcon,
+    this.biometricLabel,
+    this.showUsePinButton = false,
+    this.onUsePin,
   });
 
   @override
@@ -70,12 +78,13 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       setState(() {
         _enteredPin += number;
       });
-      
+
       // Haptic feedback
       HapticFeedback.lightImpact();
-      
+
       // Check if PIN is complete (exactly minLength)
-      if (_enteredPin.length == widget.minLength && widget.onPinComplete != null) {
+      if (_enteredPin.length == widget.minLength &&
+          widget.onPinComplete != null) {
         // Small delay for visual feedback
         Future.delayed(const Duration(milliseconds: 200), () {
           widget.onPinComplete!(_enteredPin);
@@ -115,9 +124,10 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: Colors.white,
-                onPressed: widget.onBack ?? () {
-                  Navigator.of(context).pop();
-                },
+                onPressed: widget.onBack ??
+                    () {
+                      Navigator.of(context).pop();
+                    },
               ),
             )
           : null,
@@ -125,8 +135,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - 
-                  MediaQuery.of(context).padding.top - 
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
                   MediaQuery.of(context).padding.bottom,
             ),
             child: Column(
@@ -134,6 +144,31 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
               children: [
                 // Add top spacing to move content down
                 const SizedBox(height: 80),
+
+                if (widget.biometricIcon != null &&
+                    widget.biometricLabel != null) ...[
+                  Icon(
+                    widget.biometricIcon,
+                    size: 36,
+                    color: AppTheme.primaryBlue,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.biometricLabel!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                  ),
+                  if (widget.showUsePinButton) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: widget.onUsePin,
+                      child: const Text('Use PIN'),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                ],
 
                 // PIN dots display - use same blue as number buttons
                 Container(
@@ -150,7 +185,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                             height: 20,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isFilled ? AppTheme.primaryBlue : Colors.transparent,
+                              color: isFilled
+                                  ? AppTheme.primaryBlue
+                                  : Colors.transparent,
                               border: Border.all(
                                 color: AppTheme.primaryBlue,
                                 width: 2,
@@ -183,7 +220,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
                 // Number pad
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32.0, vertical: 16.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -238,7 +276,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Forgot PIN link
                 if (widget.onForgotPin != null)
                   TextButton(

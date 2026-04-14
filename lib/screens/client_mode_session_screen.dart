@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../models/client_profile_model.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
 import '../providers/language_provider.dart';
+import '../providers/client_session_provider.dart';
+import '../services/client_service.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
@@ -31,14 +36,70 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   int _currentStepIndex = 0;
   DateTime? _lastExitAttempt;
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
+  final ClientService _clientService = ClientService();
+  List<ClientProfile> _sidebarClients = <ClientProfile>[];
+  bool _isLoadingClients = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSidebarClients();
+    });
+  }
+
+  Future<void> _loadSidebarClients() async {
+    try {
+      final fetchedClients = await _clientService.getUserClients().first;
+      if (!mounted) return;
+
+      final selectedClients = fetchedClients.take(3).toList();
+      final controller = ClientSessionProvider.of(context);
+      final preferredClientId = widget.set.clientId;
+
+      final initialClientId = selectedClients.isNotEmpty
+          ? (preferredClientId != null &&
+                  selectedClients
+                      .any((client) => client.id == preferredClientId)
+              ? preferredClientId
+              : selectedClients.first.id)
+          : null;
+
+      setState(() {
+        _sidebarClients = selectedClients;
+        _isLoadingClients = false;
+      });
+
+      if (initialClientId != null) {
+        final cloudIndex = await _clientService.getClientProgress(
+          clientId: initialClientId,
+          setId: widget.set.id,
+        );
+        controller.activateClient(initialClientId, index: cloudIndex);
+        final restoredIndex = controller.progressFor(initialClientId);
+        final pictograms = _modifiedSequence ?? widget.set.pictograms;
+        final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
+        if (mounted) {
+          setState(() {
+            _currentStepIndex = restoredIndex.clamp(0, maxIndex);
+          });
+        }
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _sidebarClients = <ClientProfile>[];
+        _isLoadingClients = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
 
-    // Disable back button completely, but allow AppBar back button
     return PopScope(
-      canPop: false, // Prevent back button and navigation gestures
+      canPop: false,
       child: Scaffold(
         backgroundColor: AppTheme.backgroundLight,
         appBar: AppBar(
@@ -46,20 +107,69 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
-            onPressed: () {
-              // Navigate back to pictogram sets page
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
           ),
           actions: [
-            // Modify button in top right
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: SizedBox(
+                width: 92,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _openClientSwitcherPopup,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: Center(
+                              child: ColorFiltered(
+                                colorFilter: const ColorFilter.mode(
+                                  AppTheme.primaryBlue,
+                                  BlendMode.srcIn,
+                                ),
+                                child: Image.asset(
+                                  'assets/images/noun-switch-user-1892509.png',
+                                  width: 20,
+                                  height: 20,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            localizations.switchClientActionLabel,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: AppTheme.primaryBlue,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.0,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Center(
                 child: GestureDetector(
-                  onTap: () {
-                    _modifySequence();
-                  },
+                  onTap: _modifySequence,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -84,14 +194,311 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         body: SafeArea(
           child: Stack(
             children: [
-              // Main content (without buttons)
               _buildMainContentWithoutButtons(),
-
-              // Hidden exit areas (invisible but tappable) - positioned behind buttons
               _buildHiddenExitAreas(),
-
-              // Buttons on top layer to ensure they're clickable
               _buildActionButtons(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openClientSwitcherPopup() async {
+    if (_isLoadingClients || _sidebarClients.isEmpty) {
+      return;
+    }
+
+    final localizations = LanguageProvider.localizationsOf(context);
+    final controller = ClientSessionProvider.of(context);
+    final initialIndex = _sidebarClients.indexWhere(
+      (client) => client.id == controller.activeClientId,
+    );
+    final pageController = PageController(
+      viewportFraction: 0.9,
+      initialPage: initialIndex >= 0 ? initialIndex : 0,
+    );
+
+    try {
+      await showGeneralDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: localizations.switchClient,
+        barrierColor: Colors.black.withValues(alpha: 0.14),
+        transitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (dialogContext, animation, secondaryAnimation) {
+          return Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.08),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 20,
+                      borderRadius: BorderRadius.circular(26),
+                      clipBehavior: Clip.antiAlias,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              height: 28,
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: Text(
+                                      localizations.switchClient,
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                  ),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () =>
+                                          Navigator.of(dialogContext).pop(),
+                                      icon: const Icon(Icons.close),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              localizations.swipeChooseAnotherClient,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppTheme.textSecondary),
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              height: 300,
+                              child: PageView.builder(
+                                controller: pageController,
+                                itemCount: _sidebarClients.length,
+                                itemBuilder: (context, index) {
+                                  final client = _sidebarClients[index];
+                                  final isActive =
+                                      controller.activeClientId == client.id;
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6),
+                                    child: _buildSwitcherCard(
+                                      context,
+                                      client: client,
+                                      isActive: isActive,
+                                      onSelect: () {
+                                        Navigator.of(dialogContext).pop();
+                                        unawaited(_switchClient(client.id));
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOut,
+            ),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.96, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+              child: child,
+            ),
+          );
+        },
+      );
+    } finally {
+      pageController.dispose();
+    }
+  }
+
+  Future<void> _switchClient(String nextClientId) async {
+    final controller = ClientSessionProvider.of(context);
+    final currentClientId = controller.activeClientId;
+
+    if (currentClientId != null) {
+      unawaited(_persistClientProgress(currentClientId, _currentStepIndex));
+    }
+
+    controller.switchClient(nextClientId, currentIndex: _currentStepIndex);
+
+    final cloudIndex = await _clientService.getClientProgress(
+      clientId: nextClientId,
+      setId: widget.set.id,
+    );
+    controller.activateClient(nextClientId, index: cloudIndex);
+
+    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
+
+    if (!mounted) return;
+    setState(() {
+      _currentStepIndex = cloudIndex.clamp(0, maxIndex);
+    });
+  }
+
+  Future<void> _persistClientProgress(String clientId, int index) async {
+    try {
+      await _clientService.saveClientProgress(
+        clientId: clientId,
+        setId: widget.set.id,
+        index: index,
+      );
+    } catch (_) {
+      // Keep the session usable even if cloud sync is unavailable.
+    }
+  }
+
+  String _maskClientName(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '***';
+    if (trimmed.length <= 4) return trimmed;
+    return trimmed.substring(0, 4);
+  }
+
+  Widget _buildSwitcherCard(
+    BuildContext context, {
+    required ClientProfile client,
+    required bool isActive,
+    required VoidCallback onSelect,
+  }) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final displayName = _maskClientName(client.name);
+    final avatarText = displayName.isNotEmpty ? displayName[0] : 'C';
+
+    return Material(
+      color: isActive
+          ? AppTheme.primaryBlue.withValues(alpha: 0.06)
+          : Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onSelect,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isActive
+                  ? AppTheme.primaryBlue.withValues(alpha: 0.32)
+                  : AppTheme.primaryBlue.withValues(alpha: 0.12),
+              width: 1.2,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryBlue.withValues(alpha: 0.92),
+                      AppTheme.primaryBlueLight,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.14),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    avatarText,
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isActive
+                    ? localizations.activeClient
+                    : localizations.tapToSwitch,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: onSelect,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isActive ? AppTheme.primaryBlue : AppTheme.accentOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: const Size(0, 52),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(localizations.chooseClient),
+                ),
+              ),
             ],
           ),
         ),
@@ -490,6 +897,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       setState(() {
         _currentStepIndex++;
       });
+      final controller = ClientSessionProvider.of(context);
+      controller.updateCurrentIndex(_currentStepIndex);
+      final activeClientId = controller.activeClientId;
+      if (activeClientId != null) {
+        unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
+      }
     }
   }
 
@@ -498,6 +911,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       setState(() {
         _currentStepIndex--;
       });
+      final controller = ClientSessionProvider.of(context);
+      controller.updateCurrentIndex(_currentStepIndex);
+      final activeClientId = controller.activeClientId;
+      if (activeClientId != null) {
+        unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
+      }
     }
   }
 
@@ -520,6 +939,13 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         // Reset to first step after modification
         _currentStepIndex = 0;
       });
+
+      final controller = ClientSessionProvider.of(context);
+      controller.updateCurrentIndex(0);
+      final activeClientId = controller.activeClientId;
+      if (activeClientId != null) {
+        unawaited(_persistClientProgress(activeClientId, 0));
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

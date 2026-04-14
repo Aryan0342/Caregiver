@@ -154,7 +154,7 @@ class SetService {
   /// Get all sets for the current user
   /// Uses a fallback query without orderBy if the index is still building
   /// Includes cached data when offline
-  Stream<List<PictogramSet>> getUserSets() {
+  Stream<List<PictogramSet>> getUserSets({String? clientId}) {
     if (_currentUserId == null) {
       return Stream.value([]);
     }
@@ -163,11 +163,15 @@ class SetService {
     // This works immediately while the index is building
     // Once the index is ready, you can switch back to orderBy for better performance
     // snapshots() automatically includes cached data when offline (if persistence is enabled)
-    return _firestore
+    Query<Map<String, dynamic>> query = _firestore
         .collection(_collectionName)
-        .where('userId', isEqualTo: _currentUserId)
-        .snapshots()
-        .asyncMap((snapshot) async {
+        .where('userId', isEqualTo: _currentUserId);
+
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('clientId', isEqualTo: clientId);
+    }
+
+    return query.snapshots().asyncMap((snapshot) async {
       try {
         final sets = snapshot.docs
             .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
@@ -201,17 +205,21 @@ class SetService {
   /// Get auto-saved pictogram sets (last 5, without names)
   /// These are sets that were created and played but not saved with a name
   /// Limited to 5 most recent; oldest auto-saves are removed when limit reached
-  Stream<List<PictogramSet>> getAutoSavedSets() {
+  Stream<List<PictogramSet>> getAutoSavedSets({String? clientId}) {
     if (_currentUserId == null) {
       return Stream.value([]);
     }
 
-    return _firestore
+    Query<Map<String, dynamic>> query = _firestore
         .collection(_collectionName)
         .where('userId', isEqualTo: _currentUserId)
-        .where('isAutoSaved', isEqualTo: true)
-        .snapshots()
-        .asyncMap((snapshot) async {
+        .where('isAutoSaved', isEqualTo: true);
+
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('clientId', isEqualTo: clientId);
+    }
+
+    return query.snapshots().asyncMap((snapshot) async {
       try {
         final sets = snapshot.docs
             .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))

@@ -9,11 +9,20 @@ import '../services/set_share_service.dart';
 import 'edit_set_screen.dart';
 import 'client_mode_session_screen.dart';
 import '../providers/language_provider.dart';
+import '../services/language_service.dart';
+import '../models/client_profile_model.dart';
+import 'pictogram_picker_screen.dart';
+import 'clients_screen.dart';
 
 enum _SetMenuAction { exportPdf, shareLink, delete }
 
 class MySetsScreen extends StatefulWidget {
-  const MySetsScreen({super.key});
+  final ClientProfile? selectedClient;
+
+  const MySetsScreen({
+    super.key,
+    this.selectedClient,
+  });
 
   @override
   State<MySetsScreen> createState() => _MySetsScreenState();
@@ -32,13 +41,47 @@ class _MySetsScreenState extends State<MySetsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: Text(localizations.myPictogramSets),
+        title: Text(
+          widget.selectedClient == null
+              ? localizations.myPictogramSets
+              : '${widget.selectedClient!.name} - ${localizations.myPictogramSets}',
+        ),
         backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          if (widget.selectedClient != null)
+            IconButton(
+              icon: const Icon(Icons.swap_horiz_rounded),
+              tooltip: localizations.switchClient,
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ClientsScreen(),
+                  ),
+                );
+              },
+            ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            tooltip: localizations.newPictogramSet,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PictogramPickerScreen(
+                    maxSelection: 20,
+                    selectedClient: widget.selectedClient,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -149,7 +192,7 @@ class _MySetsScreenState extends State<MySetsScreen> {
     SetShareService shareService,
   ) {
     return StreamBuilder<List<PictogramSet>>(
-      stream: setService.getUserSets(),
+      stream: setService.getUserSets(clientId: widget.selectedClient?.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -209,7 +252,7 @@ class _MySetsScreenState extends State<MySetsScreen> {
                                 : isIndexBuilding
                                     ? localizations.indexBuildingMessage
                                     : errorMessage.length > 200
-                                        ? errorMessage.substring(0, 200) + "..."
+                                        ? '${errorMessage.substring(0, 200)}...'
                                         : errorMessage,
                             style: Theme.of(context)
                                 .textTheme
@@ -293,7 +336,7 @@ class _MySetsScreenState extends State<MySetsScreen> {
     SetShareService shareService,
   ) {
     return StreamBuilder<List<PictogramSet>>(
-      stream: setService.getAutoSavedSets(),
+      stream: setService.getAutoSavedSets(clientId: widget.selectedClient?.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -763,8 +806,8 @@ class _MySetsScreenState extends State<MySetsScreen> {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content:
-                    Text('${localizations.shareSet} ${localizations.failed}: $e'),
+                content: Text(
+                    '${localizations.shareSet} ${localizations.failed}: $e'),
                 backgroundColor: Colors.red,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(

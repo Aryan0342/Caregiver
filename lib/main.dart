@@ -25,12 +25,17 @@ import 'screens/client_mode_entry_screen.dart';
 import 'screens/request_picto_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/picto_library_screen.dart';
+import 'screens/clients_screen.dart';
+import 'screens/add_client_screen.dart';
+import 'screens/security_settings_screen.dart';
 import 'services/language_service.dart';
 import 'services/setup_service.dart';
 import 'services/pin_auth_service.dart';
+import 'services/biometric_preference_service.dart';
 import 'screens/verify_pin_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/language_provider.dart';
+import 'providers/client_session_provider.dart';
 
 void main() async {
   // Required: Initialize Flutter bindings before any async operations
@@ -76,17 +81,20 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final LanguageService _languageService;
+  late final ClientSessionController _clientSessionController;
 
   @override
   void initState() {
     super.initState();
     _languageService = LanguageService();
+    _clientSessionController = ClientSessionController();
     _languageService.addListener(_onLanguageChanged);
   }
 
   @override
   void dispose() {
     _languageService.removeListener(_onLanguageChanged);
+    _clientSessionController.dispose();
     super.dispose();
   }
 
@@ -98,64 +106,71 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations(_languageService.currentLanguage);
 
-    return LanguageProvider(
-      languageService: _languageService,
-      localizations: localizations,
-      child: MaterialApp(
-        title: localizations.appName,
-        theme: AppTheme.lightTheme,
-        darkTheme: null, // No dark mode as requested
-        debugShowCheckedModeBanner: false, // Remove DEBUG banner
-        locale: _languageService.locale,
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en', ''), Locale('nl', '')],
-        // Use named routes
-        initialRoute: AppRoutes.login,
-        routes: {
-          AppRoutes.login: (context) => const AuthWrapper(),
-          AppRoutes.home: (context) => const HomeScreen(),
-          AppRoutes.createSet: (context) => const CreateSetScreen(),
-          AppRoutes.mySets: (context) => const MySetsScreen(),
-          AppRoutes.settings: (context) => const SettingsScreen(),
-          AppRoutes.caregiverRegistration: (context) =>
-              const CaregiverRegistrationScreen(),
-          AppRoutes.caregiverProfileSetup: (context) =>
-              const CaregiverProfileSetupScreen(),
-          AppRoutes.createCaregiverPin: (context) =>
-              const CreateCaregiverPinScreen(),
-          AppRoutes.changePin: (context) => const ChangePinScreen(),
-          AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
-          AppRoutes.resetPassword: (context) {
-            final email =
-                ModalRoute.of(context)?.settings.arguments as String? ?? '';
-            return ResetPasswordScreen(email: email);
+    return ClientSessionProvider(
+      controller: _clientSessionController,
+      child: LanguageProvider(
+        languageService: _languageService,
+        localizations: localizations,
+        child: MaterialApp(
+          title: localizations.appName,
+          theme: AppTheme.lightTheme,
+          darkTheme: null, // No dark mode as requested
+          debugShowCheckedModeBanner: false, // Remove DEBUG banner
+          locale: _languageService.locale,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en', ''), Locale('nl', '')],
+          // Use named routes
+          initialRoute: AppRoutes.login,
+          routes: {
+            AppRoutes.login: (context) => const AuthWrapper(),
+            AppRoutes.home: (context) => const HomeScreen(),
+            AppRoutes.createSet: (context) => const CreateSetScreen(),
+            AppRoutes.mySets: (context) => const MySetsScreen(),
+            AppRoutes.settings: (context) => const SettingsScreen(),
+            AppRoutes.caregiverRegistration: (context) =>
+                const CaregiverRegistrationScreen(),
+            AppRoutes.caregiverProfileSetup: (context) =>
+                const CaregiverProfileSetupScreen(),
+            AppRoutes.createCaregiverPin: (context) =>
+                const CreateCaregiverPinScreen(),
+            AppRoutes.changePin: (context) => const ChangePinScreen(),
+            AppRoutes.forgotPassword: (context) => const ForgotPasswordScreen(),
+            AppRoutes.resetPassword: (context) {
+              final email =
+                  ModalRoute.of(context)?.settings.arguments as String? ?? '';
+              return ResetPasswordScreen(email: email);
+            },
+            AppRoutes.securityQuestionVerification: (context) {
+              final args = ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+              final email = args?['email'] as String? ?? '';
+              final onVerificationSuccess =
+                  args?['onVerificationSuccess'] as Function()? ?? () {};
+              return SecurityQuestionVerificationScreen(
+                email: email,
+                onVerificationSuccess: onVerificationSuccess,
+              );
+            },
+            AppRoutes.clientMode: (context) => const ClientModeEntryScreen(),
+            AppRoutes.requestPicto: (context) => const RequestPictoScreen(),
+            AppRoutes.emailVerification: (context) =>
+                const EmailVerificationScreen(),
+            AppRoutes.profile: (context) => const ProfileScreen(),
+            AppRoutes.pictoLibrary: (context) => const PictoLibraryScreen(),
+            AppRoutes.clients: (context) => const ClientsScreen(),
+            AppRoutes.addClient: (context) => const AddClientScreen(),
+            AppRoutes.securitySettings: (context) =>
+                const SecuritySettingsScreen(),
           },
-          AppRoutes.securityQuestionVerification: (context) {
-            final args = ModalRoute.of(context)?.settings.arguments
-                as Map<String, dynamic>?;
-            final email = args?['email'] as String? ?? '';
-            final onVerificationSuccess =
-                args?['onVerificationSuccess'] as Function()? ?? () {};
-            return SecurityQuestionVerificationScreen(
-              email: email,
-              onVerificationSuccess: onVerificationSuccess,
-            );
+          // Fallback for unknown routes
+          onUnknownRoute: (settings) {
+            return MaterialPageRoute(builder: (context) => const AuthWrapper());
           },
-          AppRoutes.clientMode: (context) => const ClientModeEntryScreen(),
-          AppRoutes.requestPicto: (context) => const RequestPictoScreen(),
-          AppRoutes.emailVerification: (context) =>
-              const EmailVerificationScreen(),
-          AppRoutes.profile: (context) => const ProfileScreen(),
-          AppRoutes.pictoLibrary: (context) => const PictoLibraryScreen(),
-        },
-        // Fallback for unknown routes
-        onUnknownRoute: (settings) {
-          return MaterialPageRoute(builder: (context) => const AuthWrapper());
-        },
+        ),
       ),
     );
   }
@@ -172,6 +187,8 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   final SetupService _setupService = SetupService();
   final PinAuthService _pinAuthService = PinAuthService();
+  final BiometricPreferenceService _biometricPreferenceService =
+      BiometricPreferenceService();
   bool _isCheckingSetup = false;
   bool _isCheckingPin = false;
   bool _shouldShowPin = false;
@@ -224,10 +241,11 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
     try {
       final pinRequired = await _pinAuthService.isPinRequired();
+      final faceIdEnabled = await _biometricPreferenceService.isFaceIdEnabled();
 
       if (mounted) {
         setState(() {
-          _shouldShowPin = pinRequired;
+          _shouldShowPin = pinRequired || faceIdEnabled;
           _isCheckingPin = false;
         });
       }
@@ -303,7 +321,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
             // Email verified - navigate to profile setup or home
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                _checkSetupAndNavigate(context);
+                _checkSetupAndNavigate();
               }
             });
             return const SizedBox.shrink();
@@ -349,7 +367,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                   setState(() {
                     _shouldShowPin = false;
                   });
-                  _checkSetupAndNavigate(context);
+                  _checkSetupAndNavigate();
                 }
               },
             );
@@ -373,7 +391,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
           // Check setup completion before navigating to home
           if (!_isCheckingSetup) {
             _isCheckingSetup = true;
-            _checkSetupAndNavigate(context);
+            _checkSetupAndNavigate();
           }
 
           // Show loading while navigating
@@ -388,7 +406,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _checkSetupAndNavigate(BuildContext context) async {
+  Future<void> _checkSetupAndNavigate() async {
     if (!mounted) return;
 
     // Get current route and navigator before async operations

@@ -4,16 +4,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'pin_service.dart';
 
 /// Simple service for managing PIN authentication on app reopen.
-/// 
+///
 /// Checks if PIN should be required when app is reopened.
 class PinAuthService {
   static const String _pinVerifiedKey = 'pin_verified_this_session';
   static const String _lastVerifiedUserIdKey = 'last_verified_user_id';
+  static const String _skipFaceIdKey = 'skip_face_id_this_session';
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final PinService _pinService = PinService();
 
   /// Check if PIN verification is required for the current user.
-  /// 
+  ///
   /// Returns true if:
   /// - User is logged in
   /// - PIN exists for the user
@@ -34,22 +35,23 @@ class PinAuthService {
     final prefs = await SharedPreferences.getInstance();
     final verifiedUserId = prefs.getString(_lastVerifiedUserIdKey);
     final isVerified = prefs.getBool(_pinVerifiedKey) ?? false;
-    
+
     // PIN is required if it exists and hasn't been verified for this user this session
     final requiresPin = verifiedUserId != currentUser.uid || !isVerified;
-    
+
     if (kDebugMode) {
       debugPrint('PinAuthService: isPinRequired = $requiresPin');
       debugPrint('PinAuthService: pinExists = $pinExists');
-      debugPrint('PinAuthService: verifiedUserId = $verifiedUserId, currentUserId = ${currentUser.uid}');
+      debugPrint(
+          'PinAuthService: verifiedUserId = $verifiedUserId, currentUserId = ${currentUser.uid}');
       debugPrint('PinAuthService: isVerified = $isVerified');
     }
-    
+
     return requiresPin;
   }
 
   /// Mark PIN as verified for this session.
-  /// 
+  ///
   /// This prevents asking for PIN again until app is closed and reopened.
   Future<void> markPinVerified() async {
     final currentUser = _auth.currentUser;
@@ -61,9 +63,11 @@ class PinAuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_pinVerifiedKey, true);
       await prefs.setString(_lastVerifiedUserIdKey, currentUser.uid);
-      
+      await prefs.remove(_skipFaceIdKey);
+
       if (kDebugMode) {
-        debugPrint('PinAuthService: Marked PIN as verified for user ${currentUser.uid}');
+        debugPrint(
+            'PinAuthService: Marked PIN as verified for user ${currentUser.uid}');
       }
     } catch (e) {
       debugPrint('PinAuthService: Failed to mark PIN verified: $e');
@@ -71,19 +75,42 @@ class PinAuthService {
   }
 
   /// Clear PIN verification status.
-  /// 
+  ///
   /// Call this when app is reopened to force PIN check again.
   Future<void> clearPinVerification() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_pinVerifiedKey);
       await prefs.remove(_lastVerifiedUserIdKey);
-      
+
       if (kDebugMode) {
         debugPrint('PinAuthService: Cleared PIN verification status');
       }
     } catch (e) {
       debugPrint('PinAuthService: Failed to clear PIN verification: $e');
+    }
+  }
+
+  Future<void> setSkipFaceId(bool skip) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (skip) {
+        await prefs.setBool(_skipFaceIdKey, true);
+      } else {
+        await prefs.remove(_skipFaceIdKey);
+      }
+    } catch (e) {
+      debugPrint('PinAuthService: Failed to set skip Face ID: $e');
+    }
+  }
+
+  Future<bool> shouldSkipFaceId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_skipFaceIdKey) ?? false;
+    } catch (e) {
+      debugPrint('PinAuthService: Failed to read skip Face ID: $e');
+      return false;
     }
   }
 }

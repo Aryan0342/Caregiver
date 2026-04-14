@@ -143,12 +143,24 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           const SizedBox(height: 70),
-                          // Primary action: "Nieuwe pictoreeks" (Blue button)
+                          // Primary action: client-based workflow
+                          _buildMainActionButton(
+                            context,
+                            icon: Icons.groups_rounded,
+                            title: localizations.myClients,
+                            color: AppTheme.primaryBlue,
+                            onTap: () {
+                              Navigator.pushNamed(context, AppRoutes.clients);
+                            },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Secondary action: "Nieuwe pictoreeks" (Blue button)
                           _buildMainActionButton(
                             context,
                             icon: Icons.add_rounded,
                             title: localizations.newPictogramSet,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.accentOrange,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -163,17 +175,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Secondary action: "Opgeslagen pictoreeksen" (Orange button)
+                          // Tertiary action: "Opgeslagen pictoreeksen" (Orange button)
                           _buildMainActionButton(
                             context,
                             icon: Icons.folder_rounded,
                             title: localizations.myPictogramSets,
-                            color: AppTheme.accentOrange,
+                            color: AppTheme.primaryBlue,
                             onTap: () {
                               Navigator.pushNamed(context, AppRoutes.mySets);
                             },
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
 
                           // Tertiary action: "Gehele pictotheek" (Text button style)
                           GestureDetector(

@@ -5,6 +5,8 @@ class PictogramSet {
   final String id;
   final String name;
   final String userId;
+  final String? clientId;
+  final String? clientName;
   final List<Pictogram> pictograms;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -14,6 +16,8 @@ class PictogramSet {
     required this.id,
     required this.name,
     required this.userId,
+    this.clientId,
+    this.clientName,
     required this.pictograms,
     required this.createdAt,
     this.updatedAt,
@@ -25,6 +29,8 @@ class PictogramSet {
     String? id,
     String? name,
     String? userId,
+    String? clientId,
+    String? clientName,
     List<Pictogram>? pictograms,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -34,6 +40,8 @@ class PictogramSet {
       id: id ?? this.id,
       name: name ?? this.name,
       userId: userId ?? this.userId,
+      clientId: clientId ?? this.clientId,
+      clientName: clientName ?? this.clientName,
       pictograms: pictograms ?? this.pictograms,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -46,6 +54,8 @@ class PictogramSet {
     return {
       'name': name,
       'userId': userId,
+      'clientId': clientId,
+      'clientName': clientName,
       'pictograms': pictograms.map((p) => p.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -59,6 +69,8 @@ class PictogramSet {
       id: id,
       name: json['name'] as String,
       userId: json['userId'] as String,
+      clientId: json['clientId'] as String?,
+      clientName: json['clientName'] as String?,
       pictograms: (json['pictograms'] as List<dynamic>?)
               ?.map((p) => Pictogram.fromJson(p as Map<String, dynamic>))
               .toList() ??

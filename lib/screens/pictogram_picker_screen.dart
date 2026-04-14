@@ -7,17 +7,20 @@ import '../services/category_service.dart';
 import '../services/language_service.dart';
 import '../theme.dart';
 import '../providers/language_provider.dart';
+import '../models/client_profile_model.dart';
 import 'request_picto_screen.dart';
 import 'create_set_screen.dart';
 
 class PictogramPickerScreen extends StatefulWidget {
   final List<Pictogram>? initialSelection;
   final int maxSelection;
+  final ClientProfile? selectedClient;
 
   const PictogramPickerScreen({
     super.key,
     this.initialSelection,
     this.maxSelection = 10,
+    this.selectedClient,
   });
 
   @override
@@ -205,6 +208,7 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       MaterialPageRoute(
         builder: (context) => CreateSetScreen(
           initialPictograms: _selectedPictograms.toList(),
+          selectedClient: widget.selectedClient,
         ),
       ),
     );

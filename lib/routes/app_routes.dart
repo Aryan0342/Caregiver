@@ -19,4 +19,7 @@ class AppRoutes {
   static const String emailVerification = '/email-verification';
   static const String profile = '/profile';
   static const String pictoLibrary = '/picto-library';
+  static const String clients = '/clients';
+  static const String addClient = '/add-client';
+  static const String securitySettings = '/security-settings';
 }

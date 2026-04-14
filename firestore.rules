@@ -79,6 +79,26 @@ service cloud.firestore {
                          request.auth.uid == caregiverId;
       }
     }
+
+    // Clients collection - caregivers can only access their own clients
+    match /clients/{clientId} {
+      // Allow read if user is authenticated and owns the client
+      allow read: if request.auth != null &&
+                     request.auth.uid == resource.data.caregiverId;
+
+      // Allow create if user is authenticated and sets themselves as owner
+      allow create: if request.auth != null &&
+                       request.auth.uid == request.resource.data.caregiverId;
+
+      // Allow update if user is authenticated and remains the owner
+      allow update: if request.auth != null &&
+                       request.auth.uid == resource.data.caregiverId &&
+                       request.auth.uid == request.resource.data.caregiverId;
+
+      // Allow delete if user is authenticated and owns the client
+      allow delete: if request.auth != null &&
+                       request.auth.uid == resource.data.caregiverId;
+    }
     
     // Categories collection - app users can read, admins can write
     match /categories/{categoryId} {

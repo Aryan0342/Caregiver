@@ -64,6 +64,43 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
     }
   }
 
+  Future<void> _openExternalLink(BuildContext context, String urlString) async {
+    final url = Uri.parse(urlString);
+
+    try {
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.platformDefault,
+      );
+
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not open link'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening link: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   /// Handle user logout with error handling.
   Future<void> _signOut(BuildContext context) async {
     try {
@@ -247,9 +284,10 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
             children: [
               Text(
                 localizations.privacyPolicy,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Text(
@@ -290,6 +328,45 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Handige links',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => _openExternalLink(
+                  context,
+                  'https://www.jedaginbeeld.nl/privacy-policy/',
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Onze privacy policy'),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _openExternalLink(
+                  context,
+                  'https://www.jedaginbeeld.nl/verwerkersovereenkomst/',
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Verwerkingsovereenkomst'),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _openExternalLink(
+                  context,
+                  'https://www.jedaginbeeld.nl/algemene-voorwaarden/',
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Algemene voorwaarden'),
                 ),
               ),
             ],
@@ -376,6 +453,50 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                     ),
                   ),
 
+                  // Clients management
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(
+                            alpha: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.groups_outlined,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        languageService.currentLanguage == AppLanguage.dutch
+                            ? 'Clienten toevoegen'
+                            : 'Add clients',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        languageService.currentLanguage == AppLanguage.dutch
+                            ? 'Voeg nieuwe clienten toe'
+                            : 'Add new clients',
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.addClient);
+                      },
+                    ),
+                  ),
+
                   // Language selector
                   Card(
                     margin: const EdgeInsets.symmetric(
@@ -414,7 +535,7 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                     ),
                   ),
 
-                  // Change PIN
+                  // Security
                   Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -433,21 +554,30 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          Icons.lock_outline,
+                          Icons.security,
                           color: AppTheme.primaryBlue,
                         ),
                       ),
                       title: Text(
-                        localizations.changePin,
+                        languageService.currentLanguage == AppLanguage.dutch
+                            ? 'Beveiliging'
+                            : 'Security',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      subtitle: Text(localizations.changePinDescription),
+                      subtitle: Text(
+                        languageService.currentLanguage == AppLanguage.dutch
+                            ? 'Pincode en Face ID beheren'
+                            : 'Manage PIN and Face ID',
+                      ),
                       trailing: Icon(
                         Icons.chevron_right,
                         color: AppTheme.textSecondary,
                       ),
                       onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.changePin);
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.securitySettings,
+                        );
                       },
                     ),
                   ),

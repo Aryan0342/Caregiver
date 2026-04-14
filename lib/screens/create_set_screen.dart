@@ -4,17 +4,23 @@ import '../theme.dart';
 import '../models/pictogram_model.dart';
 import '../models/set_model.dart';
 import '../services/set_service.dart';
+import '../services/client_service.dart';
 import 'pictogram_picker_screen.dart';
 import 'client_mode_session_screen.dart';
 import 'my_sets_screen.dart';
 import '../providers/language_provider.dart';
+import '../services/language_service.dart';
+import '../l10n/app_localizations.dart';
+import '../models/client_profile_model.dart';
 
 class CreateSetScreen extends StatefulWidget {
   final List<Pictogram>? initialPictograms;
+  final ClientProfile? selectedClient;
 
   const CreateSetScreen({
     super.key,
     this.initialPictograms,
+    this.selectedClient,
   });
 
   @override
@@ -23,14 +29,17 @@ class CreateSetScreen extends StatefulWidget {
 
 class _CreateSetScreenState extends State<CreateSetScreen> {
   final _setService = SetService();
+  final _clientService = ClientService();
   final _nameController = TextEditingController();
   late List<Pictogram> _selectedPictograms = [];
   late int _currentStep;
   bool _isSaving = false;
+  ClientProfile? _selectedSaveClient;
 
   @override
   void initState() {
     super.initState();
+    _selectedSaveClient = widget.selectedClient;
     // If initial pictograms are provided, start from step 2
     // Otherwise start from step 1 (naming)
     if (widget.initialPictograms != null &&
@@ -137,11 +146,13 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     if (_nameController.text.trim().isEmpty) {
       if (!mounted) return;
 
-      final name = await _showNameDialog(context);
-      if (name == null || name.isEmpty) {
+      final result = await _showNameDialog(context);
+      if (!mounted) return;
+      if (result == null || result.name.isEmpty) {
         return; // User cancelled
       }
-      _nameController.text = name;
+      _nameController.text = result.name;
+      _selectedSaveClient = result.client;
     }
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
@@ -159,11 +170,15 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       _isSaving = true;
     });
 
+    final effectiveClient = _selectedSaveClient ?? widget.selectedClient;
+
     try {
       final newSet = PictogramSet(
         id: '', // Will be set by Firestore
         name: _nameController.text.trim(),
         userId: userId,
+        clientId: effectiveClient?.id,
+        clientName: effectiveClient?.name,
         pictograms: _selectedPictograms,
         createdAt: DateTime.now(),
       );
@@ -171,9 +186,10 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       await _setService.createSet(newSet);
 
       if (mounted) {
+        final updatedLocalizations = LanguageProvider.localizationsOf(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(localizations.setSaved),
+            content: Text(updatedLocalizations.setSaved),
             backgroundColor: AppTheme.accentGreen,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -184,7 +200,9 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const MySetsScreen(),
+            builder: (context) => MySetsScreen(
+              selectedClient: effectiveClient,
+            ),
           ),
         );
       }
@@ -216,7 +234,9 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const MySetsScreen(),
+              builder: (context) => MySetsScreen(
+                selectedClient: effectiveClient,
+              ),
             ),
           );
         }
@@ -230,60 +250,190 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     }
   }
 
-  Future<String?> _showNameDialog(BuildContext context) async {
+  ClientProfile? _resolveClientSelection(
+    List<ClientProfile> clients,
+    ClientProfile? selected,
+  ) {
+    if (selected == null) return null;
+    for (final client in clients) {
+      if (client.id == selected.id) {
+        return client;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildClientDropdown({
+    required AppLocalizations localizations,
+    required List<ClientProfile> clients,
+    required ClientProfile? selected,
+    required ValueChanged<ClientProfile?> onChanged,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth =
+            constraints.maxWidth > 320 ? 320.0 : constraints.maxWidth;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: DropdownButtonFormField<ClientProfile?>(
+              value: selected,
+              isExpanded: true,
+              menuMaxHeight: 260,
+              borderRadius: BorderRadius.circular(12),
+              dropdownColor: AppTheme.surfaceWhite,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              decoration: InputDecoration(
+                labelText: localizations.currentLanguage == AppLanguage.dutch
+                    ? 'Selecteer client (optioneel)'
+                    : 'Select client (optional)',
+                prefixIcon: const Icon(Icons.person_outline),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              ),
+              items: clients
+                  .map(
+                    (client) => DropdownMenuItem<ClientProfile?>(
+                      value: client,
+                      child: Text(_displayInitials(client.name)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _displayInitials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '';
+    if (trimmed.length <= 3) return trimmed;
+    return trimmed.substring(0, 3);
+  }
+
+  Future<_NameDialogResult?> _showNameDialog(BuildContext context) async {
     final localizations = LanguageProvider.localizationsOf(context);
     final nameController = TextEditingController();
+    ClientProfile? selectedClient =
+        _selectedSaveClient ?? widget.selectedClient;
 
-    return showDialog<String>(
+    return showDialog<_NameDialogResult>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.name),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            hintText: localizations.giveAName,
-            prefixIcon: const Icon(Icons.label_outline),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          autofocus: true,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              Navigator.pop(context, value.trim());
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(localizations.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(localizations.enterName),
-                    backgroundColor: AppTheme.accentOrange,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(localizations.name),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      hintText: localizations.giveAName,
+                      prefixIcon: const Icon(Icons.label_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    autofocus: true,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (value) {
+                      if (value.trim().isNotEmpty) {
+                        Navigator.pop(
+                          context,
+                          _NameDialogResult(
+                            name: value.trim(),
+                            client: selectedClient,
+                          ),
+                        );
+                      }
+                    },
                   ),
-                );
-                return;
-              }
-              Navigator.pop(context, name);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
+                  const SizedBox(height: 16),
+                  StreamBuilder<List<ClientProfile>>(
+                    stream: _clientService.getUserClients(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      final clients = snapshot.data ?? [];
+                      if (clients.isEmpty) {
+                        return Text(
+                          localizations.currentLanguage == AppLanguage.dutch
+                              ? 'Geen clienten beschikbaar'
+                              : 'No clients available',
+                          textAlign: TextAlign.center,
+                        );
+                      }
+
+                      final resolvedSelection = _resolveClientSelection(
+                        clients,
+                        selectedClient,
+                      );
+
+                      return _buildClientDropdown(
+                        localizations: localizations,
+                        clients: clients,
+                        selected: resolvedSelection,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            selectedClient = value;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-            child: Text(
-              localizations.save,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(localizations.cancel),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final name = nameController.text.trim();
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(localizations.enterName),
+                        backgroundColor: AppTheme.accentOrange,
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(
+                    context,
+                    _NameDialogResult(name: name, client: selectedClient),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBlue,
+                ),
+                child: Text(
+                  localizations.save,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -317,6 +467,8 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       name: '', // Empty name for auto-saved sets
       userId: FirebaseAuth.instance.currentUser?.uid ?? 'temp',
+      clientId: widget.selectedClient?.id,
+      clientName: widget.selectedClient?.name,
       pictograms: _selectedPictograms,
       createdAt: DateTime.now(),
       isAutoSaved: true, // Mark as auto-saved
@@ -433,6 +585,43 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                 ),
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _goToStep2(),
+              ),
+              const SizedBox(height: 16),
+              StreamBuilder<List<ClientProfile>>(
+                stream: _clientService.getUserClients(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  final clients = snapshot.data ?? [];
+                  if (clients.isEmpty) {
+                    return Text(
+                      localizations.currentLanguage == AppLanguage.dutch
+                          ? 'Geen clienten beschikbaar'
+                          : 'No clients available',
+                      textAlign: TextAlign.center,
+                    );
+                  }
+
+                  final resolvedSelection = _resolveClientSelection(
+                    clients,
+                    _selectedSaveClient,
+                  );
+
+                  return _buildClientDropdown(
+                    localizations: localizations,
+                    clients: clients,
+                    selected: resolvedSelection,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSaveClient = value;
+                      });
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 32),
 
@@ -793,4 +982,14 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     }
     return Icons.image_outlined;
   }
+}
+
+class _NameDialogResult {
+  final String name;
+  final ClientProfile? client;
+
+  const _NameDialogResult({
+    required this.name,
+    required this.client,
+  });
 }
