@@ -366,6 +366,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                 if (mounted) {
                   setState(() {
                     _shouldShowPin = false;
+                    _isCheckingSetup = true;
                   });
                   _checkSetupAndNavigate();
                 }

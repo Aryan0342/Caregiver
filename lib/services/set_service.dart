@@ -202,6 +202,41 @@ class SetService {
     });
   }
 
+  /// Get user sets once (single fetch) for selection dialogs.
+  Future<List<PictogramSet>> getUserSetsOnce({
+    String? clientId,
+    bool includeAutoSaved = true,
+  }) async {
+    if (_currentUserId == null) {
+      return <PictogramSet>[];
+    }
+
+    Query<Map<String, dynamic>> query = _firestore
+        .collection(_collectionName)
+        .where('userId', isEqualTo: _currentUserId);
+
+    if (clientId != null && clientId.isNotEmpty) {
+      query = query.where('clientId', isEqualTo: clientId);
+    }
+
+    final snapshot = await query.get(
+      const GetOptions(source: Source.serverAndCache),
+    );
+
+    final sets = snapshot.docs
+        .map((doc) => PictogramSet.fromJson(doc.id, doc.data()))
+        .where((set) => includeAutoSaved || !set.isAutoSaved)
+        .toList();
+
+    sets.sort((a, b) {
+      final aDate = a.updatedAt ?? a.createdAt;
+      final bDate = b.updatedAt ?? b.createdAt;
+      return bDate.compareTo(aDate);
+    });
+
+    return sets;
+  }
+
   /// Get auto-saved pictogram sets (last 5, without names)
   /// These are sets that were created and played but not saved with a name
   /// Limited to 5 most recent; oldest auto-saves are removed when limit reached

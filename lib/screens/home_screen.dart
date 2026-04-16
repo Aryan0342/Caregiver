@@ -7,6 +7,7 @@ import '../providers/language_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../services/language_service.dart';
 import 'pictogram_picker_screen.dart';
+import 'my_sets_screen.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 ///
@@ -185,33 +186,52 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.pushNamed(context, AppRoutes.mySets);
                             },
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 42),
 
-                          // Tertiary action: "Gehele pictotheek" (Text button style)
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                  context, AppRoutes.pictoLibrary);
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 20),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.library_books_rounded,
-                                      color: AppTheme.primaryBlue, size: 24),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    localizations.pictoLibrary,
-                                    style: TextStyle(
-                                      color: AppTheme.primaryBlue,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                          // Bottom quick actions: active sets (left) + library (right)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(8, 14, 8, 4),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: AppTheme.primaryBlue
+                                      .withValues(alpha: 0.16),
+                                  width: 1,
+                                ),
                               ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildBottomTextAction(
+                                    context,
+                                    icon: Icons.flash_on_rounded,
+                                    title: localizations.activePictogramSets,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const MySetsScreen(
+                                                  initialTabIndex: 1),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _buildBottomTextAction(
+                                    context,
+                                    icon: Icons.library_books_rounded,
+                                    title: localizations.pictoLibrary,
+                                    onTap: () {
+                                      Navigator.pushNamed(
+                                          context, AppRoutes.pictoLibrary);
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -224,6 +244,51 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomTextAction(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 170;
+        final iconSize = compact ? 20.0 : 22.0;
+        final fontSize = compact ? 12.0 : 13.0;
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: AppTheme.primaryBlue, size: iconSize),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: AppTheme.primaryBlue,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    softWrap: true,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

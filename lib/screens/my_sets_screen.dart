@@ -18,10 +18,12 @@ enum _SetMenuAction { exportPdf, shareLink, delete }
 
 class MySetsScreen extends StatefulWidget {
   final ClientProfile? selectedClient;
+  final int initialTabIndex;
 
   const MySetsScreen({
     super.key,
     this.selectedClient,
+    this.initialTabIndex = 0,
   });
 
   @override
@@ -29,7 +31,13 @@ class MySetsScreen extends StatefulWidget {
 }
 
 class _MySetsScreenState extends State<MySetsScreen> {
-  int _selectedTabIndex = 0;
+  late int _selectedTabIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTabIndex = widget.initialTabIndex.clamp(0, 2);
+  }
 
   @override
   Widget build(BuildContext context) {

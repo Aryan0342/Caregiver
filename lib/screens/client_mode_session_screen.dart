@@ -8,6 +8,7 @@ import '../models/pictogram_model.dart';
 import '../providers/language_provider.dart';
 import '../providers/client_session_provider.dart';
 import '../services/client_service.dart';
+import '../services/set_service.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
@@ -37,12 +38,15 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   DateTime? _lastExitAttempt;
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
   final ClientService _clientService = ClientService();
+  final SetService _setService = SetService();
+  late PictogramSet _activeSet;
   List<ClientProfile> _sidebarClients = <ClientProfile>[];
   bool _isLoadingClients = true;
 
   @override
   void initState() {
     super.initState();
+    _activeSet = widget.set;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSidebarClients();
     });
@@ -55,7 +59,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
       final selectedClients = fetchedClients.take(3).toList();
       final controller = ClientSessionProvider.of(context);
-      final preferredClientId = widget.set.clientId;
+      final preferredClientId = _activeSet.clientId;
 
       final initialClientId = selectedClients.isNotEmpty
           ? (preferredClientId != null &&
@@ -73,11 +77,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       if (initialClientId != null) {
         final cloudIndex = await _clientService.getClientProgress(
           clientId: initialClientId,
-          setId: widget.set.id,
+          setId: _activeSet.id,
         );
         controller.activateClient(initialClientId, index: cloudIndex);
         final restoredIndex = controller.progressFor(initialClientId);
-        final pictograms = _modifiedSequence ?? widget.set.pictograms;
+        final pictograms = _modifiedSequence ?? _activeSet.pictograms;
         final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
         if (mounted) {
           setState(() {
@@ -105,66 +109,61 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: SizedBox(
-                width: 92,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: _openClientSwitcherPopup,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: Center(
-                              child: ColorFiltered(
-                                colorFilter: const ColorFilter.mode(
-                                  AppTheme.primaryBlue,
-                                  BlendMode.srcIn,
-                                ),
-                                child: Image.asset(
-                                  'assets/images/noun-switch-user-1892509.png',
-                                  width: 20,
-                                  height: 20,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
+          title: SizedBox(
+            width: 92,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _openClientSwitcherPopup,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Center(
+                          child: ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                              AppTheme.primaryBlue,
+                              BlendMode.srcIn,
+                            ),
+                            child: Image.asset(
+                              'assets/images/noun-switch-user-1892509.png',
+                              width: 20,
+                              height: 20,
+                              fit: BoxFit.contain,
                             ),
                           ),
-                          const SizedBox(height: 1),
-                          Text(
-                            localizations.switchClientActionLabel,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: AppTheme.primaryBlue,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.0,
-                                ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 1),
+                      Text(
+                        localizations.switchClientActionLabel,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppTheme.primaryBlue,
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
+          ),
+          actions: [
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Center(
@@ -352,6 +351,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   Future<void> _switchClient(String nextClientId) async {
     final controller = ClientSessionProvider.of(context);
     final currentClientId = controller.activeClientId;
+    final selectedSet = await _chooseSetForClient(nextClientId);
+    if (selectedSet == null) return;
 
     if (currentClientId != null) {
       unawaited(_persistClientProgress(currentClientId, _currentStepIndex));
@@ -361,24 +362,156 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
     final cloudIndex = await _clientService.getClientProgress(
       clientId: nextClientId,
-      setId: widget.set.id,
+      setId: selectedSet.id,
     );
     controller.activateClient(nextClientId, index: cloudIndex);
 
-    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    final pictograms = selectedSet.pictograms;
     final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
 
     if (!mounted) return;
     setState(() {
+      _activeSet = selectedSet;
+      _modifiedSequence = null;
       _currentStepIndex = cloudIndex.clamp(0, maxIndex);
     });
+  }
+
+  Future<PictogramSet?> _chooseSetForClient(String clientId) async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final sets = await _setService.getUserSetsOnce(
+      clientId: clientId,
+      includeAutoSaved: true,
+    );
+
+    if (sets.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.noSetsForClient),
+            backgroundColor: AppTheme.accentOrange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return null;
+    }
+
+    PictogramSet? currentActiveSet;
+    for (final set in sets) {
+      if (set.id == _activeSet.id) {
+        currentActiveSet = set;
+        break;
+      }
+    }
+    final withoutCurrent =
+        sets.where((set) => set.id != _activeSet.id).toList();
+    final recentSets = withoutCurrent.take(5).toList();
+    final olderSets = withoutCurrent.skip(5).toList();
+
+    if (currentActiveSet != null) {
+      recentSets.insert(0, currentActiveSet);
+    }
+
+    if (!mounted) return null;
+    return showModalBottomSheet<PictogramSet>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  localizations.chooseSetForClient,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Text(
+                        localizations.activePictogramSets,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: AppTheme.primaryBlue,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      for (final set in recentSets) ...[
+                        _buildSetPickerTile(
+                          sheetContext,
+                          set,
+                          isCurrentSet: set.id == _activeSet.id,
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (olderSets.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          localizations.myPictogramSets,
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        const SizedBox(height: 6),
+                        for (final set in olderSets) ...[
+                          _buildSetPickerTile(sheetContext, set),
+                          const Divider(height: 1),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSetPickerTile(
+    BuildContext sheetContext,
+    PictogramSet set, {
+    bool isCurrentSet = false,
+  }) {
+    return ListTile(
+      title: Text(
+        set.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        '${set.pictograms.length} pictogrammen',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: isCurrentSet
+          ? Icon(
+              Icons.check_circle,
+              color: AppTheme.primaryBlue,
+            )
+          : null,
+      onTap: () => Navigator.of(sheetContext).pop(set),
+    );
   }
 
   Future<void> _persistClientProgress(String clientId, int index) async {
     try {
       await _clientService.saveClientProgress(
         clientId: clientId,
-        setId: widget.set.id,
+        setId: _activeSet.id,
         index: index,
       );
     } catch (_) {
@@ -510,7 +643,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     final localizations = LanguageProvider.localizationsOf(context);
 
     // Use modified sequence if available, otherwise use original
-    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    final pictograms = _modifiedSequence ?? _activeSet.pictograms;
 
     if (pictograms.isEmpty) {
       return Center(
@@ -678,7 +811,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   Widget _buildActionButtons() {
     final localizations = LanguageProvider.localizationsOf(context);
-    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    final pictograms = _modifiedSequence ?? _activeSet.pictograms;
     final isLastStep = _currentStepIndex == pictograms.length - 1;
     final isFirstStep = _currentStepIndex == 0;
 
@@ -892,7 +1025,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   void _nextStep() {
     if (!mounted) return;
 
-    final pictograms = _modifiedSequence ?? widget.set.pictograms;
+    final pictograms = _modifiedSequence ?? _activeSet.pictograms;
     if (_currentStepIndex < pictograms.length - 1) {
       setState(() {
         _currentStepIndex++;
@@ -922,7 +1055,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   void _modifySequence() async {
     final currentSequence =
-        _modifiedSequence ?? List<Pictogram>.from(widget.set.pictograms);
+        _modifiedSequence ?? List<Pictogram>.from(_activeSet.pictograms);
 
     // Show dialog to modify sequence
     final result = await showDialog<List<Pictogram>>(

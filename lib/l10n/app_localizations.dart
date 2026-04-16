@@ -394,7 +394,7 @@ class AppLocalizations {
   String get pictoLibrary =>
       _language == AppLanguage.dutch ? 'Pictotheek' : 'Picto library';
   String get guideSubtitle => _language == AppLanguage.dutch
-      ? 'Voeg cliënten toe aan je cliëntgroep, maak een nieuwe pictoreeks of open een bestaande en breng Je Dag in Beeld.'
+      ? 'Voeg cliënten toe aan je cliëntgroep, maak een nieuwe pictoreeks of open een bestaande en Breng Je Dag in Beeld.'
       : 'Create a new pictogram set or open an existing one and visualize your day.';
   String get myClients =>
       _language == AppLanguage.dutch ? 'Mijn cliënten' : 'My clients';
@@ -411,7 +411,7 @@ class AppLocalizations {
   String get switchClient =>
       _language == AppLanguage.dutch ? 'Wijzig cliënt' : 'Change client';
   String get switchClientActionLabel =>
-      _language == AppLanguage.dutch ? 'Wijziging cliënt' : 'Change client';
+      _language == AppLanguage.dutch ? 'Cliënt kiezen' : 'Choose client';
   String get chooseClient => _language == AppLanguage.dutch ? 'Kies' : 'Select';
   String get activeClient =>
       _language == AppLanguage.dutch ? 'Actieve cliënt' : 'Active client';
@@ -438,6 +438,15 @@ class AppLocalizations {
   String get myPictogramSets => _language == AppLanguage.dutch
       ? 'Opgeslagen pictoreeksen'
       : 'Saved icon sets';
+  String get activePictogramSets => _language == AppLanguage.dutch
+      ? 'Actieve pictoreeksen'
+      : 'Active pictogram sets';
+  String get chooseSetForClient => _language == AppLanguage.dutch
+      ? 'Kies pictoreeks voor cliënt'
+      : 'Choose a pictogram set for client';
+  String get noSetsForClient => _language == AppLanguage.dutch
+      ? 'Geen pictoreeksen voor deze cliënt'
+      : 'No pictogram sets found for this client';
   String get savedSets =>
       _language == AppLanguage.dutch ? 'Opgeslagen pictoreeksen' : 'Saved sets';
   String get recentAutoSaved =>
