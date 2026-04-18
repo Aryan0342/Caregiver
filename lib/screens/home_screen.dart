@@ -6,8 +6,9 @@ import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../services/language_service.dart';
+import '../services/set_service.dart';
 import 'pictogram_picker_screen.dart';
-import 'my_sets_screen.dart';
+import 'client_mode_session_screen.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 ///
@@ -25,6 +26,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final SetService _setService = SetService();
+
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
@@ -209,14 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     icon: Icons.flash_on_rounded,
                                     title: localizations.activePictogramSets,
                                     onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const MySetsScreen(
-                                                  initialTabIndex: 1),
-                                        ),
-                                      );
+                                      _openActiveSetChooser();
                                     },
                                   ),
                                 ),
@@ -289,6 +285,123 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openActiveSetChooser() async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final allSets = await _setService.getUserSetsOnce(includeAutoSaved: true);
+    final activeSets = allSets.where((set) => set.isAutoSaved).take(5).toList();
+
+    if (!mounted) return;
+
+    if (activeSets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(localizations.noAutoSavedSets),
+          backgroundColor: AppTheme.accentOrange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final selectedSet = await showModalBottomSheet<dynamic>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  localizations.activePictogramSets,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 360),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: activeSets.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (itemContext, index) {
+                      final set = activeSets[index];
+                      final displayName = set.name.trim().isEmpty
+                          ? '${localizations.recentAutoSaved} ${index + 1}'
+                          : set.name;
+                      final subtitleParts = <String>[
+                        '${set.pictograms.length} picto\'s',
+                        if (set.clientName != null &&
+                            set.clientName!.isNotEmpty)
+                          set.clientName!,
+                      ];
+
+                      return ListTile(
+                        dense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 4),
+                        leading: CircleAvatar(
+                          radius: 16,
+                          backgroundColor:
+                              AppTheme.primaryBlue.withValues(alpha: 0.12),
+                          child: Icon(
+                            Icons.flash_on_rounded,
+                            size: 18,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                        title: Text(
+                          displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        subtitle: Text(
+                          subtitleParts.join(' • '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                        ),
+                        trailing: Icon(
+                          Icons.play_circle_fill_rounded,
+                          color: AppTheme.accentGreen,
+                          size: 26,
+                        ),
+                        onTap: () {
+                          Navigator.pop(sheetContext, set);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedSet == null || !mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClientModeSessionScreen(set: selectedSet),
+      ),
     );
   }
 
