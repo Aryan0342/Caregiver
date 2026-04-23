@@ -188,6 +188,8 @@ class AppLocalizations {
   String get roleOrthopedagoog =>
       _language == AppLanguage.dutch ? 'orthopedagoog' : 'Orthopedagogue';
   String get roleOuder => _language == AppLanguage.dutch ? 'ouder' : 'Parent';
+  String get roleLogopedist =>
+      _language == AppLanguage.dutch ? 'logopedist' : 'Speech therapist';
   String get roleAnders => _language == AppLanguage.dutch ? 'anders' : 'Other';
 
   // Legacy role names (kept for backward compatibility)

@@ -6,9 +6,6 @@ import '../routes/app_routes.dart';
 import '../providers/language_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../services/language_service.dart';
-import '../services/set_service.dart';
-import 'pictogram_picker_screen.dart';
-import 'client_mode_session_screen.dart';
 
 /// Modern HomeScreen for the AAC pictogram routine app.
 ///
@@ -26,8 +23,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final SetService _setService = SetService();
-
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
@@ -148,86 +143,67 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           const SizedBox(height: 70),
                           // Primary action: client-based workflow
-                          _buildMainActionButton(
+                          _buildInfoActionButton(
                             context,
                             icon: Icons.groups_rounded,
                             title: localizations.myClients,
+                            subtitle: localizations.currentLanguage ==
+                                    AppLanguage.dutch
+                                ? 'voor zorgverleners'
+                                : 'for care institutions',
                             color: AppTheme.primaryBlue,
                             onTap: () {
                               Navigator.pushNamed(context, AppRoutes.clients);
                             },
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 28),
 
-                          // Secondary action: "Nieuwe pictoreeks" (Blue button)
-                          _buildMainActionButton(
+                          // Parent-focused entry point to the child workflow.
+                          _buildInfoActionButton(
                             context,
-                            icon: Icons.add_rounded,
-                            title: localizations.newPictogramSet,
+                            icon: Icons.person_rounded,
+                            title: localizations.currentLanguage ==
+                                    AppLanguage.dutch
+                                ? 'Mijn kind'
+                                : 'My child',
+                            subtitle: localizations.currentLanguage ==
+                                    AppLanguage.dutch
+                                ? 'Voor ouders'
+                                : 'For parents',
                             color: AppTheme.accentOrange,
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PictogramPickerScreen(
-                                    maxSelection: 20,
-                                  ),
-                                ),
-                              );
+                              Navigator.pushNamed(context, AppRoutes.myChild);
                             },
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 18),
 
-                          // Tertiary action: "Opgeslagen pictoreeksen" (Orange button)
-                          _buildMainActionButton(
-                            context,
-                            icon: Icons.folder_rounded,
-                            title: localizations.myPictogramSets,
-                            color: AppTheme.primaryBlue,
+                          GestureDetector(
                             onTap: () {
-                              Navigator.pushNamed(context, AppRoutes.mySets);
+                              Navigator.pushNamed(
+                                  context, AppRoutes.pictoLibrary);
                             },
-                          ),
-                          const SizedBox(height: 42),
-
-                          // Bottom quick actions: active sets (left) + library (right)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(8, 14, 8, 4),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(
-                                  color: AppTheme.primaryBlue
-                                      .withValues(alpha: 0.16),
-                                  width: 1,
-                                ),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.library_books_rounded,
+                                    color: AppTheme.primaryBlue,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    localizations.pictoLibrary,
+                                    style: TextStyle(
+                                      color: AppTheme.primaryBlue,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _buildBottomTextAction(
-                                    context,
-                                    icon: Icons.flash_on_rounded,
-                                    title: localizations.activePictogramSets,
-                                    onTap: () {
-                                      _openActiveSetChooser();
-                                    },
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _buildBottomTextAction(
-                                    context,
-                                    icon: Icons.library_books_rounded,
-                                    title: localizations.pictoLibrary,
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                          context, AppRoutes.pictoLibrary);
-                                    },
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                         ],
@@ -239,168 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomTextAction(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 170;
-        final iconSize = compact ? 20.0 : 22.0;
-        final fontSize = compact ? 12.0 : 13.0;
-
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: AppTheme.primaryBlue, size: iconSize),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: AppTheme.primaryBlue,
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    softWrap: true,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _openActiveSetChooser() async {
-    final localizations = LanguageProvider.localizationsOf(context);
-    final allSets = await _setService.getUserSetsOnce(includeAutoSaved: true);
-    final activeSets = allSets.where((set) => set.isAutoSaved).take(5).toList();
-
-    if (!mounted) return;
-
-    if (activeSets.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.noAutoSavedSets),
-          backgroundColor: AppTheme.accentOrange,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    final selectedSet = await showModalBottomSheet<dynamic>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  localizations.activePictogramSets,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 10),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 360),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: activeSets.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (itemContext, index) {
-                      final set = activeSets[index];
-                      final displayName = set.name.trim().isEmpty
-                          ? '${localizations.recentAutoSaved} ${index + 1}'
-                          : set.name;
-                      final subtitleParts = <String>[
-                        '${set.pictograms.length} picto\'s',
-                        if (set.clientName != null &&
-                            set.clientName!.isNotEmpty)
-                          set.clientName!,
-                      ];
-
-                      return ListTile(
-                        dense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 4),
-                        leading: CircleAvatar(
-                          radius: 16,
-                          backgroundColor:
-                              AppTheme.primaryBlue.withValues(alpha: 0.12),
-                          child: Icon(
-                            Icons.flash_on_rounded,
-                            size: 18,
-                            color: AppTheme.primaryBlue,
-                          ),
-                        ),
-                        title: Text(
-                          displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                        ),
-                        subtitle: Text(
-                          subtitleParts.join(' • '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                        ),
-                        trailing: Icon(
-                          Icons.play_circle_fill_rounded,
-                          color: AppTheme.accentGreen,
-                          size: 26,
-                        ),
-                        onTap: () {
-                          Navigator.pop(sheetContext, set);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (selectedSet == null || !mounted) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ClientModeSessionScreen(set: selectedSet),
       ),
     );
   }
@@ -434,20 +248,18 @@ class _HomeScreenState extends State<HomeScreen> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           constraints: const BoxConstraints(
-            minHeight: 70, // Smaller touch target
+            minHeight: 70,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon (rounded Material icon)
               Icon(
                 icon,
                 color: Colors.white,
                 size: 32,
               ),
               const SizedBox(width: 16),
-              // Button text
               Flexible(
                 child: Text(
                   title,
@@ -470,11 +282,77 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Build subtitle text with only the last 5 words italicized
+  Widget _buildInfoActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 4,
+      shadowColor: color.withValues(alpha: 0.35),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        splashColor: Colors.white.withValues(alpha: 0.2),
+        highlightColor: Colors.white.withValues(alpha: 0.1),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          constraints: const BoxConstraints(minHeight: 72),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 30),
+              const SizedBox(width: 14),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 20,
+                            height: 1.2,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            height: 1.2,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSubtitleWithPartialItalics(BuildContext context, String text) {
     final words = text.split(' ');
     final regularWords =
-        words.length > 5 ? words.sublist(0, words.length - 5) : [];
+        words.length > 5 ? words.sublist(0, words.length - 5) : <String>[];
     final italicWords =
         words.length > 5 ? words.sublist(words.length - 5) : words;
 
@@ -489,10 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
         style: baseStyle,
         children: [
           if (regularWords.isNotEmpty)
-            TextSpan(
-              text: '${regularWords.join(' ')} ',
-              style: baseStyle,
-            ),
+            TextSpan(text: '${regularWords.join(' ')} ', style: baseStyle),
           TextSpan(
             text: italicWords.join(' '),
             style: baseStyle?.copyWith(fontStyle: FontStyle.italic),
@@ -503,49 +378,51 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Show language selector dialog
   void _showLanguageSelector(BuildContext context) {
     final languageService =
         LanguageProvider.of(context)?.languageService ?? LanguageService();
     final localizations = LanguageProvider.localizationsOf(context);
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Icon(Icons.language, color: AppTheme.primaryBlue),
-            const SizedBox(width: 12),
-            Text(localizations.languageLabel),
+            const SizedBox(width: 8),
+            Text(localizations.currentLanguage == AppLanguage.dutch
+                ? 'Kies taal'
+                : 'Choose language'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: AppLanguage.values.map((language) {
-            return RadioListTile<AppLanguage>(
-              title: Text(language.displayName),
-              value: language,
-              groupValue: languageService.currentLanguage,
-              onChanged: (value) {
-                if (value != null) {
-                  languageService.setLanguage(value);
-                  Navigator.of(context).pop();
-                }
+          children: [
+            ListTile(
+              leading: const Text('🇳🇱', style: TextStyle(fontSize: 20)),
+              title: const Text('Nederlands'),
+              trailing: languageService.currentLanguage == AppLanguage.dutch
+                  ? Icon(Icons.check, color: AppTheme.primaryBlue)
+                  : null,
+              onTap: () {
+                languageService.setLanguage(AppLanguage.dutch);
+                Navigator.pop(context);
               },
-              activeColor: AppTheme.primaryBlue,
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              localizations.close,
-              style: TextStyle(color: AppTheme.primaryBlue),
             ),
-          ),
-        ],
+            ListTile(
+              leading: const Text('🇺🇸', style: TextStyle(fontSize: 20)),
+              title: const Text('English'),
+              trailing: languageService.currentLanguage == AppLanguage.english
+                  ? Icon(Icons.check, color: AppTheme.primaryBlue)
+                  : null,
+              onTap: () {
+                languageService.setLanguage(AppLanguage.english);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

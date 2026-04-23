@@ -26,6 +26,7 @@ import 'screens/request_picto_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/picto_library_screen.dart';
 import 'screens/clients_screen.dart';
+import 'screens/my_child_screen.dart';
 import 'screens/add_client_screen.dart';
 import 'screens/security_settings_screen.dart';
 import 'services/language_service.dart';
@@ -162,6 +163,7 @@ class _MyAppState extends State<MyApp> {
             AppRoutes.profile: (context) => const ProfileScreen(),
             AppRoutes.pictoLibrary: (context) => const PictoLibraryScreen(),
             AppRoutes.clients: (context) => const ClientsScreen(),
+            AppRoutes.myChild: (context) => const MyChildScreen(),
             AppRoutes.addClient: (context) => const AddClientScreen(),
             AppRoutes.securitySettings: (context) =>
                 const SecuritySettingsScreen(),

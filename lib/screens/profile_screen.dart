@@ -73,8 +73,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final data = await _profileService.getProfile();
       if (mounted && data != null) {
         _nameController.text = (data['name'] as String? ?? '').trim();
-        _organisationController.text = (data['organisation'] as String? ?? '')
-            .trim();
+        _organisationController.text =
+            (data['organisation'] as String? ?? '').trim();
         _locationController.text = (data['location'] as String? ?? '').trim();
         _selectedRole = data['role'] as String?;
         _selectedSex = _normalizeSex(data['sex'] as String?);
@@ -83,9 +83,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _securityAnswerController.text = ''; // Never show stored answer
         // Security question: accept stored value from either language and show in current UI language
         final langService = LanguageService();
-        final optsCurrent = AppLocalizations(langService.currentLanguage).securityQuestionOptions;
-        final optsOther = AppLocalizations(langService.currentLanguage == AppLanguage.dutch ? AppLanguage.english : AppLanguage.dutch).securityQuestionOptions;
-        if (_selectedSecurityQuestion != null && _selectedSecurityQuestion!.isNotEmpty) {
+        final optsCurrent = AppLocalizations(langService.currentLanguage)
+            .securityQuestionOptions;
+        final optsOther = AppLocalizations(
+                langService.currentLanguage == AppLanguage.dutch
+                    ? AppLanguage.english
+                    : AppLanguage.dutch)
+            .securityQuestionOptions;
+        if (_selectedSecurityQuestion != null &&
+            _selectedSecurityQuestion!.isNotEmpty) {
           if (optsCurrent.contains(_selectedSecurityQuestion!)) {
             // Already in current language, keep
           } else {
@@ -128,9 +134,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (_selectedRole == null || _selectedRole!.isEmpty) {
       setState(() {
-        _errorMessage = _selectedLanguage == 'nl'
-            ? 'Selecteer uw rol'
-            : 'Select your role';
+        _errorMessage =
+            _selectedLanguage == 'nl' ? 'Selecteer uw rol' : 'Select your role';
       });
       return;
     }
@@ -239,9 +244,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         localizations.profileDescription,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontSize: 16,
-                        ),
+                              color: AppTheme.textSecondary,
+                              fontSize: 16,
+                            ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
@@ -303,6 +308,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             value: 'ouder',
                             child: Text(
                               localizations.roleOuder,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'logopedist',
+                            child: Text(
+                              localizations.roleLogopedist,
                               style: const TextStyle(
                                 color: Colors.black,
                                 fontSize: 18,
@@ -405,7 +421,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                         onChanged: (value) =>
                             setState(() => _selectedSex = value),
-                        value: const ['Male', 'Female', 'Other'].contains(_selectedSex)
+                        value: const ['Male', 'Female', 'Other']
+                                .contains(_selectedSex)
                             ? _selectedSex
                             : null,
                       ),
@@ -532,7 +549,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }).toList(),
                         onChanged: (value) =>
                             setState(() => _selectedSecurityQuestion = value),
-                        value: localizations.securityQuestionOptions.contains(_selectedSecurityQuestion)
+                        value: localizations.securityQuestionOptions
+                                .contains(_selectedSecurityQuestion)
                             ? _selectedSecurityQuestion
                             : null,
                         validator: (value) => (value == null || value.isEmpty)
@@ -637,18 +655,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Divider(height: 32),
                       Text(
                         localizations.deleteAccount,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.red,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
-                        onPressed: () => _showDeleteAccountConfirmation(context),
-                        icon: const Icon(Icons.delete_forever, color: Colors.red, size: 22),
+                        onPressed: () =>
+                            _showDeleteAccountConfirmation(context),
+                        icon: const Icon(Icons.delete_forever,
+                            color: Colors.red, size: 22),
                         label: Text(
                           localizations.deleteAccount,
-                          style: const TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.red),
@@ -678,11 +702,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(localizations.cancelDelete, style: TextStyle(color: AppTheme.primaryBlue)),
+            child: Text(localizations.cancelDelete,
+                style: TextStyle(color: AppTheme.primaryBlue)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(localizations.confirmDelete, style: const TextStyle(color: Colors.red)),
+            child: Text(localizations.confirmDelete,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -694,7 +720,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) {
         final controller = TextEditingController();
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(localizations.deleteAccountConfirmTitle),
           content: TextField(
             controller: controller,
@@ -708,11 +735,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(localizations.cancel, style: TextStyle(color: AppTheme.primaryBlue)),
+              child: Text(localizations.cancel,
+                  style: TextStyle(color: AppTheme.primaryBlue)),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(controller.text),
-              child: Text(localizations.confirmDelete, style: const TextStyle(color: Colors.red)),
+              child: Text(localizations.confirmDelete,
+                  style: const TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -737,10 +766,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.errorMessage ?? localizations.deleteAccountError),
+            content:
+                Text(result.errorMessage ?? localizations.deleteAccountError),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         return;
@@ -748,13 +779,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       await FirebaseAuth.instance.signOut();
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+        Navigator.of(context)
+            .pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(localizations.deleteAccountSuccess),
             backgroundColor: AppTheme.accentGreen,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -765,7 +798,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             content: Text('${localizations.deleteAccountError}: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }

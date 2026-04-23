@@ -20,6 +20,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String pictoLibrary = '/picto-library';
   static const String clients = '/clients';
+  static const String myChild = '/my-child';
   static const String addClient = '/add-client';
   static const String securitySettings = '/security-settings';
 }
