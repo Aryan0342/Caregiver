@@ -7,7 +7,8 @@ import '../models/pictogram_model.dart';
 import 'custom_pictogram_service.dart';
 
 class ArasaacService {
-  final CustomPictogramService _customPictogramService = CustomPictogramService();
+  final CustomPictogramService _customPictogramService =
+      CustomPictogramService();
 
   // NOTE: All explicit ARASAAC disk caching has been disabled. The app now
   // always works online and does not store pictogram images on disk.
@@ -99,18 +100,24 @@ class ArasaacService {
     // No-op: category-based cache is no longer used.
   }
 
-  Future<File?> downloadAndCachePictogramAtSize(int pictogramId, {int size = 500, required String category, required String keyword}) async {
+  Future<File?> downloadAndCachePictogramAtSize(int pictogramId,
+      {int size = 500,
+      required String category,
+      required String keyword}) async {
     // Disk-based caching has been disabled. This method is kept only for
     // backward compatibility and now always returns null so that callers
     // fall back to using online image URLs directly.
     return null;
   }
 
-  Future<File?> downloadAndCachePictogram(int pictogramId, {required String category, required String keyword}) async {
-    return await downloadAndCachePictogramAtSize(pictogramId, size: 500, category: category, keyword: keyword);
+  Future<File?> downloadAndCachePictogram(int pictogramId,
+      {required String category, required String keyword}) async {
+    return await downloadAndCachePictogramAtSize(pictogramId,
+        size: 500, category: category, keyword: keyword);
   }
 
-  Future<List<Pictogram>> getCachedPictograms({List<int>? ids, String? category}) async {
+  Future<List<Pictogram>> getCachedPictograms(
+      {List<int>? ids, String? category}) async {
     // Offline pictogram cache has been removed. Always return an empty list.
     return [];
   }
@@ -124,143 +131,449 @@ class ArasaacService {
     return 0;
   }
 
-
   List<String> _getCategorySearchTerms(PictogramCategory category) {
     switch (category) {
       case PictogramCategory.eten:
         return [
-          'eten', 'drinken', 'voedsel', 'maaltijd', 'ontbijt', 'lunch', 'diner',
-          'vlees', 'vis', 'zeevruchten', 'zuivel', 'ei', 'eiproduct',
-          'fruit', 'groente', 'gedroogd fruit', 'peulvrucht', 'graan', 'kruiden', 'aromatische kruiden',
-          'vleeswaren', 'dessert', 'bakken', 'snoep', 'condiment',
-          'drank', 'beverage', 'gastronomie', 'traditioneel gerecht', 'smaak', 'koken', 'kookkunst'
+          'eten',
+          'drinken',
+          'voedsel',
+          'maaltijd',
+          'ontbijt',
+          'lunch',
+          'diner',
+          'vlees',
+          'vis',
+          'zeevruchten',
+          'zuivel',
+          'ei',
+          'eiproduct',
+          'fruit',
+          'groente',
+          'gedroogd fruit',
+          'peulvrucht',
+          'graan',
+          'kruiden',
+          'aromatische kruiden',
+          'vleeswaren',
+          'dessert',
+          'bakken',
+          'snoep',
+          'condiment',
+          'drank',
+          'beverage',
+          'gastronomie',
+          'traditioneel gerecht',
+          'smaak',
+          'koken',
+          'kookkunst'
         ];
       case PictogramCategory.vrijetijd:
         return [
-          'vrijetijd', 'hobby', 'sport', 'sportevenement', 'olympische spelen', 'sportmodaliteit',
-          'sportregels', 'aangepaste sport', 'sportkleding', 'sportmateriaal', 'sportfaciliteit',
-          'atleet', 'sportgroep', 'karate', 'schaatsen', 'duiken', 'basketbal', 'surfen',
-          'fietsen', 'voetbal', 'zwemmen', 'schaken', 'paardrijden', 'lichamelijke oefening',
-          'atletiek', 'gymnastiek', 'ritmische gymnastiek', 'acrobatische gymnastiek',
-          'traditioneel spel', 'speelgoed', 'toy', 'spel', 'gokken', 'kaartspel', 'bordspel',
-          'videogame', 'show', 'buitensport', 'strand', 'zwembad', 'berg', 'entertainment faciliteit'
+          'vrijetijd',
+          'hobby',
+          'sport',
+          'sportevenement',
+          'olympische spelen',
+          'sportmodaliteit',
+          'sportregels',
+          'aangepaste sport',
+          'sportkleding',
+          'sportmateriaal',
+          'sportfaciliteit',
+          'atleet',
+          'sportgroep',
+          'karate',
+          'schaatsen',
+          'duiken',
+          'basketbal',
+          'surfen',
+          'fietsen',
+          'voetbal',
+          'zwemmen',
+          'schaken',
+          'paardrijden',
+          'lichamelijke oefening',
+          'atletiek',
+          'gymnastiek',
+          'ritmische gymnastiek',
+          'acrobatische gymnastiek',
+          'traditioneel spel',
+          'speelgoed',
+          'toy',
+          'spel',
+          'gokken',
+          'kaartspel',
+          'bordspel',
+          'videogame',
+          'show',
+          'buitensport',
+          'strand',
+          'zwembad',
+          'berg',
+          'entertainment faciliteit'
         ];
       case PictogramCategory.plaats:
         return [
-          'plaats', 'locatie', 'monument', 'gebouw', 'woongebouw', 'kamer', 'room',
-          'commercieel gebouw', 'cultureel gebouw', 'horeca', 'religieus gebouw',
-          'gebouwsfaciliteit', 'industrieel gebouw', 'onderwijsgebouw', 'medisch centrum',
-          'gebouwskamer', 'openbaar gebouw', 'dienstgebouw', 'faciliteit', 'recreatiefaciliteit',
-          'speeltuin', 'recyclingcentrum', 'stedelijk gebied', 'straatmeubilair',
-          'infrastructuur', 'werkplek', 'landelijk gebied'
+          'plaats',
+          'locatie',
+          'monument',
+          'gebouw',
+          'woongebouw',
+          'kamer',
+          'room',
+          'commercieel gebouw',
+          'cultureel gebouw',
+          'horeca',
+          'religieus gebouw',
+          'gebouwsfaciliteit',
+          'industrieel gebouw',
+          'onderwijsgebouw',
+          'medisch centrum',
+          'gebouwskamer',
+          'openbaar gebouw',
+          'dienstgebouw',
+          'faciliteit',
+          'recreatiefaciliteit',
+          'speeltuin',
+          'recyclingcentrum',
+          'stedelijk gebied',
+          'straatmeubilair',
+          'infrastructuur',
+          'werkplek',
+          'landelijk gebied'
         ];
       case PictogramCategory.onderwijs:
         return [
-          'onderwijs', 'school', 'leren', 'leraar', 'leerling', 'klas', 'les',
-          'onderwijsactiviteit', 'vak', 'onderwijsinstelling', 'onderwijstaak',
-          'onderwijsmateriaal', 'onderwijsapparatuur', 'onderwijsruimte',
-          'onderwijsorganisatie', 'onderwijsinstelling', 'speciaal onderwijs',
-          'onderwijspersoneel', 'onderwijsdocumentatie', 'studenten', 'onderwijsmethodologie'
+          'onderwijs',
+          'school',
+          'leren',
+          'leraar',
+          'leerling',
+          'klas',
+          'les',
+          'onderwijsactiviteit',
+          'vak',
+          'onderwijsinstelling',
+          'onderwijstaak',
+          'onderwijsmateriaal',
+          'onderwijsapparatuur',
+          'onderwijsruimte',
+          'onderwijsorganisatie',
+          'onderwijsinstelling',
+          'speciaal onderwijs',
+          'onderwijspersoneel',
+          'onderwijsdocumentatie',
+          'studenten',
+          'onderwijsmethodologie'
         ];
       case PictogramCategory.tijd:
         return [
-          'tijd', 'uur', 'dag', 'week', 'maand', 'jaar', 'moment',
-          'chronologische tijd', 'evenement', 'populair evenement', 'halloween', 'carnaval',
-          'nieuwjaar', 'fiestas del pilar', 'populair festival', 'kerstmis', 'paasweek',
-          'religieus evenement', 'sociaal evenement', 'verjaardag', 'bruiloft', 'dood',
-          'oorlog', 'kalender', 'seizoen', 'dagtijd', 'tijdeenheid', 'daguren',
+          'tijd',
+          'uur',
+          'dag',
+          'week',
+          'maand',
+          'jaar',
+          'moment',
+          'chronologische tijd',
+          'evenement',
+          'populair evenement',
+          'halloween',
+          'carnaval',
+          'nieuwjaar',
+          'fiestas del pilar',
+          'populair festival',
+          'kerstmis',
+          'paasweek',
+          'religieus evenement',
+          'sociaal evenement',
+          'verjaardag',
+          'bruiloft',
+          'dood',
+          'oorlog',
+          'kalender',
+          'seizoen',
+          'dagtijd',
+          'tijdeenheid',
+          'daguren',
           'chronologisch instrument'
         ];
       case PictogramCategory.diversen:
         return [
-          'diversen', 'overig', 'anders', 'miscellaneous',
-          'covid-19', 'categorisatie', 'internationale organisatie', 'seizoenen',
-          'winter', 'zomer', 'herfst', 'lente', 'aragon', 'huesca', 'teruel', 'zaragoza',
+          'diversen',
+          'overig',
+          'anders',
+          'miscellaneous',
+          'covid-19',
+          'categorisatie',
+          'internationale organisatie',
+          'seizoenen',
+          'winter',
+          'zomer',
+          'herfst',
+          'lente',
+          'aragon',
+          'huesca',
+          'teruel',
+          'zaragoza',
           'orofaciale praxis'
         ];
       case PictogramCategory.beweging:
         return [
-          'beweging', 'lopen', 'rennen', 'gaan', 'reizen', 'verplaatsen',
-          'verkeer', 'verkeersveiligheid', 'verkeerslicht', 'vervoermiddel',
-          'watertransport', 'luchttransport', 'landtransport', 'voertuigonderdeel',
-          'route', 'verkeersongeval'
+          'beweging',
+          'lopen',
+          'rennen',
+          'gaan',
+          'reizen',
+          'verplaatsen',
+          'verkeer',
+          'verkeersveiligheid',
+          'verkeerslicht',
+          'vervoermiddel',
+          'watertransport',
+          'luchttransport',
+          'landtransport',
+          'voertuigonderdeel',
+          'route',
+          'verkeersongeval'
         ];
       case PictogramCategory.religie:
         return [
-          'religie', 'geloof', 'kerk', 'bidden', 'aanbidden',
-          'christendom', 'islam', 'jodendom', 'boeddhisme', 'hindoeïsme',
-          'religieus object', 'religieuze plaats', 'religieus persoon',
-          'religieus karakter', 'religieuze handeling'
+          'religie',
+          'geloof',
+          'kerk',
+          'bidden',
+          'aanbidden',
+          'christendom',
+          'islam',
+          'jodendom',
+          'boeddhisme',
+          'hindoeïsme',
+          'religieus object',
+          'religieuze plaats',
+          'religieus persoon',
+          'religieus karakter',
+          'religieuze handeling'
         ];
       case PictogramCategory.werk:
         return [
-          'werk', 'baan', 'beroep', 'kantoor', 'carrière', 'arbeid',
-          'economische sector', 'primaire sector', 'veeteelt', 'visserij', 'landbouw',
-          'mijnbouw', 'bosbouw', 'bijenteelt', 'tuinieren', 'jacht',
-          'secundaire sector', 'industrie', 'energie', 'bouw', 'ambacht', 'kledingindustrie', 'timmerman',
-          'tertiaire sector', 'toerisme', 'financiële diensten', 'openbaar bestuur',
-          'handel', 'horeca', 'veiligheid en defensie', 'telecommunicatie', 'cultuur',
-          'professionele diensten', 'consultancy', 'afvalverwerking', 'persoonlijke diensten',
-          'kapper', 'politieke vertegenwoordiging', 'verkiezing', 'recht en justitie',
-          'juridische instelling', 'informatietechnologie', 'professional', 'onderwijsprofessional',
-          'sanitair professional', 'kunstenaar', 'muzikant', 'uitvoerend kunstenaar', 'beeldend kunstenaar',
-          'verkoper', 'werkgereedschap', 'werkmachine', 'werkplaats', 'werkkleding',
-          'beschermingsuitrusting', 'werkongeval', 'werkorganisatie'
+          'werk',
+          'baan',
+          'beroep',
+          'kantoor',
+          'carrière',
+          'arbeid',
+          'economische sector',
+          'primaire sector',
+          'veeteelt',
+          'visserij',
+          'landbouw',
+          'mijnbouw',
+          'bosbouw',
+          'bijenteelt',
+          'tuinieren',
+          'jacht',
+          'secundaire sector',
+          'industrie',
+          'energie',
+          'bouw',
+          'ambacht',
+          'kledingindustrie',
+          'timmerman',
+          'tertiaire sector',
+          'toerisme',
+          'financiële diensten',
+          'openbaar bestuur',
+          'handel',
+          'horeca',
+          'veiligheid en defensie',
+          'telecommunicatie',
+          'cultuur',
+          'professionele diensten',
+          'consultancy',
+          'afvalverwerking',
+          'persoonlijke diensten',
+          'kapper',
+          'politieke vertegenwoordiging',
+          'verkiezing',
+          'recht en justitie',
+          'juridische instelling',
+          'informatietechnologie',
+          'professional',
+          'onderwijsprofessional',
+          'sanitair professional',
+          'kunstenaar',
+          'muzikant',
+          'uitvoerend kunstenaar',
+          'beeldend kunstenaar',
+          'verkoper',
+          'werkgereedschap',
+          'werkmachine',
+          'werkplaats',
+          'werkkleding',
+          'beschermingsuitrusting',
+          'werkongeval',
+          'werkorganisatie'
         ];
       case PictogramCategory.communicatie:
         return [
-          'communicatie', 'praten', 'spreken', 'telefoon', 'bellen', 'bericht',
-          'augmentatieve communicatie', 'communicatiesysteem', 'communicatiehulpmiddel',
-          'aac implementatie', 'taal', 'lexicon', 'bijvoeglijk naamwoord',
-          'kwalificerend bijvoeglijk naamwoord', 'vergelijkend bijvoeglijk naamwoord',
-          'onbepaald bijvoeglijk naamwoord', 'telwoord', 'rangtelwoord', 'bezittelijk bijvoeglijk naamwoord',
-          'overtreffende trap', 'demonym', 'aanwijzend bijvoeglijk naamwoord',
-          'bijwoord', 'bijwoord van toevoeging', 'bijwoord van bevestiging',
-          'bijwoord van graad', 'bijwoord van twijfel', 'bijwoord van uitsluiting',
-          'bijwoord van plaats', 'bijwoord van wijze', 'bijwoord van ontkenning'
+          'communicatie',
+          'praten',
+          'spreken',
+          'telefoon',
+          'bellen',
+          'bericht',
+          'augmentatieve communicatie',
+          'communicatiesysteem',
+          'communicatiehulpmiddel',
+          'aac implementatie',
+          'taal',
+          'lexicon',
+          'bijvoeglijk naamwoord',
+          'kwalificerend bijvoeglijk naamwoord',
+          'vergelijkend bijvoeglijk naamwoord',
+          'onbepaald bijvoeglijk naamwoord',
+          'telwoord',
+          'rangtelwoord',
+          'bezittelijk bijvoeglijk naamwoord',
+          'overtreffende trap',
+          'demonym',
+          'aanwijzend bijvoeglijk naamwoord',
+          'bijwoord',
+          'bijwoord van toevoeging',
+          'bijwoord van bevestiging',
+          'bijwoord van graad',
+          'bijwoord van twijfel',
+          'bijwoord van uitsluiting',
+          'bijwoord van plaats',
+          'bijwoord van wijze',
+          'bijwoord van ontkenning'
         ];
       case PictogramCategory.document:
         return [
-          'document', 'papier', 'brief', 'bestand', 'formulier', 'briefje',
-          'medische documentatie', 'ondersteunend document', 'officieel document',
-          'onderwijsdocument', 'informatiedocument', 'gerechtelijk document',
-          'handelsdocument', 'kernwoordenschat'
+          'document',
+          'papier',
+          'brief',
+          'bestand',
+          'formulier',
+          'briefje',
+          'medische documentatie',
+          'ondersteunend document',
+          'officieel document',
+          'onderwijsdocument',
+          'informatiedocument',
+          'gerechtelijk document',
+          'handelsdocument',
+          'kernwoordenschat'
         ];
       case PictogramCategory.kennis:
         return [
-          'kennis', 'informatie', 'leren', 'begrijpen', 'weten',
-          'kunst', 'wetenschap', 'geesteswetenschappen', 'kernwoordenschat'
+          'kennis',
+          'informatie',
+          'leren',
+          'begrijpen',
+          'weten',
+          'kunst',
+          'wetenschap',
+          'geesteswetenschappen',
+          'kernwoordenschat'
         ];
       case PictogramCategory.object:
         return [
-          'object', 'voorwerp', 'ding', 'gereedschap', 'apparaat', 'uitrusting',
-          'objecteigenschap', 'kleur', 'vorm', 'materiaal', 'afgeleid materiaal',
-          'grondstof', 'dierlijk materiaal', 'mineraal materiaal', 'plantaardig materiaal',
-          'fossiel materiaal', 'grootte', 'textuur', 'patroon', 'meubilair',
-          'apparaat', 'massamedia apparaat', 'chronologisch apparaat', 'atmosferisch apparaat',
-          'elektrisch apparaat', 'verlichting', 'muziekapparaat', 'schoonmaakproduct',
-          'hygiëneproduct', 'huishouden', 'trousseau', 'bestek', 'gerei', 'servies',
-          'mode', 'accessoires', 'sieraden', 'schoenen', 'kleding', 'kostuum', 'regionaal kostuum',
-          'cosmetica', 'zintuiglijke stimulatiemateriaal', 'publicatie'
+          'object',
+          'voorwerp',
+          'ding',
+          'gereedschap',
+          'apparaat',
+          'uitrusting',
+          'objecteigenschap',
+          'kleur',
+          'vorm',
+          'materiaal',
+          'afgeleid materiaal',
+          'grondstof',
+          'dierlijk materiaal',
+          'mineraal materiaal',
+          'plantaardig materiaal',
+          'fossiel materiaal',
+          'grootte',
+          'textuur',
+          'patroon',
+          'meubilair',
+          'apparaat',
+          'massamedia apparaat',
+          'chronologisch apparaat',
+          'atmosferisch apparaat',
+          'elektrisch apparaat',
+          'verlichting',
+          'muziekapparaat',
+          'schoonmaakproduct',
+          'hygiëneproduct',
+          'huishouden',
+          'trousseau',
+          'bestek',
+          'gerei',
+          'servies',
+          'mode',
+          'accessoires',
+          'sieraden',
+          'schoenen',
+          'kleding',
+          'kostuum',
+          'regionaal kostuum',
+          'cosmetica',
+          'zintuiglijke stimulatiemateriaal',
+          'publicatie'
         ];
       case PictogramCategory.levendWezen:
         return [
-          'dier', 'mens', 'persoon', 'huisdier', 'hond', 'kat', 'dieren',
-          'levend wezen', 'dierlijk', 'mensen', 'persoonlijk'
+          'dier',
+          'mens',
+          'persoon',
+          'huisdier',
+          'hond',
+          'kat',
+          'dieren',
+          'levend wezen',
+          'dierlijk',
+          'mensen',
+          'persoonlijk'
         ];
       case PictogramCategory.gevoelens:
         return [
-          'gevoel', 'emotie', 'blij', 'verdrietig', 'boos', 'liefde', 'gelukkig',
-          'gevoelens', 'emoties'
+          'gevoel',
+          'emotie',
+          'blij',
+          'verdrietig',
+          'boos',
+          'liefde',
+          'gelukkig',
+          'gevoelens',
+          'emoties'
         ];
       case PictogramCategory.gezondheid:
         return [
-          'gezondheid', 'medicijn', 'dokter', 'ziekenhuis', 'medisch', 'geneeskunde',
-          'gezondheidszorg', 'medicatie'
+          'gezondheid',
+          'medicijn',
+          'dokter',
+          'ziekenhuis',
+          'medisch',
+          'geneeskunde',
+          'gezondheidszorg',
+          'medicatie'
         ];
       case PictogramCategory.lichaam:
         return [
-          'lichaam', 'hoofd', 'hand', 'voet', 'oog', 'oor', 'mond', 'gezicht', 'lichaamsdeel',
+          'lichaam',
+          'hoofd',
+          'hand',
+          'voet',
+          'oog',
+          'oor',
+          'mond',
+          'gezicht',
+          'lichaamsdeel',
           'lichaamsdelen'
         ];
     }
@@ -287,19 +600,20 @@ class ArasaacService {
       int apiCallCount = 0;
 
       // Process up to 50 terms per search
-      final termsToProcess = searchTerms.length > 50
-          ? searchTerms.take(50).toList()
-          : searchTerms;
+      final termsToProcess =
+          searchTerms.length > 50 ? searchTerms.take(50).toList() : searchTerms;
 
       if (kDebugMode) {
-        debugPrint('Category search [${category.key}]: Fetching page offset=$offset, limit=$limit using ${termsToProcess.length} terms');
+        debugPrint(
+            'Category search [${category.key}]: Fetching page offset=$offset, limit=$limit using ${termsToProcess.length} terms');
       }
 
       // Collect results from all terms first (for proper pagination)
       for (final term in termsToProcess) {
         if (apiCallCount >= _maxApiCallsPerCategory) {
           if (kDebugMode) {
-            debugPrint('Category search [${category.key}]: Reached API call limit ($_maxApiCallsPerCategory)');
+            debugPrint(
+                'Category search [${category.key}]: Reached API call limit ($_maxApiCallsPerCategory)');
           }
           break;
         }
@@ -337,7 +651,8 @@ class ArasaacService {
             // Stop early if we have enough for the requested page + some buffer
             if (mergedResults.length >= (offset + limit + 50)) {
               if (kDebugMode) {
-                debugPrint('Category search [${category.key}]: Collected ${mergedResults.length} total results, enough for pagination');
+                debugPrint(
+                    'Category search [${category.key}]: Collected ${mergedResults.length} total results, enough for pagination');
               }
               break;
             }
@@ -346,7 +661,8 @@ class ArasaacService {
           continue;
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('Category search [${category.key}]: Error searching term "$term": $e');
+            debugPrint(
+                'Category search [${category.key}]: Error searching term "$term": $e');
           }
           continue;
         }
@@ -356,12 +672,14 @@ class ArasaacService {
       var finalResults = mergedResults.skip(offset).take(limit).toList();
 
       if (kDebugMode) {
-        debugPrint('Category search [${category.key}]: Returned ${finalResults.length} results (page offset=$offset, limit=$limit)');
+        debugPrint(
+            'Category search [${category.key}]: Returned ${finalResults.length} results (page offset=$offset, limit=$limit)');
       }
 
       // Fallback if results are too few
       if (finalResults.length <= 2) {
-        final fallbackResults = await _tryFallbackSearches(category, limit, finalResults.length);
+        final fallbackResults =
+            await _tryFallbackSearches(category, limit, finalResults.length);
 
         if (fallbackResults.isNotEmpty && finalResults.length <= 2) {
           final combined = <Pictogram>[...finalResults];
@@ -374,7 +692,8 @@ class ArasaacService {
           }
 
           if (kDebugMode && combined.length > finalResults.length) {
-            debugPrint('Category search [${category.key}]: Added ${combined.length - finalResults.length} pictograms from fallback');
+            debugPrint(
+                'Category search [${category.key}]: Added ${combined.length - finalResults.length} pictograms from fallback');
           }
 
           return combined;
@@ -383,28 +702,33 @@ class ArasaacService {
 
       // Add custom pictograms
       try {
-        final customPictograms = await _customPictogramService.getPictogramsByCategory(category.key);
+        final customPictograms =
+            await _customPictogramService.getPictogramsByCategory(category.key);
         if (customPictograms.isNotEmpty) {
           finalResults.addAll(customPictograms);
           if (kDebugMode) {
-            debugPrint('Category search [${category.key}]: Added ${customPictograms.length} custom pictograms');
+            debugPrint(
+                'Category search [${category.key}]: Added ${customPictograms.length} custom pictograms');
           }
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Category search [${category.key}]: Error loading custom pictograms: $e');
+          debugPrint(
+              'Category search [${category.key}]: Error loading custom pictograms: $e');
         }
       }
 
       return finalResults;
     } on SocketException {
       if (kDebugMode) {
-        debugPrint('Category search [${category.key}]: Offline - cannot search pictograms');
+        debugPrint(
+            'Category search [${category.key}]: Offline - cannot search pictograms');
       }
       return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Category search [${category.key}]: Error in multi-keyword search: $e');
+        debugPrint(
+            'Category search [${category.key}]: Error in multi-keyword search: $e');
       }
 
       try {
@@ -430,26 +754,31 @@ class ArasaacService {
 
   /// Enhance cached pictogram keywords by fetching from API if online
   /// Only enhances pictograms that have fallback keywords or truncated keywords
-  Future<List<Pictogram>> _enhanceCachedPictogramKeywords(List<Pictogram> pictograms) async {
-    final fallbackKeywords = ['Opgeslagen pictogram', 'Saved pictogram', 'Onbekend'];
+  Future<List<Pictogram>> _enhanceCachedPictogramKeywords(
+      List<Pictogram> pictograms) async {
+    final fallbackKeywords = [
+      'Opgeslagen pictogram',
+      'Saved pictogram',
+      'Onbekend'
+    ];
     final enhancedPictograms = <Pictogram>[];
-    
+
     for (final pictogram in pictograms) {
       // Check if keyword is a fallback or truncated version
       final isFallback = fallbackKeywords.contains(pictogram.keyword) ||
-                         pictogram.keyword.startsWith('Opgeslag') ||
-                         pictogram.keyword.startsWith('Opgeslagen') ||
-                         pictogram.keyword.startsWith('Saved') ||
-                         pictogram.keyword.startsWith('Pictogram ') ||
-                         pictogram.keyword.contains('picto') ||
-                         (pictogram.keyword.length < 3 && pictogram.keyword.isNotEmpty);
-      
+          pictogram.keyword.startsWith('Opgeslag') ||
+          pictogram.keyword.startsWith('Opgeslagen') ||
+          pictogram.keyword.startsWith('Saved') ||
+          pictogram.keyword.startsWith('Pictogram ') ||
+          pictogram.keyword.contains('picto') ||
+          (pictogram.keyword.length < 3 && pictogram.keyword.isNotEmpty);
+
       // Skip if keyword is already valid (not a fallback)
       if (!isFallback && pictogram.keyword.isNotEmpty) {
         enhancedPictograms.add(pictogram);
         continue;
       }
-      
+
       // Try to fetch real keyword from API (quick timeout to avoid blocking)
       if (pictogram.id > 0) {
         try {
@@ -457,9 +786,9 @@ class ArasaacService {
             const Duration(seconds: 2),
             onTimeout: () => null,
           );
-          
-          if (fetched != null && 
-              fetched.keyword.isNotEmpty && 
+
+          if (fetched != null &&
+              fetched.keyword.isNotEmpty &&
               !fallbackKeywords.contains(fetched.keyword) &&
               !fetched.keyword.startsWith('Opgeslag') &&
               !fetched.keyword.startsWith('Saved')) {
@@ -469,16 +798,17 @@ class ArasaacService {
               final category = pictogram.category;
               metadata[pictogram.id] = '$category|${fetched.keyword}';
               await _saveCacheMetadata(metadata);
-              
+
               if (kDebugMode) {
-                debugPrint('Enhanced keyword for pictogram ${pictogram.id}: "${pictogram.keyword}" -> "${fetched.keyword}"');
+                debugPrint(
+                    'Enhanced keyword for pictogram ${pictogram.id}: "${pictogram.keyword}" -> "${fetched.keyword}"');
               }
             } catch (e) {
               if (kDebugMode) {
                 debugPrint('Error updating metadata for enhanced keyword: $e');
               }
             }
-            
+
             // Use enhanced pictogram with real keyword
             enhancedPictograms.add(pictogram.copyWith(
               keyword: fetched.keyword,
@@ -488,15 +818,16 @@ class ArasaacService {
         } catch (e) {
           // Network error or timeout - keep original
           if (kDebugMode) {
-            debugPrint('Could not enhance keyword for pictogram ${pictogram.id}: $e');
+            debugPrint(
+                'Could not enhance keyword for pictogram ${pictogram.id}: $e');
           }
         }
       }
-      
+
       // Keep original if enhancement failed or not needed
       enhancedPictograms.add(pictogram);
     }
-    
+
     return enhancedPictograms;
   }
 
@@ -537,8 +868,10 @@ class ArasaacService {
   Future<Pictogram?> getPictogramById(int pictogramId) async {
     try {
       final urls = [
-        Uri.parse('$_baseUrl/pictograms/$pictogramId?download=false&url=true&locale=nl'),
-        Uri.parse('$_baseUrl/pictograms/$pictogramId?download=false&url=true&locale=en'),
+        Uri.parse(
+            '$_baseUrl/pictograms/$pictogramId?download=false&url=true&locale=nl'),
+        Uri.parse(
+            '$_baseUrl/pictograms/$pictogramId?download=false&url=true&locale=en'),
         Uri.parse('$_baseUrl/pictograms/$pictogramId?download=false&url=true'),
         Uri.parse('$_baseUrl/pictograms/$pictogramId?locale=nl'),
         Uri.parse('$_baseUrl/pictograms/$pictogramId?locale=en'),
@@ -561,9 +894,9 @@ class ArasaacService {
             if (bodyBytes.length >= 4) {
               final pngSignature = [0x89, 0x50, 0x4E, 0x47];
               final isPng = bodyBytes[0] == pngSignature[0] &&
-                           bodyBytes[1] == pngSignature[1] &&
-                           bodyBytes[2] == pngSignature[2] &&
-                           bodyBytes[3] == pngSignature[3];
+                  bodyBytes[1] == pngSignature[1] &&
+                  bodyBytes[2] == pngSignature[2] &&
+                  bodyBytes[3] == pngSignature[3];
 
               if (isPng) {
                 continue;
@@ -616,7 +949,8 @@ class ArasaacService {
     return null;
   }
 
-  Future<List<Pictogram>> searchByKeyword(String keyword, {int limit = _defaultLimit}) async {
+  Future<List<Pictogram>> searchByKeyword(String keyword,
+      {int limit = _defaultLimit}) async {
     try {
       final encodedQuery = Uri.encodeComponent(keyword.toLowerCase().trim());
       final url = _buildSearchUrl(encodedQuery, language: 'nl');
@@ -633,7 +967,8 @@ class ArasaacService {
         final results = _parseSearchResponse(response.body, category, limit);
 
         try {
-          final allCustomPictograms = await _customPictogramService.getAllPictograms();
+          final allCustomPictograms =
+              await _customPictogramService.getAllPictograms();
           final matchingCustom = allCustomPictograms.where((p) {
             return p.keyword.toLowerCase().contains(keyword.toLowerCase());
           }).toList();
@@ -641,7 +976,8 @@ class ArasaacService {
           if (matchingCustom.isNotEmpty) {
             results.addAll(matchingCustom);
             if (kDebugMode) {
-              debugPrint('Keyword search: Added ${matchingCustom.length} matching custom pictograms');
+              debugPrint(
+                  'Keyword search: Added ${matchingCustom.length} matching custom pictograms');
             }
           }
         } catch (e) {
@@ -768,18 +1104,21 @@ class ArasaacService {
     for (var k in keywords) {
       if (k is Map) {
         final keywordText = (k['keyword'] as String?) ??
-                           (k['text'] as String?) ??
-                           (k['name'] as String?);
+            (k['text'] as String?) ??
+            (k['name'] as String?);
         final locale = (k['locale'] as String?) ??
-                      (k['language'] as String?) ??
-                      (k['lang'] as String?);
+            (k['language'] as String?) ??
+            (k['lang'] as String?);
 
         if (keywordText != null && keywordText.trim().isNotEmpty) {
           final trimmedKeyword = keywordText.trim();
-          if ((locale == 'nl' || locale == 'dutch' || locale == 'nederlands') && dutchKeyword == null) {
+          if ((locale == 'nl' || locale == 'dutch' || locale == 'nederlands') &&
+              dutchKeyword == null) {
             dutchKeyword = trimmedKeyword;
-          }
-          else if ((locale == 'en' || locale == 'english' || locale == 'engels') && englishKeyword == null) {
+          } else if ((locale == 'en' ||
+                  locale == 'english' ||
+                  locale == 'engels') &&
+              englishKeyword == null) {
             englishKeyword = trimmedKeyword;
           }
           anyKeyword ??= trimmedKeyword;
@@ -875,7 +1214,8 @@ class ArasaacService {
 
         for (final term in searchTerms.take(3)) {
           final encodedQuery = Uri.encodeComponent(term);
-          final url = _buildSearchUrl(encodedQuery, language: _categorySearchLanguage);
+          final url =
+              _buildSearchUrl(encodedQuery, language: _categorySearchLanguage);
 
           final response = await http.get(url).timeout(
             _requestTimeout,
@@ -885,7 +1225,8 @@ class ArasaacService {
           );
 
           if (response.statusCode == 200) {
-            final pictograms = _parseSearchResponse(response.body, fallbackCategory, 20);
+            final pictograms =
+                _parseSearchResponse(response.body, fallbackCategory, 20);
 
             for (var pictogram in pictograms) {
               if (!seenIds.contains(pictogram.id)) {
@@ -896,7 +1237,8 @@ class ArasaacService {
             }
 
             if (kDebugMode && pictograms.isNotEmpty) {
-              debugPrint('Fallback search: Found ${pictograms.length} pictograms in ${fallbackCategory.key}');
+              debugPrint(
+                  'Fallback search: Found ${pictograms.length} pictograms in ${fallbackCategory.key}');
             }
           }
 
@@ -906,7 +1248,8 @@ class ArasaacService {
         continue;
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Error in fallback search for ${fallbackCategory.key}: $e');
+          debugPrint(
+              'Error in fallback search for ${fallbackCategory.key}: $e');
         }
         continue;
       }
@@ -923,7 +1266,8 @@ class ArasaacService {
 
           for (final term in searchTerms.take(3)) {
             final encodedQuery = Uri.encodeComponent(term);
-            final url = _buildSearchUrl(encodedQuery, language: _categorySearchLanguage);
+            final url = _buildSearchUrl(encodedQuery,
+                language: _categorySearchLanguage);
 
             final response = await http.get(url).timeout(
               _requestTimeout,
@@ -933,7 +1277,8 @@ class ArasaacService {
             );
 
             if (response.statusCode == 200) {
-              final pictograms = _parseSearchResponse(response.body, fallbackCategory, 20);
+              final pictograms =
+                  _parseSearchResponse(response.body, fallbackCategory, 20);
 
               for (var pictogram in pictograms) {
                 if (!seenIds.contains(pictogram.id)) {
@@ -944,7 +1289,8 @@ class ArasaacService {
               }
 
               if (kDebugMode && pictograms.isNotEmpty) {
-                debugPrint('Fallback search: Found ${pictograms.length} pictograms in ${fallbackCategory.key}');
+                debugPrint(
+                    'Fallback search: Found ${pictograms.length} pictograms in ${fallbackCategory.key}');
               }
             }
 
@@ -954,7 +1300,8 @@ class ArasaacService {
           continue;
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('Error in fallback search for ${fallbackCategory.key}: $e');
+            debugPrint(
+                'Error in fallback search for ${fallbackCategory.key}: $e');
           }
           continue;
         }
@@ -973,7 +1320,8 @@ class ArasaacService {
     try {
       final broadTerm = category.searchTerm;
       final encodedQuery = Uri.encodeComponent(broadTerm);
-      final url = _buildSearchUrl(encodedQuery, language: _categorySearchLanguage);
+      final url =
+          _buildSearchUrl(encodedQuery, language: _categorySearchLanguage);
 
       final response = await http.get(url).timeout(
         _requestTimeout,

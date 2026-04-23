@@ -239,12 +239,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       final displayName = set.name.trim().isEmpty
                           ? '${localizations.recentAutoSaved} ${index + 1}'
                           : set.name;
-                      final subtitleParts = <String>[
-                        '${set.pictograms.length} picto\'s',
-                        if (set.clientName != null &&
-                            set.clientName!.isNotEmpty)
-                          set.clientName!,
-                      ];
+                      final clientName =
+                          set.clientName?.trim().isNotEmpty == true
+                              ? set.clientName!.trim()
+                              : null;
 
                       return ListTile(
                         dense: true,
@@ -261,7 +259,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                           ),
                         ),
                         title: Text(
-                          displayName,
+                          clientName ?? displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style:
@@ -270,8 +268,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
                                   ),
                         ),
                         subtitle: Text(
-                          subtitleParts.join(' • '),
-                          maxLines: 1,
+                          clientName == null
+                              ? '${set.pictograms.length} picto\'s'
+                              : '${localizations.currentLanguage == AppLanguage.dutch ? 'Pictoreeks' : 'Pictogram set'}: $displayName • ${set.pictograms.length} picto\'s',
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
