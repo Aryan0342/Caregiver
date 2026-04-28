@@ -9,6 +9,15 @@ class SetShareService {
 
   static const String _shareCollection = 'pictogram_set_shares';
   static const String _setCollection = 'pictogram_sets';
+  static const List<String> _tokenParameterNames = [
+    'token',
+    'share',
+    'shareId',
+    'setId',
+    'id',
+    'docId',
+    'documentId',
+  ];
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -62,10 +71,43 @@ class SetShareService {
 
   String? _extractToken(String linkOrToken) {
     final trimmed = linkOrToken.trim();
-    final uri = Uri.tryParse(trimmed);
-    if (uri != null && uri.queryParameters.containsKey('token')) {
-      return uri.queryParameters['token'];
+    if (trimmed.isEmpty) {
+      return null;
     }
-    return trimmed.isEmpty ? null : trimmed;
+
+    final urlMatch = RegExp(
+      r'''https?://[^\s<>"']+''',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+
+    final candidate = urlMatch?.group(0) ?? trimmed;
+    final uri = Uri.tryParse(candidate);
+    if (uri != null) {
+      for (final parameterName in _tokenParameterNames) {
+        final value = uri.queryParameters[parameterName];
+        if (value != null && value.isNotEmpty) {
+          return value;
+        }
+      }
+
+      for (final segment in uri.pathSegments.reversed) {
+        if (segment.isNotEmpty && segment.toLowerCase() != 'share') {
+          return segment;
+        }
+      }
+    }
+
+    final queryMatch = RegExp(
+      r'(?i)(?:token|shareId|setId|id|docId|documentId)=([A-Za-z0-9_-]+)',
+    ).firstMatch(trimmed);
+    if (queryMatch != null) {
+      return queryMatch.group(1);
+    }
+
+    if (RegExp(r'^[A-Za-z0-9_-]{8,}$').hasMatch(trimmed)) {
+      return trimmed;
+    }
+
+    return null;
   }
 }

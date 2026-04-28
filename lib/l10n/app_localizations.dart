@@ -470,8 +470,8 @@ class AppLocalizations {
       ? 'Pictoreeks importeren'
       : 'Import pictogram set';
   String get pasteShareLink => _language == AppLanguage.dutch
-      ? 'plak een importeer-link'
-      : 'Paste an import link';
+      ? 'Plak een importeer-link of gedeelde tekst'
+      : 'Paste a share link or shared text';
   String get importAction =>
       _language == AppLanguage.dutch ? 'Importeren' : 'Import';
   String get importSuccess => _language == AppLanguage.dutch

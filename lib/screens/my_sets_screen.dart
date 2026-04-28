@@ -894,7 +894,7 @@ class _MySetsScreenState extends State<MySetsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(localizations.importFailed),
+          content: Text('${localizations.importFailed}: $e'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -957,7 +957,7 @@ class _MySetsScreenState extends State<MySetsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(localizations.importFailed),
+          content: Text('${localizations.importFailed}: $e'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
