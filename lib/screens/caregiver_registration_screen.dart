@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../theme.dart';
 import '../services/auth_service.dart';
 import '../services/auth_state_service.dart';
+import '../services/caregiver_profile_service.dart';
 import '../providers/language_provider.dart';
 import '../routes/app_routes.dart';
 
 /// Caregiver registration screen with minimal cognitive load UI.
-/// 
+///
 /// Features:
 /// - Large buttons and text for accessibility
 /// - Simple vertical layout
@@ -17,10 +18,12 @@ class CaregiverRegistrationScreen extends StatefulWidget {
   const CaregiverRegistrationScreen({super.key});
 
   @override
-  State<CaregiverRegistrationScreen> createState() => _CaregiverRegistrationScreenState();
+  State<CaregiverRegistrationScreen> createState() =>
+      _CaregiverRegistrationScreenState();
 }
 
-class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScreen> {
+class _CaregiverRegistrationScreenState
+    extends State<CaregiverRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -28,7 +31,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
   final _confirmPasswordController = TextEditingController();
   final _authService = AuthService();
   final _authStateService = AuthStateService();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -49,13 +52,14 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
       final localizations = LanguageProvider.localizationsOf(context);
       return localizations.fieldRequired;
     }
-    
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!emailRegex.hasMatch(value.trim())) {
       final localizations = LanguageProvider.localizationsOf(context);
       return localizations.invalidEmail;
     }
-    
+
     return null;
   }
 
@@ -65,12 +69,12 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
       final localizations = LanguageProvider.localizationsOf(context);
       return localizations.fieldRequired;
     }
-    
+
     if (value != _passwordController.text) {
       final localizations = LanguageProvider.localizationsOf(context);
       return localizations.passwordsDoNotMatch;
     }
-    
+
     return null;
   }
 
@@ -104,33 +108,46 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
       // Success - account created, Firebase UID is available in result.uid
       if (mounted) {
         final localizations = LanguageProvider.localizationsOf(context);
-        
+
         // Log the UID for debugging (optional)
         if (result.uid != null) {
           debugPrint('Caregiver account created with UID: ${result.uid}');
         }
-        
+
+        // Create minimal profile immediately to ensure data sync
+        // This prevents the gap where users exist in Firebase Auth but not in Firestore
+        final profileService = CaregiverProfileService();
+        final profileCreated =
+            await profileService.createMinimalProfileIfNeeded();
+        if (profileCreated) {
+          debugPrint('Minimal caregiver profile created successfully');
+        } else {
+          debugPrint(
+              'Warning: Could not create minimal profile, but continuing...');
+        }
+
         // Send email verification automatically after registration
         final user = _authService.currentUser;
         if (user != null && !user.emailVerified) {
           debugPrint('Sending email verification to: ${user.email}');
           final verificationResult = await _authService.sendEmailVerification();
-          
+
           if (verificationResult.success) {
             debugPrint('Email verification sent successfully');
           } else {
-            debugPrint('Failed to send email verification: ${verificationResult.errorMessage}');
+            debugPrint(
+                'Failed to send email verification: ${verificationResult.errorMessage}');
           }
         }
-        
+
         // Mark that user has logged in (for PIN auth on next app open)
         // This must be called after successful registration
         await _authStateService.markLoggedIn();
-        
+
         if (kDebugMode) {
           debugPrint('CaregiverRegistrationScreen: Marked user as logged in');
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(localizations.registrationSuccess),
@@ -141,7 +158,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
             ),
           ),
         );
-        
+
         // Navigate to email verification screen (blocks progression until verified)
         Navigator.pushReplacementNamed(context, AppRoutes.emailVerification);
       }
@@ -161,7 +178,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
@@ -173,7 +190,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                
+
                 // Title
                 Text(
                   localizations.createAccount,
@@ -185,7 +202,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
-                
+
                 // Full Name field
                 TextFormField(
                   controller: _fullNameController,
@@ -209,7 +226,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                   },
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Email field
                 TextFormField(
                   controller: _emailController,
@@ -229,7 +246,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                   validator: _validateEmail,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Password field
                 TextFormField(
                   controller: _passwordController,
@@ -240,7 +257,9 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
                       onPressed: () {
                         setState(() {
@@ -267,7 +286,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                   },
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Confirm Password field
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -278,7 +297,9 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                       ),
                       onPressed: () {
                         setState(() {
@@ -298,7 +319,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                   validator: _validatePasswordMatch,
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Error message
                 if (_errorMessage != null)
                   Container(
@@ -307,7 +328,8 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: Colors.red.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -325,7 +347,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                       ],
                     ),
                   ),
-                
+
                 // Create Account button
                 SizedBox(
                   height: 64,
@@ -344,7 +366,8 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                             width: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
@@ -357,7 +380,7 @@ class _CaregiverRegistrationScreenState extends State<CaregiverRegistrationScree
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Login link
                 TextButton(
                   onPressed: _navigateToLogin,

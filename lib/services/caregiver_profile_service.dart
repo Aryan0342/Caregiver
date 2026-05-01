@@ -175,6 +175,57 @@ class CaregiverProfileService {
     }
   }
 
+  /// Create a minimal profile immediately after Firebase registration.
+  ///
+  /// This ensures every Firebase Auth user has a corresponding Firestore profile,
+  /// preventing the data sync gap where users exist in Firebase Auth but not in
+  /// the caregiver profiles collection.
+  ///
+  /// Only creates if profile doesn't already exist (idempotent).
+  /// Uses sensible defaults that user can update later.
+  ///
+  /// Returns true if profile created or already exists, false if unable to create.
+  Future<bool> createMinimalProfileIfNeeded() async {
+    if (_currentUserId == null) {
+      return false;
+    }
+
+    try {
+      // Check if profile already exists
+      final exists = await profileExists();
+      if (exists) {
+        return true; // Already exists, nothing to do
+      }
+
+      // Get user email from Firebase Auth
+      final userEmail = _auth.currentUser?.email?.toLowerCase().trim();
+      if (userEmail == null || userEmail.isEmpty) {
+        return false; // Can't create profile without email
+      }
+
+      // Create minimal profile with defaults
+      final minimalProfile = {
+        'email': userEmail,
+        'name': _auth.currentUser?.displayName ?? userEmail.split('@').first,
+        'role': 'begeleider', // Default role
+        'language': 'nl', // Default language
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore
+          .collection(_collectionName)
+          .doc(_currentUserId)
+          .set(minimalProfile, SetOptions(merge: true));
+
+      return true;
+    } catch (e) {
+      // Log error but don't throw - this is non-critical
+      print('Warning: Failed to create minimal profile: $e');
+      return false;
+    }
+  }
+
   /// Get security question for a user by email.
   ///
   /// Finds the user by email and returns their security question.
