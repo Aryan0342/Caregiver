@@ -6,14 +6,15 @@ import '../routes/app_routes.dart';
 import '../services/language_service.dart';
 
 /// Email verification screen.
-/// 
+///
 /// Shows after registration and blocks app progression until email is verified.
 /// Allows resending verification email with cooldown to prevent spam.
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
 
   @override
-  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
@@ -48,7 +49,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     try {
       // Reload user to get latest emailVerified status
       final reloadResult = await _authService.reloadUser();
-      
+
       if (!reloadResult.success) {
         if (mounted) {
           final localizations = LanguageProvider.localizationsOf(context);
@@ -71,7 +72,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
       // Check verification status
       final user = _authService.currentUser;
-      
+
       if (mounted) {
         setState(() {
           _isCheckingVerification = false;
@@ -93,7 +94,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
           // Navigate to profile setup (or home if setup complete)
           // AuthWrapper will handle the correct routing
-          Navigator.pushReplacementNamed(context, AppRoutes.caregiverProfileSetup);
+          Navigator.pushReplacementNamed(
+              context, AppRoutes.caregiverProfileSetup);
         } else {
           // Email not verified - show warning
           final localizations = LanguageProvider.localizationsOf(context);
@@ -133,7 +135,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   /// Handle wrong email - show dialog and allow sign out
   Future<void> _handleWrongEmail() async {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     final shouldSignOut = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -167,7 +169,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         }
         // Sign out
         await _authService.signOut();
-        
+
         if (mounted) {
           // Navigate to registration screen
           Navigator.pushNamedAndRemoveUntil(
@@ -180,7 +182,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         // If deletion fails (e.g., requires recent login), just sign out
         debugPrint('Error deleting account: $e');
         await _authService.signOut();
-        
+
         if (mounted) {
           final localizations = LanguageProvider.localizationsOf(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -194,7 +196,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               duration: const Duration(seconds: 4),
             ),
           );
-          
+
           // Navigate to login screen instead
           Navigator.pushNamedAndRemoveUntil(
             context,
@@ -210,14 +212,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Future<void> _resendVerificationEmail() async {
     // Check cooldown
     if (_lastResendTime != null) {
-      final secondsSinceLastResend = DateTime.now().difference(_lastResendTime!).inSeconds;
+      final secondsSinceLastResend =
+          DateTime.now().difference(_lastResendTime!).inSeconds;
       if (secondsSinceLastResend < _resendCooldownSeconds) {
         final localizations = LanguageProvider.localizationsOf(context);
         final languageService = LanguageProvider.languageServiceOf(context);
-        final remainingSeconds = _resendCooldownSeconds - secondsSinceLastResend;
+        final remainingSeconds =
+            _resendCooldownSeconds - secondsSinceLastResend;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${localizations.resendEmailCooldown} ($remainingSeconds ${languageService.currentLanguage == AppLanguage.dutch ? 'seconden' : 'seconds'})'),
+            content: Text(
+                '${localizations.resendEmailCooldown} ($remainingSeconds ${languageService.currentLanguage == AppLanguage.dutch ? 'seconden' : 'seconds'})'),
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -235,7 +240,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     try {
       final result = await _authService.sendEmailVerification();
-      
+
       if (mounted) {
         setState(() {
           _isResendingEmail = false;
@@ -243,7 +248,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         });
 
         final localizations = LanguageProvider.localizationsOf(context);
-        
+
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -256,16 +261,34 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.errorMessage ?? localizations.emailVerificationError),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          // Parse the error message to provide better guidance
+          final errorMsg =
+              result.errorMessage ?? localizations.emailVerificationError;
+
+          // Check if it's a rate limit error
+          final isRateLimit =
+              errorMsg.toLowerCase().contains('too-many-requests') ||
+                  errorMsg.toLowerCase().contains('too many') ||
+                  errorMsg.toLowerCase().contains('try again');
+
+          if (isRateLimit) {
+            // Show recovery options for rate-limited users
+            _showRateLimitRecovery(context, errorMsg);
+          } else {
+            // Show regular error
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content:
+                    Text('${localizations.emailVerificationError}: $errorMsg'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                duration: const Duration(seconds: 5),
               ),
-            ),
-          );
+            );
+          }
         }
       }
     } catch (e) {
@@ -286,6 +309,44 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         );
       }
     }
+  }
+
+  /// Show recovery dialog for rate-limited users
+  Future<void> _showRateLimitRecovery(
+    BuildContext context,
+    String errorMsg,
+  ) async {
+    final localizations = LanguageProvider.localizationsOf(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Te veel pogingen'),
+        content: Text(
+          'U hebt te veel keren geprobeerd een verificatie-e-mail te versturen.\n\n'
+          'Opties:\n'
+          '1. Wacht 1 uur en probeer het opnieuw\n'
+          '2. Controleer uw spam/ongewenste e-mailmappen\n'
+          '3. Logout en registreer met een ander e-mailadres',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(localizations.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleWrongEmail();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Logout & opnieuw registreren'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -313,7 +374,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                
+
                 // Icon
                 Icon(
                   Icons.email_outlined,
@@ -321,7 +382,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   color: AppTheme.primaryBlue,
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Title
                 Text(
                   localizations.verificationEmailSentTitle,
@@ -333,7 +394,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Message
                 Text(
                   localizations.verificationEmailSent,
@@ -344,7 +405,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Email address (highlighted)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -352,7 +413,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.primaryBlueLight.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     userEmail,
@@ -364,14 +426,15 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // "I've verified my email" button
                 SizedBox(
                   height: 64,
                   child: ElevatedButton(
-                    onPressed: _isCheckingVerification ? null : _checkVerification,
+                    onPressed:
+                        _isCheckingVerification ? null : _checkVerification,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryBlue,
                       foregroundColor: Colors.white,
@@ -385,7 +448,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             width: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
@@ -397,14 +461,15 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Resend email button
                 SizedBox(
                   height: 64,
                   child: OutlinedButton(
-                    onPressed: _isResendingEmail ? null : _resendVerificationEmail,
+                    onPressed:
+                        _isResendingEmail ? null : _resendVerificationEmail,
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppTheme.primaryBlue, width: 2),
                       shape: RoundedRectangleBorder(
@@ -417,7 +482,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             width: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.blue),
                             ),
                           )
                         : Text(
@@ -430,15 +496,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Wrong email option
                 Center(
                   child: TextButton(
                     onPressed: _handleWrongEmail,
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 24),
                     ),
                     child: Text(
                       localizations.wrongEmail,
