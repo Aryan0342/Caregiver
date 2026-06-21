@@ -9,6 +9,7 @@ import '../providers/language_provider.dart';
 import '../providers/client_session_provider.dart';
 import '../services/client_service.dart';
 import '../services/set_service.dart';
+import '../services/watch_session_service.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
@@ -39,6 +40,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
   final ClientService _clientService = ClientService();
   final SetService _setService = SetService();
+  final WatchSessionService _watchService = WatchSessionService();
   late PictogramSet _activeSet;
   List<ClientProfile> _sidebarClients = <ClientProfile>[];
   bool _isLoadingClients = true;
@@ -87,6 +89,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           setState(() {
             _currentStepIndex = restoredIndex.clamp(0, maxIndex);
           });
+          _watchService.startSession(
+            setName: _activeSet.name,
+            currentIndex: _currentStepIndex,
+            totalSteps: pictograms.length,
+          );
         }
       }
     } catch (_) {
@@ -96,6 +103,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         _isLoadingClients = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _watchService.endSession();
+    super.dispose();
   }
 
   @override
@@ -1036,6 +1049,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       if (activeClientId != null) {
         unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
       }
+      _watchService.updateIndex(_currentStepIndex);
     }
   }
 
@@ -1050,6 +1064,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       if (activeClientId != null) {
         unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
       }
+      _watchService.updateIndex(_currentStepIndex);
     }
   }
 
@@ -1072,6 +1087,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         // Reset to first step after modification
         _currentStepIndex = 0;
       });
+
+      _watchService.startSession(
+        setName: _activeSet.name,
+        currentIndex: _currentStepIndex,
+        totalSteps: result.length,
+      );
 
       final controller = ClientSessionProvider.of(context);
       controller.updateCurrentIndex(0);
@@ -1114,6 +1135,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   /// Exit client mode (no PIN required since PIN was verified to enter)
   Future<void> _exitWithPin() async {
     final localizations = LanguageProvider.localizationsOf(context);
+
+    _watchService.endSession();
 
     // Show completion message and exit (PIN was already verified to enter client mode)
     if (mounted) {
