@@ -17,7 +17,7 @@ import 'pictogram_picker_screen.dart';
 /// Features:
 /// - Full-screen pictogram view
 /// - No back button
-/// - No navigation gestures
+/// - No navigation gesture
 /// - No settings access
 /// - No editing features
 /// - Hidden exit mechanism (long-press corner or caregiver icon)
@@ -93,6 +93,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             setName: _activeSet.name,
             currentIndex: _currentStepIndex,
             totalSteps: pictograms.length,
+            pictograms: pictograms,
           );
         }
       }
@@ -1092,6 +1093,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         setName: _activeSet.name,
         currentIndex: _currentStepIndex,
         totalSteps: result.length,
+        pictograms: result,
       );
 
       final controller = ClientSessionProvider.of(context);

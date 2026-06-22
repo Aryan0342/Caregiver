@@ -29,6 +29,7 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
       setName: widget.set.name,
       currentIndex: _currentStepIndex,
       totalSteps: widget.set.pictograms.length,
+      pictograms: widget.set.pictograms,
     );
   }
 
