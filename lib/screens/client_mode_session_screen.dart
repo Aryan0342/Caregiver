@@ -95,6 +95,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             totalSteps: pictograms.length,
             pictograms: pictograms,
           );
+          _watchService.startListeningToWatchNavigation(
+            onNext: _nextStep,
+            onPrev: _previousStep,
+          );
         }
       }
     } catch (_) {
@@ -108,6 +112,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   @override
   void dispose() {
+    _watchService.stopListeningToWatchNavigation();
     _watchService.endSession();
     super.dispose();
   }

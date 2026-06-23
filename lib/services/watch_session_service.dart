@@ -184,4 +184,24 @@ class WatchSessionService {
       rethrow;
     }
   }
+
+  void startListeningToWatchNavigation({
+    required VoidCallback onNext,
+    required VoidCallback onPrev,
+  }) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onWatchNavigation') {
+        final action = call.arguments['action'] as String;
+        if (action == 'next') {
+          onNext();
+        } else if (action == 'prev') {
+          onPrev();
+        }
+      }
+    });
+  }
+
+  void stopListeningToWatchNavigation() {
+    _channel.setMethodCallHandler(null);
+  }
 }

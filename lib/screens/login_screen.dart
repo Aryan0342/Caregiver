@@ -104,32 +104,33 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Logo (bigger)
+                  // Smaller app logo
                   Image.asset(
                     'assets/images/app_logo.png',
-                    width: 200,
-                    height: 200,
+                    width: 80,
+                    height: 80,
                     fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 16),
                   
-                  // Email field - Large input field
+                  // Email field
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    style: const TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: localizations.emailAddress,
                       hintText: localizations.enterEmail,
-                      prefixIcon: const Icon(Icons.email_outlined, size: 28),
+                      prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       errorText: _errorMessage?.contains('e-mail') == true 
                           ? _errorMessage 
                           : null,
@@ -144,24 +145,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   
-                  // Password field - Large input field
+                  // Password field
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
-                    style: const TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: localizations.password,
                       hintText: localizations.enterPassword,
-                      prefixIcon: const Icon(Icons.lock_outlined, size: 28),
+                      prefixIcon: const Icon(Icons.lock_outlined, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          size: 28,
+                          size: 20,
                         ),
                         onPressed: () {
                           setState(() {
@@ -184,33 +186,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     onFieldSubmitted: (_) => _handleLogin(),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   
-                  // Login button - Large button
+                  // Login button - smaller size
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      minimumSize: const Size(double.infinity, 64),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size(double.infinity, 44),
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                            height: 24,
-                            width: 24,
+                            height: 20,
+                            width: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
+                              strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
                             localizations.login,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
                           ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   
                   // Forgot Password button
                   Center(
@@ -223,14 +226,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         localizations.forgotPassword,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 12,
                           color: AppTheme.primaryBlue,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   
                   // Register button
                   OutlinedButton(
@@ -240,16 +243,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.pushNamed(context, AppRoutes.caregiverRegistration);
                           },
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      minimumSize: const Size(double.infinity, 56),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      minimumSize: const Size(double.infinity, 40),
                       side: BorderSide(color: AppTheme.primaryBlue, width: 2),
                     ),
                     child: Text(
                       localizations.createAccount,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppTheme.primaryBlue,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: TextStyle(
+                        color: AppTheme.primaryBlue,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
