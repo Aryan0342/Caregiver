@@ -16,11 +16,25 @@ class MainActivity : ComponentActivity() {
     private val viewModel: SessionViewModel by viewModels()
     private val dataReceiver = WearDataReceiver()
 
+    private fun sendNavigationToPhone(action: String) {
+        val nodeClient = Wearable.getNodeClient(this)
+        val messageClient = Wearable.getMessageClient(this)
+        nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+            val path = "/navigation"
+            val data = """{"action":"$action"}""".toByteArray(Charsets.UTF_8)
+            for (node in nodes) {
+                messageClient.sendMessage(node.id, path, data)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dataReceiver.init(this)
         setContent {
-            WearApp(viewModel)
+            WearApp(viewModel) { action ->
+                sendNavigationToPhone(action)
+            }
         }
     }
 
@@ -36,12 +50,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WearApp(viewModel: SessionViewModel) {
+fun WearApp(
+    viewModel: SessionViewModel,
+    onNavigation: (String) -> Unit
+) {
     val state by viewModel.sessionState.collectAsState()
 
     MaterialTheme {
         if (state.isActive) {
-            SessionScreen(state = state)
+            SessionScreen(
+                state = state,
+                onNext = { onNavigation("next") },
+                onPrev = { onNavigation("prev") }
+            )
         } else {
             IdleScreen()
         }
@@ -55,5 +76,5 @@ fun WearApp(viewModel: SessionViewModel) {
 @Composable
 fun WearAppPreview() {
     val mockViewModel = SessionViewModel()
-    WearApp(mockViewModel)
+    WearApp(mockViewModel) { /* do nothing in preview */ }
 }
