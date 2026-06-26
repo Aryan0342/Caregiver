@@ -18,33 +18,42 @@ class WearDataReceiver : DataClient.OnDataChangedListener {
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         for (event in dataEvents) {
             if (event.type == DataEvent.TYPE_CHANGED) {
+                try {
+                    val dataItem = event.dataItem
+                    if (dataItem.uri.path == "/watch_session") {
+                        val dataMap = DataMapItem.fromDataItem(dataItem).dataMap
+
+                        val action = dataMap.getString("action") ?: ""
+                        val currentIndex = dataMap.getInt("currentIndex", 0)
+                        val totalSteps = dataMap.getInt("totalSteps", 0)
+                        val setName = dataMap.getString("setName") ?: ""
+                        val userId = dataMap.getString("userId") ?: ""
+                        val pictogramsJson = dataMap.getString("pictograms") ?: "[]"
+
+                        val pictogramListType = object : TypeToken<List<PictogramStep>>() {}.type
+                        val pictogramSteps: List<PictogramStep> = try {
+                            gson.fromJson(pictogramsJson, pictogramListType)
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
+
+                        val sessionData = SessionState(
+                            setName = setName,
+                            currentIndex = currentIndex,
+                            totalSteps = totalSteps,
+                            steps = pictogramSteps,
+                            userId = userId
+                        )
+
+                        SessionRepository.updateSession(action, sessionData)
+                    }
+                } catch (e: Exception) {
+                    // Ignore malformed data
+                }
+            } else if (event.type == DataEvent.TYPE_DELETED) {
                 val dataItem = event.dataItem
                 if (dataItem.uri.path == "/watch_session") {
-                    val dataMap = DataMapItem.fromDataItem(dataItem).dataMap
-
-                    val action = dataMap.getString("action") ?: ""
-                    val currentIndex = dataMap.getInt("currentIndex", 0)
-                    val totalSteps = dataMap.getInt("totalSteps", 0)
-                    val setName = dataMap.getString("setName") ?: ""
-                    val userId = dataMap.getString("userId") ?: ""
-                    val pictogramsJson = dataMap.getString("pictograms") ?: "[]"
-
-                    val pictogramListType = object : TypeToken<List<PictogramStep>>() {}.type
-                    val pictogramSteps: List<PictogramStep> = try {
-                        gson.fromJson(pictogramsJson, pictogramListType)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-
-                    val sessionData = SessionState(
-                        setName = setName,
-                        currentIndex = currentIndex,
-                        totalSteps = totalSteps,
-                        steps = pictogramSteps,
-                        userId = userId
-                    )
-
-                    SessionRepository.updateSession(action, sessionData)
+                    SessionRepository.updateSession("END", SessionState())
                 }
             }
         }
