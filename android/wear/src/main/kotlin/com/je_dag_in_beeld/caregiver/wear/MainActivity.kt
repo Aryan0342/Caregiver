@@ -2,6 +2,7 @@ package com.je_dag_in_beeld.caregiver.wear
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -16,28 +17,42 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 class MainActivity : ComponentActivity() {
+    private val TAG = "WearMainActivity"
 
     private val viewModel: SessionViewModel by viewModels()
     private val dataReceiver = WearDataReceiver()
     private val gson = Gson()
 
     private fun sendNavigationToPhone(action: String) {
+        Log.d(TAG, "sendNavigationToPhone: action = $action")
         val nodeClient = Wearable.getNodeClient(this)
         val messageClient = Wearable.getMessageClient(this)
         nodeClient.connectedNodes.addOnSuccessListener { nodes ->
+            Log.d(TAG, "sendNavigationToPhone: connected nodes = ${nodes.size}")
             val path = "/navigation"
-            val data = """{"action":"$action"}""".toByteArray(Charsets.UTF_8)
+            val data = """{"action":"$action"}""".toByteArray(Charsets.UTF_8)   
             for (node in nodes) {
+                Log.d(TAG, "sendNavigationToPhone: sending to node ${node.id}")
                 messageClient.sendMessage(node.id, path, data)
+                    .addOnSuccessListener { 
+                        Log.d(TAG, "sendNavigationToPhone: success")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "sendNavigationToPhone: failed", e)
+                    }
             }
+        }.addOnFailureListener { e ->
+            Log.e(TAG, "sendNavigationToPhone: failed to get nodes", e)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate")
         dataReceiver.init(this)
         setContent {
             WearApp(viewModel) { action ->
+                Log.d(TAG, "WearApp: onNavigation called with action = $action")
                 sendNavigationToPhone(action)
             }
         }
@@ -45,22 +60,23 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "onResume")
         Wearable.getDataClient(this).addListener(dataReceiver)
         // Poll current DataLayer state
         Wearable.getDataClient(this).getDataItems(Uri.parse("wear://*/watch_session")).addOnSuccessListener { dataItems ->
             try {
                 for (item in dataItems) {
                     if (item.uri.path == "/watch_session") {
-                        val dataMap = DataMapItem.fromDataItem(item).dataMap
+                        val dataMap = DataMapItem.fromDataItem(item).dataMap    
                         val action = dataMap.getString("action") ?: ""
-                        val currentIndex = dataMap.getInt("currentIndex", 0)
-                        val totalSteps = dataMap.getInt("totalSteps", 0)
-                        val setName = dataMap.getString("setName") ?: ""
+                        val currentIndex = dataMap.getInt("currentIndex", 0)    
+                        val totalSteps = dataMap.getInt("totalSteps", 0)        
+                        val setName = dataMap.getString("setName") ?: ""        
                         val userId = dataMap.getString("userId") ?: ""
                         val pictogramsJson = dataMap.getString("pictograms") ?: "[]"
                         val pictogramListType = object : TypeToken<List<PictogramStep>>() {}.type
                         val pictogramSteps: List<PictogramStep> = try {
-                            gson.fromJson(pictogramsJson, pictogramListType)
+                            gson.fromJson(pictogramsJson, pictogramListType)    
                         } catch (e: Exception) {
                             emptyList()
                         }
@@ -71,7 +87,7 @@ class MainActivity : ComponentActivity() {
                             steps = pictogramSteps,
                             userId = userId
                         )
-                        SessionRepository.updateSession(action, sessionData)
+                        SessionRepository.updateSession(action, sessionData)    
                     }
                 }
             } finally {
@@ -82,6 +98,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        Log.d(TAG, "onPause")
         Wearable.getDataClient(this).removeListener(dataReceiver)
     }
 }

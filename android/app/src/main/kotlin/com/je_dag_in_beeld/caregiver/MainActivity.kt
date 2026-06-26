@@ -1,5 +1,6 @@
 package com.je_dag_in_beeld.caregiver
 
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
@@ -13,6 +14,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener {
+    private val TAG = "PhoneMainActivity"
     private val CHANNEL = "com.jedaginbeeld.wear"
     private val WEAR_PATH = "/watch_session"
     private val NAVIGATION_PATH = "/navigation"
@@ -27,7 +29,7 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
             dataClient = Wearable.getDataClient(this)
             messageClient = Wearable.getMessageClient(this)
         } catch (e: Exception) {
-            // Handle Wearable APIs unavailable
+            Log.e(TAG, "Wearable APIs unavailable", e)
         }
 
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
@@ -35,7 +37,7 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
             when (call.method) {
                 "sendToWear" -> {
                     try {
-                        val data = call.argument<Map<String, Any>>("data")
+                        val data = call.argument<Map<String, Any>>("data")      
                         if (data != null) {
                             sendDataToWear(data, result)
                         } else {
@@ -55,32 +57,37 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
     override fun onResume() {
         super.onResume()
         try {
+            Log.d(TAG, "Adding message listener")
             messageClient.addListener(this)
         } catch (e: Exception) {
-            // Handle Wearable APIs unavailable
+            Log.e(TAG, "Failed to add message listener", e)
         }
     }
 
     override fun onPause() {
         super.onPause()
         try {
+            Log.d(TAG, "Removing message listener")
             messageClient.removeListener(this)
         } catch (e: Exception) {
-            // Handle Wearable APIs unavailable
+            Log.e(TAG, "Failed to remove message listener", e)
         }
     }
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
+        Log.d(TAG, "onMessageReceived: path = ${messageEvent.path}")
         if (messageEvent.path == NAVIGATION_PATH) {
             try {
                 val message = String(messageEvent.data, Charsets.UTF_8)
+                Log.d(TAG, "onMessageReceived: message = $message")
                 val json = JSONObject(message)
                 val action = json.optString("action")
+                Log.d(TAG, "onMessageReceived: action = $action")
                 if (action == "next" || action == "prev") {
                     methodChannel?.invokeMethod("onWatchNavigation", mapOf("action" to action))
                 }
             } catch (e: Exception) {
-                // Handle parsing errors
+                Log.e(TAG, "Failed to parse message", e)
             }
         }
     }
@@ -116,7 +123,7 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
                             jsonArray.put(JSONObject(item))
                         }
                     }
-                    dataMap.putString("pictograms", jsonArray.toString())
+                    dataMap.putString("pictograms", jsonArray.toString())       
                 }
             }
 
@@ -128,12 +135,15 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
 
             dataClient.putDataItem(putDataRequest)
                 .addOnSuccessListener {
+                    Log.d(TAG, "sendDataToWear: success")
                     result.success(null)
                 }
                 .addOnFailureListener { e ->
+                    Log.e(TAG, "sendDataToWear: failed", e)
                     result.error("WEAR_ERROR", e.message, null)
                 }
         } catch (e: Exception) {
+            Log.e(TAG, "sendDataToWear: exception", e)
             result.error("WEAR_ERROR", e.message, null)
         }
     }
