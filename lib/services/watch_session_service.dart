@@ -10,6 +10,10 @@ class WatchSessionService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   static const MethodChannel _channel = MethodChannel('com.jedaginbeeld.wear');
 
+  VoidCallback? _onNextCallback;
+  VoidCallback? _onPrevCallback;
+  bool _handlerRegistered = false;
+
   static const String _cloudinaryTransform = '/upload/w_200,h_200,c_fit/';
   static const String _collectionName = 'watch_sessions';
 
@@ -189,19 +193,26 @@ class WatchSessionService {
     required VoidCallback onNext,
     required VoidCallback onPrev,
   }) {
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onWatchNavigation') {
-        final action = call.arguments['action'] as String;
-        if (action == 'next') {
-          onNext();
-        } else if (action == 'prev') {
-          onPrev();
+    _onNextCallback = onNext;
+    _onPrevCallback = onPrev;
+
+    if (!_handlerRegistered) {
+      _handlerRegistered = true;
+      _channel.setMethodCallHandler((call) async {
+        if (call.method == 'onWatchNavigation') {
+          final action = call.arguments['action'] as String;
+          if (action == 'next') {
+            _onNextCallback?.call();
+          } else if (action == 'prev') {
+            _onPrevCallback?.call();
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   void stopListeningToWatchNavigation() {
-    _channel.setMethodCallHandler(null);
+    _onNextCallback = null;
+    _onPrevCallback = null;
   }
 }

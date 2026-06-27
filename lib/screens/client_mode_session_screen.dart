@@ -49,6 +49,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   void initState() {
     super.initState();
     _activeSet = widget.set;
+    _watchService.startListeningToWatchNavigation(
+      onNext: _nextStep,
+      onPrev: _previousStep,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSidebarClients();
     });
@@ -94,10 +98,6 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             currentIndex: _currentStepIndex,
             totalSteps: pictograms.length,
             pictograms: pictograms,
-          );
-          _watchService.startListeningToWatchNavigation(
-            onNext: _nextStep,
-            onPrev: _previousStep,
           );
         }
       }

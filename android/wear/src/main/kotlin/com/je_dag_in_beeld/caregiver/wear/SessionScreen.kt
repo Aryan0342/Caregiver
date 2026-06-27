@@ -61,8 +61,8 @@ fun SessionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.Center,
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Step counter
@@ -71,17 +71,19 @@ fun SessionScreen(
                 style = MaterialTheme.typography.caption1,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.onBackground,
-                modifier = Modifier.padding(bottom = 6.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
 
-            // Pictogram image
+            // Pictogram image (large)
             currentStep?.let { step ->
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 4.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(White)
-                        .padding(6.dp),
+                        .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -91,73 +93,94 @@ fun SessionScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
                 // Keyword label
                 Text(
                     text = step.keyword,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = Black
+                    color = Black,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
             }
 
-            // Navigation buttons - LARGE TOUCH TARGETS
+            // Navigation buttons (smaller)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
+                    .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Previous button
                 Button(
                     onClick = {
-                        // Large touch target, directly call onPrev
+                        android.util.Log.d("SessionScreen", "Previous button clicked, isFirstStep = $isFirstStep")
                         onPrev()
                     },
                     enabled = !isFirstStep,
                     modifier = Modifier
-                        .height(50.dp)
+                        .height(36.dp)
                         .weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = if (isFirstStep) AccentRed.copy(alpha = 0.5f) else AccentRed,
                         contentColor = White
                     ),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "‹ Vorige",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.W600
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "‹",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "Prev",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.W600
+                        )
+                    }
                 }
 
                 // Next button
                 Button(
                     onClick = {
-                        // Large touch target, directly call onNext
+                        android.util.Log.d("SessionScreen", "Next button clicked, isLastStep = $isLastStep")
                         onNext()
                     },
                     modifier = Modifier
-                        .height(50.dp)
+                        .height(36.dp)
                         .weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = AccentGreen,
                         contentColor = White
                     ),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = if (isLastStep) "Klaar" else "Volgende ›",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.W600
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isLastStep) "Done" else "Next",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.W600
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "›",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

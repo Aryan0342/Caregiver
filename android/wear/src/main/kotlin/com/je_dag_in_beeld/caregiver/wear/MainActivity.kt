@@ -62,38 +62,6 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         Log.d(TAG, "onResume")
         Wearable.getDataClient(this).addListener(dataReceiver)
-        // Poll current DataLayer state
-        Wearable.getDataClient(this).getDataItems(Uri.parse("wear://*/watch_session")).addOnSuccessListener { dataItems ->
-            try {
-                for (item in dataItems) {
-                    if (item.uri.path == "/watch_session") {
-                        val dataMap = DataMapItem.fromDataItem(item).dataMap    
-                        val action = dataMap.getString("action") ?: ""
-                        val currentIndex = dataMap.getInt("currentIndex", 0)    
-                        val totalSteps = dataMap.getInt("totalSteps", 0)        
-                        val setName = dataMap.getString("setName") ?: ""        
-                        val userId = dataMap.getString("userId") ?: ""
-                        val pictogramsJson = dataMap.getString("pictograms") ?: "[]"
-                        val pictogramListType = object : TypeToken<List<PictogramStep>>() {}.type
-                        val pictogramSteps: List<PictogramStep> = try {
-                            gson.fromJson(pictogramsJson, pictogramListType)    
-                        } catch (e: Exception) {
-                            emptyList()
-                        }
-                        val sessionData = SessionState(
-                            setName = setName,
-                            currentIndex = currentIndex,
-                            totalSteps = totalSteps,
-                            steps = pictogramSteps,
-                            userId = userId
-                        )
-                        SessionRepository.updateSession(action, sessionData)    
-                    }
-                }
-            } finally {
-                dataItems.release()
-            }
-        }
     }
 
     override fun onPause() {
