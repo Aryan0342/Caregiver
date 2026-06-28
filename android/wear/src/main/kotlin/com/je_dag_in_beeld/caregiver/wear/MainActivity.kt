@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import com.google.android.gms.wearable.DataClient
-import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 
 class MainActivity : ComponentActivity() {
@@ -23,10 +20,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             WearApp(
                 onNext = {
-                    sendNavigationToPhone("next")
+                    handleNavigation("next")
                 },
                 onPrev = {
-                    sendNavigationToPhone("prev")
+                    handleNavigation("prev")
                 }
             )
         }
@@ -52,18 +49,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun sendNavigationToPhone(action: String) {
-        Log.d(TAG, "sendNavigationToPhone via DataLayer: action = $action")
-        try {
-            val putDataMapRequest = PutDataMapRequest.create("/navigation")
-            putDataMapRequest.dataMap.putString("action", action)
-            putDataMapRequest.dataMap.putLong("timestamp", System.currentTimeMillis())
-            val request = putDataMapRequest.asPutDataRequest().setUrgent()
-            Wearable.getDataClient(this).putDataItem(request)
-                .addOnSuccessListener { Log.d(TAG, "Navigation sent via DataLayer: $action") }
-                .addOnFailureListener { e -> Log.e(TAG, "Failed to send navigation via DataLayer", e) }
-        } catch (e: Exception) {
-            Log.e(TAG, "sendNavigationToPhone exception", e)
+    private fun handleNavigation(action: String) {
+        Log.d(TAG, "handleNavigation: $action")
+        val currentState = SessionRepository.sessionState.value
+        val currentIndex = currentState.currentIndex
+        val totalSteps = currentState.totalSteps
+        val newIndex = when (action) {
+            "next" -> (currentIndex + 1).coerceAtMost(totalSteps - 1)
+            "prev" -> (currentIndex - 1).coerceAtLeast(0)
+            else -> currentIndex
         }
+        Log.d(TAG, "handleNavigation: $currentIndex -> $newIndex (total: $totalSteps)")
+        SessionRepository.navigateToIndex(newIndex)
     }
 }

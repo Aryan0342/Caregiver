@@ -121,4 +121,26 @@ object SessionRepository {
             }
         }
     }
+
+    fun navigateToIndex(newIndex: Int) {
+        val userId = _sessionState.value.userId
+        if (userId.isEmpty()) {
+            Log.e(TAG, "navigateToIndex: userId is empty, cannot update Firestore")
+            return
+        }
+        val currentState = _sessionState.value
+        val clampedIndex = newIndex.coerceIn(0, (currentState.totalSteps - 1).coerceAtLeast(0))
+        Log.d(TAG, "navigateToIndex: updating Firestore to index=$clampedIndex")
+        FirebaseFirestore.getInstance()
+            .collection("watch_sessions")
+            .document(userId)
+            .update(
+                mapOf(
+                    "currentIndex" to clampedIndex,
+                    "updatedAt" to com.google.firebase.Timestamp.now()
+                )
+            )
+            .addOnSuccessListener { Log.d(TAG, "navigateToIndex: Firestore updated to $clampedIndex") }
+            .addOnFailureListener { e -> Log.e(TAG, "navigateToIndex: Firestore update failed", e) }
+    }
 }
