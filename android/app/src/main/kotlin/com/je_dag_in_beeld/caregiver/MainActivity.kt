@@ -6,38 +6,30 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import com.google.android.gms.wearable.DataClient
-import com.google.android.gms.wearable.MessageClient
-import com.google.android.gms.wearable.MessageEvent
+import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
 import org.json.JSONArray
 import org.json.JSONObject
 
-class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener {
+class MainActivity : FlutterActivity() {
     private val TAG = "PhoneMainActivity"
     private val CHANNEL = "com.jedaginbeeld.wear"
     private val WEAR_PATH = "/watch_session"
-    private val NAVIGATION_PATH = "/navigation"
 
-    private lateinit var dataClient: DataClient
-    private lateinit var messageClient: MessageClient
+    private var dataClient: DataClient? = null
     private var methodChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        try {
-            dataClient = Wearable.getDataClient(this)
-            messageClient = Wearable.getMessageClient(this)
-        } catch (e: Exception) {
-            Log.e(TAG, "Wearable APIs unavailable", e)
-        }
-
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        WatchNavigationService.methodChannel = methodChannel
+        Log.d(TAG, "MethodChannel set in WatchNavigationService")
         methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "sendToWear" -> {
                     try {
-                        val data = call.argument<Map<String, Any>>("data")      
+                        val data = call.argument<Map<String, Any>>("data")
                         if (data != null) {
                             sendDataToWear(data, result)
                         } else {
@@ -57,42 +49,19 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
     override fun onResume() {
         super.onResume()
         try {
-            Log.d(TAG, "Adding message listener")
-            messageClient.addListener(this)
+            if (dataClient == null) dataClient = Wearable.getDataClient(this)
+            Log.d(TAG, "DataClient initialized")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to add message listener", e)
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        try {
-            Log.d(TAG, "Removing message listener")
-            messageClient.removeListener(this)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to remove message listener", e)
-        }
-    }
-
-    override fun onMessageReceived(messageEvent: MessageEvent) {
-        Log.d(TAG, "onMessageReceived: path = ${messageEvent.path}")
-        if (messageEvent.path == NAVIGATION_PATH) {
-            try {
-                val message = String(messageEvent.data, Charsets.UTF_8)
-                Log.d(TAG, "onMessageReceived: message = $message")
-                val json = JSONObject(message)
-                val action = json.optString("action")
-                Log.d(TAG, "onMessageReceived: action = $action")
-                if (action == "next" || action == "prev") {
-                    methodChannel?.invokeMethod("onWatchNavigation", mapOf("action" to action))
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to parse message", e)
-            }
+            Log.e(TAG, "Failed to initialize Wearable clients", e)
         }
     }
 
     private fun sendDataToWear(data: Map<String, Any>, result: MethodChannel.Result) {
+        if (dataClient == null) {
+            result.error("WEAR_ERROR", "DataClient not initialized", null)
+            return
+        }
+
         try {
             val putDataMapRequest = PutDataMapRequest.create(WEAR_PATH)
             val dataMap = putDataMapRequest.dataMap
@@ -123,7 +92,7 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
                             jsonArray.put(JSONObject(item))
                         }
                     }
-                    dataMap.putString("pictograms", jsonArray.toString())       
+                    dataMap.putString("pictograms", jsonArray.toString())
                 }
             }
 
@@ -133,12 +102,12 @@ class MainActivity : FlutterActivity(), MessageClient.OnMessageReceivedListener 
             val putDataRequest = putDataMapRequest.asPutDataRequest()
             putDataRequest.setUrgent()
 
-            dataClient.putDataItem(putDataRequest)
-                .addOnSuccessListener {
+            dataClient?.putDataItem(putDataRequest)
+                ?.addOnSuccessListener {
                     Log.d(TAG, "sendDataToWear: success")
                     result.success(null)
                 }
-                .addOnFailureListener { e ->
+                ?.addOnFailureListener { e ->
                     Log.e(TAG, "sendDataToWear: failed", e)
                     result.error("WEAR_ERROR", e.message, null)
                 }

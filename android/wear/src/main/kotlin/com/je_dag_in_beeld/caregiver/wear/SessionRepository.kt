@@ -100,9 +100,10 @@ object SessionRepository {
         Log.d(TAG, "updateSession() called with action = $action, data = $data")
         val newState = when (action) {
             "START" -> data.copy(isActive = true)
-            "INDEX_CHANGE" -> _sessionState.value.copy(
-                currentIndex = data.currentIndex
-            )
+            "INDEX_CHANGE" -> {
+                Log.d(TAG, "INDEX_CHANGE received: data.currentIndex=${data.currentIndex}, current state index=${_sessionState.value.currentIndex}")
+                _sessionState.value.copy(currentIndex = data.currentIndex)
+            }
             "END" -> _sessionState.value.copy(
                 isActive = false
             )

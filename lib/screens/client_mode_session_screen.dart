@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/client_profile_model.dart';
@@ -49,6 +50,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   void initState() {
     super.initState();
     _activeSet = widget.set;
+    if (kDebugMode) {
+      debugPrint(
+          '[ClientModeSessionScreen] initState called, starting watch navigation listener');
+    }
     _watchService.startListeningToWatchNavigation(
       onNext: _nextStep,
       onPrev: _previousStep,
@@ -1042,10 +1047,17 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   }
 
   void _nextStep() {
+    if (kDebugMode) {
+      debugPrint('[ClientModeSessionScreen] _nextStep called');
+    }
     if (!mounted) return;
 
     final pictograms = _modifiedSequence ?? _activeSet.pictograms;
     if (_currentStepIndex < pictograms.length - 1) {
+      if (kDebugMode) {
+        debugPrint(
+            '[ClientModeSessionScreen] Incrementing step to ${_currentStepIndex + 1}');
+      }
       setState(() {
         _currentStepIndex++;
       });
@@ -1056,11 +1068,22 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
       }
       _watchService.updateIndex(_currentStepIndex);
+    } else {
+      if (kDebugMode) {
+        debugPrint('[ClientModeSessionScreen] Already at last step');
+      }
     }
   }
 
   void _previousStep() {
+    if (kDebugMode) {
+      debugPrint('[ClientModeSessionScreen] _previousStep called');
+    }
     if (_currentStepIndex > 0) {
+      if (kDebugMode) {
+        debugPrint(
+            '[ClientModeSessionScreen] Decrementing step to ${_currentStepIndex - 1}');
+      }
       setState(() {
         _currentStepIndex--;
       });
@@ -1071,6 +1094,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
       }
       _watchService.updateIndex(_currentStepIndex);
+    } else {
+      if (kDebugMode) {
+        debugPrint('[ClientModeSessionScreen] Already at first step');
+      }
     }
   }
 

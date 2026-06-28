@@ -1,5 +1,6 @@
 package com.je_dag_in_beeld.caregiver.wear
 
+import android.util.Log
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -8,7 +9,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 class WearDataReceiver : DataClient.OnDataChangedListener {
-
+    private val TAG = "WearDataReceiver"
     private val gson = Gson()
 
     fun init(context: android.content.Context) {
@@ -16,7 +17,9 @@ class WearDataReceiver : DataClient.OnDataChangedListener {
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
+        Log.d(TAG, "onDataChanged: ${dataEvents.count} data events received")
         for (event in dataEvents) {
+            Log.d(TAG, "onDataChanged: event type=${event.type}, uri=${event.dataItem.uri}")
             if (event.type == DataEvent.TYPE_CHANGED) {
                 try {
                     val dataItem = event.dataItem
@@ -30,10 +33,13 @@ class WearDataReceiver : DataClient.OnDataChangedListener {
                         val userId = dataMap.getString("userId") ?: ""
                         val pictogramsJson = dataMap.getString("pictograms") ?: "[]"
 
+                        Log.d(TAG, "watch_session: action=$action, currentIndex=$currentIndex, totalSteps=$totalSteps")
+
                         val pictogramListType = object : TypeToken<List<PictogramStep>>() {}.type
                         val pictogramSteps: List<PictogramStep> = try {
                             gson.fromJson(pictogramsJson, pictogramListType)
                         } catch (e: Exception) {
+                            Log.e(TAG, "Failed to parse pictogramsJson", e)
                             emptyList()
                         }
 
@@ -48,7 +54,7 @@ class WearDataReceiver : DataClient.OnDataChangedListener {
                         SessionRepository.updateSession(action, sessionData)
                     }
                 } catch (e: Exception) {
-                    // Ignore malformed data
+                    Log.e(TAG, "Error processing watch_session", e)
                 }
             } else if (event.type == DataEvent.TYPE_DELETED) {
                 val dataItem = event.dataItem

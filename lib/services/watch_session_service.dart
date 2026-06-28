@@ -193,17 +193,35 @@ class WatchSessionService {
     required VoidCallback onNext,
     required VoidCallback onPrev,
   }) {
+    if (kDebugMode) {
+      debugPrint('[WatchSessionService] startListeningToWatchNavigation called');
+    }
     _onNextCallback = onNext;
     _onPrevCallback = onPrev;
 
     if (!_handlerRegistered) {
       _handlerRegistered = true;
+      if (kDebugMode) {
+        debugPrint('[WatchSessionService] Registering MethodChannel handler');
+      }
       _channel.setMethodCallHandler((call) async {
+        if (kDebugMode) {
+          debugPrint('[WatchSessionService] Method call received: ${call.method}, arguments: ${call.arguments}');
+        }
         if (call.method == 'onWatchNavigation') {
           final action = call.arguments['action'] as String;
+          if (kDebugMode) {
+            debugPrint('[WatchSessionService] Action: $action');
+          }
           if (action == 'next') {
+            if (kDebugMode) {
+              debugPrint('[WatchSessionService] Calling _onNextCallback');
+            }
             _onNextCallback?.call();
           } else if (action == 'prev') {
+            if (kDebugMode) {
+              debugPrint('[WatchSessionService] Calling _onPrevCallback');
+            }
             _onPrevCallback?.call();
           }
         }

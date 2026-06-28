@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,12 +30,27 @@ import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import coil.compose.AsyncImage
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 private val AccentRed = Color(0xFFFF3B30)
 private val AccentGreen = Color(0xFF34C759)
 private val White = Color(0xFFFFFFFF)
 private val Black = Color(0xFF000000)
 private val BackgroundLight = Color(0xFFF2F2F7)
+
+@Composable
+fun WearApp(
+    onNext: () -> Unit,
+    onPrev: () -> Unit
+) {
+    val state by SessionRepository.sessionState.collectAsState()
+
+    if (state.isActive && state.totalSteps > 0) {
+        SessionScreen(state, onNext, onPrev)
+    } else {
+        IdleScreen()
+    }
+}
 
 @Composable
 fun SessionScreen(
