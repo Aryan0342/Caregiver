@@ -25,13 +25,32 @@ object SessionRepository {
     fun init(context: Context) {
         Log.d(TAG, "init() called")
         sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+        if (auth.currentUser == null) {
+            Log.d(TAG, "Not authenticated, signing in anonymously")
+            auth.signInAnonymously()
+                .addOnSuccessListener {
+                    Log.d(TAG, "Anonymous auth success: ${it.user?.uid}")
+                    initAfterAuth()
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Anonymous auth failed", e)
+                    initAfterAuth()
+                }
+        } else {
+            Log.d(TAG, "Already authenticated: ${auth.currentUser?.uid}")
+            initAfterAuth()
+        }
+    }
+
+    private fun initAfterAuth() {
         val savedUserId = sharedPrefs.getString(KEY_USER_ID, "") ?: ""
-        Log.d(TAG, "init(): savedUserId = $savedUserId")
+        Log.d(TAG, "initAfterAuth(): savedUserId = $savedUserId")
         _sessionState.value = _sessionState.value.copy(userId = savedUserId)
         if (savedUserId.isNotEmpty()) {
             startFirestoreListener(savedUserId)
         } else {
-            // If no saved user ID, query Firestore for any watch_sessions document and use its ID
             FirebaseFirestore.getInstance()
                 .collection("watch_sessions")
                 .limit(1)
