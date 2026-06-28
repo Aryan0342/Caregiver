@@ -58,6 +58,23 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       onNext: _nextStep,
       onPrev: _previousStep,
     );
+    _watchService.startListeningToFirestoreIndexChanges(
+      onIndexChanged: (index) {
+        if (!mounted) return;
+        final pictograms = _modifiedSequence ?? _activeSet.pictograms;
+        final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
+        final clamped = index.clamp(0, maxIndex);
+        if (clamped != _currentStepIndex) {
+          setState(() {
+            _currentStepIndex = clamped;
+          });
+          if (kDebugMode) {
+            debugPrint(
+                '[ClientModeSessionScreen] Index updated from Firestore: $clamped');
+          }
+        }
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSidebarClients();
     });
@@ -118,6 +135,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   @override
   void dispose() {
     _watchService.stopListeningToWatchNavigation();
+    _watchService.stopListeningToFirestoreIndexChanges();
     _watchService.endSession();
     super.dispose();
   }

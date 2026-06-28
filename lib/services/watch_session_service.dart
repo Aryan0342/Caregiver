@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +14,7 @@ class WatchSessionService {
   VoidCallback? _onNextCallback;
   VoidCallback? _onPrevCallback;
   bool _handlerRegistered = false;
+  StreamSubscription? _firestoreSubscription;
 
   static const String _cloudinaryTransform = '/upload/w_200,h_200,c_fit/';
   static const String _collectionName = 'watch_sessions';
@@ -194,7 +196,8 @@ class WatchSessionService {
     required VoidCallback onPrev,
   }) {
     if (kDebugMode) {
-      debugPrint('[WatchSessionService] startListeningToWatchNavigation called');
+      debugPrint(
+          '[WatchSessionService] startListeningToWatchNavigation called');
     }
     _onNextCallback = onNext;
     _onPrevCallback = onPrev;
@@ -206,7 +209,8 @@ class WatchSessionService {
       }
       _channel.setMethodCallHandler((call) async {
         if (kDebugMode) {
-          debugPrint('[WatchSessionService] Method call received: ${call.method}, arguments: ${call.arguments}');
+          debugPrint(
+              '[WatchSessionService] Method call received: ${call.method}, arguments: ${call.arguments}');
         }
         if (call.method == 'onWatchNavigation') {
           final action = call.arguments['action'] as String;
@@ -232,5 +236,34 @@ class WatchSessionService {
   void stopListeningToWatchNavigation() {
     _onNextCallback = null;
     _onPrevCallback = null;
+  }
+
+  void startListeningToFirestoreIndexChanges({
+    required void Function(int index) onIndexChanged,
+  }) {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    _firestoreSubscription?.cancel();
+    _firestoreSubscription = _firestore
+        .collection(_collectionName)
+        .doc(userId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+      final data = snapshot.data();
+      if (data == null) return;
+      final index = data['currentIndex'] as int?;
+      if (index == null) return;
+      if (kDebugMode) {
+        debugPrint('[WatchSessionService] Firestore index changed: $index');
+      }
+      onIndexChanged(index);
+    });
+  }
+
+  void stopListeningToFirestoreIndexChanges() {
+    _firestoreSubscription?.cancel();
+    _firestoreSubscription = null;
   }
 }
