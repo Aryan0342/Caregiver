@@ -78,7 +78,7 @@ fun SessionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -88,19 +88,19 @@ fun SessionScreen(
                 style = MaterialTheme.typography.caption1,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.onBackground,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
 
-            // Pictogram image (large)
+            // Pictogram image (larger)
             currentStep?.let { step ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = 4.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .padding(horizontal = 2.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(White)
-                        .padding(8.dp),
+                        .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
@@ -113,24 +113,24 @@ fun SessionScreen(
                 // Keyword label
                 Text(
                     text = step.keyword,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     color = Black,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             // Navigation buttons (smaller)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 4.dp, top = 0.dp, end = 4.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    .padding(start = 2.dp, top = 0.dp, end = 2.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Previous button
@@ -141,13 +141,13 @@ fun SessionScreen(
                     },
                     enabled = !isFirstStep,
                     modifier = Modifier
-                        .height(36.dp)
+                        .height(30.dp)
                         .weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = if (isFirstStep) AccentRed.copy(alpha = 0.5f) else AccentRed,
                         contentColor = White
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.Center,
@@ -155,13 +155,13 @@ fun SessionScreen(
                     ) {
                         Text(
                             text = "‹",
-                            fontSize = 16.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.width(1.dp))
                         Text(
                             text = "Prev",
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.W600
                         )
                     }
@@ -174,13 +174,13 @@ fun SessionScreen(
                         onNext()
                     },
                     modifier = Modifier
-                        .height(36.dp)
+                        .height(30.dp)
                         .weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = AccentGreen,
                         contentColor = White
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.Center,
@@ -188,13 +188,13 @@ fun SessionScreen(
                     ) {
                         Text(
                             text = if (isLastStep) "Done" else "Next",
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.W600
                         )
-                        Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.width(1.dp))
                         Text(
                             text = "›",
-                            fontSize = 16.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
