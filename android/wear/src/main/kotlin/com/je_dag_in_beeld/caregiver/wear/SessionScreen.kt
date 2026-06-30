@@ -98,7 +98,7 @@ fun SessionScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(6f)
+                        .weight(8f)
                         .padding(horizontal = 2.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(White)
@@ -135,7 +135,7 @@ fun SessionScreen(
                 // Keyword label
                 Text(
                     text = step.keyword,
-                    fontSize = 11.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
@@ -143,60 +143,6 @@ fun SessionScreen(
                     color = Black,
                     modifier = Modifier.padding(top = 2.dp)
                 )
-            }
-
-            // Navigation buttons
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Previous button
-                Button(
-                    onClick = {
-                        android.util.Log.d("SessionScreen", "Previous button clicked, isFirstStep = $isFirstStep")
-                        onPrev()
-                    },
-                    enabled = !isFirstStep,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = if (isFirstStep) AccentRed.copy(alpha = 0.5f) else AccentRed,
-                        contentColor = White
-                    ),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Text(
-                        text = "‹",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Next button
-                Button(
-                    onClick = {
-                        android.util.Log.d("SessionScreen", "Next button clicked, isLastStep = $isLastStep")
-                        onNext()
-                    },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = AccentGreen,
-                        contentColor = White
-                    ),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Text(
-                        text = if (isLastStep) "✓" else "›",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
         }
     }
