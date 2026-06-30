@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = result.errorMessage;
       });
-      
+
       // Show error message
       final localizations = LanguageProvider.localizationsOf(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Mark that user has logged in (for PIN auth on next app open)
       // This must be called before navigation to ensure it's saved
       await _authStateService.markLoggedIn();
-      
+
       if (kDebugMode) {
         debugPrint('LoginScreen: Marked user as logged in');
       }
@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -104,36 +104,53 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Smaller app logo
-                  Image.asset(
-                    'assets/images/app_logo.png',
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.contain,
+                  const SizedBox(height: 48),
+                  // App Logo
+                  Center(
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  
+                  // App Name
+                  Text(
+                    localizations.appName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+
                   // Email field
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    style: const TextStyle(fontSize: 14),
+                    style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       labelText: localizations.emailAddress,
                       hintText: localizations.enterEmail,
                       prefixIcon: const Icon(Icons.email_outlined, size: 20),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      errorText: _errorMessage?.contains('e-mail') == true 
-                          ? _errorMessage 
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      errorText: _errorMessage?.contains('e-mail') == true
+                          ? _errorMessage
                           : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.surfaceWhite,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -145,19 +162,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 12),
-                  
+                  const SizedBox(height: 24),
+
                   // Password field
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
-                    style: const TextStyle(fontSize: 14),
+                    style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       labelText: localizations.password,
                       hintText: localizations.enterPassword,
                       prefixIcon: const Icon(Icons.lock_outlined, size: 20),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -171,9 +189,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           });
                         },
                       ),
-                      errorText: _errorMessage?.contains('wachtwoord') == true 
-                          ? _errorMessage 
+                      errorText: _errorMessage?.contains('wachtwoord') == true
+                          ? _errorMessage
                           : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.surfaceWhite,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -186,14 +209,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     onFieldSubmitted: (_) => _handleLogin(),
                   ),
-                  const SizedBox(height: 16),
-                  
-                  // Login button - smaller size
+                  const SizedBox(height: 24),
+
+                  // Login button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      minimumSize: const Size(double.infinity, 44),
+                      backgroundColor: AppTheme.primaryBlue,
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -201,7 +227,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
@@ -209,50 +236,52 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 18,
                             ),
                           ),
                   ),
-                  const SizedBox(height: 8),
-                  
+                  const SizedBox(height: 16),
+
                   // Forgot Password button
                   Center(
                     child: TextButton(
                       onPressed: _isLoading
                           ? null
                           : () {
-                              Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                              Navigator.pushNamed(
+                                  context, AppRoutes.forgotPassword);
                             },
                       child: Text(
                         localizations.forgotPassword,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.primaryBlue,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Register button
                   OutlinedButton(
                     onPressed: _isLoading
                         ? null
                         : () {
-                            Navigator.pushNamed(context, AppRoutes.caregiverRegistration);
+                            Navigator.pushNamed(
+                                context, AppRoutes.caregiverRegistration);
                           },
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      minimumSize: const Size(double.infinity, 40),
-                      side: BorderSide(color: AppTheme.primaryBlue, width: 2),
+                      minimumSize: const Size(double.infinity, 52),
+                      side: BorderSide(color: AppTheme.textSecondary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: Text(
                       localizations.createAccount,
                       style: TextStyle(
-                        color: AppTheme.primaryBlue,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                        fontSize: 16,
                       ),
                     ),
                   ),

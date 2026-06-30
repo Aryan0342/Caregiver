@@ -78,7 +78,7 @@ fun SessionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .padding(horizontal = 2.dp, vertical = 2.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -96,7 +96,7 @@ fun SessionScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .weight(6f)
                         .padding(horizontal = 2.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(White)
@@ -113,7 +113,7 @@ fun SessionScreen(
                 // Keyword label
                 Text(
                     text = step.keyword,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
@@ -121,16 +121,14 @@ fun SessionScreen(
                     color = Black,
                     modifier = Modifier.padding(top = 2.dp)
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Navigation buttons (smaller)
+            // Navigation buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 2.dp, top = 0.dp, end = 2.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Previous button
@@ -141,30 +139,19 @@ fun SessionScreen(
                     },
                     enabled = !isFirstStep,
                     modifier = Modifier
-                        .height(30.dp)
+                        .size(36.dp)
                         .weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = if (isFirstStep) AccentRed.copy(alpha = 0.5f) else AccentRed,
                         contentColor = White
                     ),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(18.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "‹",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(1.dp))
-                        Text(
-                            text = "Prev",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.W600
-                        )
-                    }
+                    Text(
+                        text = "‹",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 // Next button
@@ -174,30 +161,19 @@ fun SessionScreen(
                         onNext()
                     },
                     modifier = Modifier
-                        .height(30.dp)
+                        .size(36.dp)
                         .weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = AccentGreen,
                         contentColor = White
                     ),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(18.dp)
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isLastStep) "Done" else "Next",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.W600
-                        )
-                        Spacer(modifier = Modifier.width(1.dp))
-                        Text(
-                            text = "›",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = if (isLastStep) "✓" else "›",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
