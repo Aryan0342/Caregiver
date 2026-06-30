@@ -1,6 +1,7 @@
 package com.je_dag_in_beeld.caregiver.wear
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -100,6 +102,26 @@ fun SessionScreen(
                         .padding(horizontal = 2.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(White)
+                        .pointerInput(Unit) {
+                            var totalDrag = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = { totalDrag = 0f },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    totalDrag += dragAmount
+                                },
+                                onDragEnd = {
+                                    val threshold = 60f
+                                    if (totalDrag > threshold) {
+                                        android.util.Log.d("SessionScreen", "Swipe right detected -> prev")
+                                        onPrev()
+                                    } else if (totalDrag < -threshold) {
+                                        android.util.Log.d("SessionScreen", "Swipe left detected -> next")
+                                        onNext()
+                                    }
+                                }
+                            )
+                        }
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
