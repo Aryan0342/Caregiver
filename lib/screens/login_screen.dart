@@ -117,17 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: Image.asset(
                       'assets/images/app_logo.png',
-                      width: 120,
-                      height: 120,
+                      width: 150,
+                      height: 150,
                       fit: BoxFit.contain,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // App Name
-                  Text(
-                    localizations.appName,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
 
