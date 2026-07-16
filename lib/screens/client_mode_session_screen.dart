@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
+import 'package:caregiver/services/language_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../theme.dart';
@@ -45,6 +46,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   late PictogramSet _activeSet;
   List<ClientProfile> _sidebarClients = <ClientProfile>[];
   bool _isLoadingClients = true;
+  bool _isWatchReachable =
+      true; // default true: avoid a false "disconnected" flash before the first native callback arrives
 
   @override
   void initState() {
@@ -73,6 +76,14 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                 '[ClientModeSessionScreen] Index updated from Firestore: $clamped');
           }
         }
+      },
+    );
+    _watchService.startListeningToReachability(
+      onChanged: (isReachable) {
+        if (!mounted) return;
+        setState(() {
+          _isWatchReachable = isReachable;
+        });
       },
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -136,6 +147,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   void dispose() {
     _watchService.stopListeningToWatchNavigation();
     _watchService.stopListeningToFirestoreIndexChanges();
+    _watchService.stopListeningToReachability();
     _watchService.endSession();
     super.dispose();
   }
@@ -238,6 +250,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               _buildMainContentWithoutButtons(),
               _buildHiddenExitAreas(),
               _buildActionButtons(),
+              if (!_isWatchReachable) _buildWatchDisconnectedBanner(),
             ],
           ),
         ),
@@ -974,6 +987,37 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWatchDisconnectedBanner() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final isDutch = localizations.currentLanguage == AppLanguage.dutch;
+    return Positioned(
+      top: 8,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.accentOrange.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.watch_off_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              isDutch ? 'Horloge niet verbonden' : 'Watch not connected',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13),
+            ),
+          ],
         ),
       ),
     );
