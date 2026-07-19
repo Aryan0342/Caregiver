@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
+import 'package:caregiver/services/language_service.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/client_profile_model.dart';
@@ -9,6 +11,7 @@ import '../providers/language_provider.dart';
 import '../providers/client_session_provider.dart';
 import '../services/client_service.dart';
 import '../services/set_service.dart';
+import '../services/watch_session_service.dart';
 import 'pictogram_picker_screen.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
@@ -16,7 +19,7 @@ import 'pictogram_picker_screen.dart';
 /// Features:
 /// - Full-screen pictogram view
 /// - No back button
-/// - No navigation gestures
+/// - No navigation gesture
 /// - No settings access
 /// - No editing features
 /// - Hidden exit mechanism (long-press corner or caregiver icon)
@@ -39,14 +42,50 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
   final ClientService _clientService = ClientService();
   final SetService _setService = SetService();
+  final WatchSessionService _watchService = WatchSessionService();
   late PictogramSet _activeSet;
   List<ClientProfile> _sidebarClients = <ClientProfile>[];
   bool _isLoadingClients = true;
+  bool _isWatchReachable =
+      true; // default true: avoid a false "disconnected" flash before the first native callback arrives
 
   @override
   void initState() {
     super.initState();
     _activeSet = widget.set;
+    if (kDebugMode) {
+      debugPrint(
+          '[ClientModeSessionScreen] initState called, starting watch navigation listener');
+    }
+    _watchService.startListeningToWatchNavigation(
+      onNext: _nextStep,
+      onPrev: _previousStep,
+    );
+    _watchService.startListeningToFirestoreIndexChanges(
+      onIndexChanged: (index) {
+        if (!mounted) return;
+        final pictograms = _modifiedSequence ?? _activeSet.pictograms;
+        final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
+        final clamped = index.clamp(0, maxIndex);
+        if (clamped != _currentStepIndex) {
+          setState(() {
+            _currentStepIndex = clamped;
+          });
+          if (kDebugMode) {
+            debugPrint(
+                '[ClientModeSessionScreen] Index updated from Firestore: $clamped');
+          }
+        }
+      },
+    );
+    _watchService.startListeningToReachability(
+      onChanged: (isReachable) {
+        if (!mounted) return;
+        setState(() {
+          _isWatchReachable = isReachable;
+        });
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSidebarClients();
     });
@@ -87,6 +126,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           setState(() {
             _currentStepIndex = restoredIndex.clamp(0, maxIndex);
           });
+          _watchService.startSession(
+            setName: _activeSet.name,
+            currentIndex: _currentStepIndex,
+            totalSteps: pictograms.length,
+            pictograms: pictograms,
+          );
         }
       }
     } catch (_) {
@@ -96,6 +141,15 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         _isLoadingClients = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _watchService.stopListeningToWatchNavigation();
+    _watchService.stopListeningToFirestoreIndexChanges();
+    _watchService.stopListeningToReachability();
+    _watchService.endSession();
+    super.dispose();
   }
 
   @override
@@ -196,6 +250,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               _buildMainContentWithoutButtons(),
               _buildHiddenExitAreas(),
               _buildActionButtons(),
+              if (!_isWatchReachable) _buildWatchDisconnectedBanner(),
             ],
           ),
         ),
@@ -937,6 +992,37 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
+  Widget _buildWatchDisconnectedBanner() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final isDutch = localizations.currentLanguage == AppLanguage.dutch;
+    return Positioned(
+      top: 8,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.accentOrange.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.watch_off_outlined, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              isDutch ? 'Horloge niet verbonden' : 'Watch not connected',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Get pictogram keyword - all pictograms are now custom with stored keywords
   String _getPictogramKeyword(Pictogram pictogram) {
     return pictogram.keyword.isNotEmpty ? pictogram.keyword : 'Onbekend';
@@ -1023,10 +1109,17 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   }
 
   void _nextStep() {
+    if (kDebugMode) {
+      debugPrint('[ClientModeSessionScreen] _nextStep called');
+    }
     if (!mounted) return;
 
     final pictograms = _modifiedSequence ?? _activeSet.pictograms;
     if (_currentStepIndex < pictograms.length - 1) {
+      if (kDebugMode) {
+        debugPrint(
+            '[ClientModeSessionScreen] Incrementing step to ${_currentStepIndex + 1}');
+      }
       setState(() {
         _currentStepIndex++;
       });
@@ -1036,11 +1129,23 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       if (activeClientId != null) {
         unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
       }
+      _watchService.updateIndex(_currentStepIndex);
+    } else {
+      if (kDebugMode) {
+        debugPrint('[ClientModeSessionScreen] Already at last step');
+      }
     }
   }
 
   void _previousStep() {
+    if (kDebugMode) {
+      debugPrint('[ClientModeSessionScreen] _previousStep called');
+    }
     if (_currentStepIndex > 0) {
+      if (kDebugMode) {
+        debugPrint(
+            '[ClientModeSessionScreen] Decrementing step to ${_currentStepIndex - 1}');
+      }
       setState(() {
         _currentStepIndex--;
       });
@@ -1049,6 +1154,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       final activeClientId = controller.activeClientId;
       if (activeClientId != null) {
         unawaited(_persistClientProgress(activeClientId, _currentStepIndex));
+      }
+      _watchService.updateIndex(_currentStepIndex);
+    } else {
+      if (kDebugMode) {
+        debugPrint('[ClientModeSessionScreen] Already at first step');
       }
     }
   }
@@ -1072,6 +1182,13 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         // Reset to first step after modification
         _currentStepIndex = 0;
       });
+
+      _watchService.startSession(
+        setName: _activeSet.name,
+        currentIndex: _currentStepIndex,
+        totalSteps: result.length,
+        pictograms: result,
+      );
 
       final controller = ClientSessionProvider.of(context);
       controller.updateCurrentIndex(0);
@@ -1114,6 +1231,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   /// Exit client mode (no PIN required since PIN was verified to enter)
   Future<void> _exitWithPin() async {
     final localizations = LanguageProvider.localizationsOf(context);
+
+    _watchService.endSession();
 
     // Show completion message and exit (PIN was already verified to enter client mode)
     if (mounted) {

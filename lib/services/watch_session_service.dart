@@ -13,6 +13,7 @@ class WatchSessionService {
 
   VoidCallback? _onNextCallback;
   VoidCallback? _onPrevCallback;
+  void Function(bool isReachable)? _onReachabilityChanged;
   bool _handlerRegistered = false;
   StreamSubscription? _firestoreSubscription;
 
@@ -58,6 +59,18 @@ class WatchSessionService {
         debugPrint(
             '[WatchSessionService] Failed to send data to DataLayer: $e');
       }
+    }
+  }
+
+  /// Check whether a paired Apple Watch has the companion app installed.
+  /// On Android this channel call will simply throw/fail (no native handler
+  /// for this method exists there), so it returns false safely.
+  Future<bool> isWatchAppAvailable() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('isWatchAppInstalled');
+      return result ?? false;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -202,40 +215,63 @@ class WatchSessionService {
     _onNextCallback = onNext;
     _onPrevCallback = onPrev;
 
-    if (!_handlerRegistered) {
-      _handlerRegistered = true;
-      if (kDebugMode) {
-        debugPrint('[WatchSessionService] Registering MethodChannel handler');
-      }
-      _channel.setMethodCallHandler((call) async {
-        if (kDebugMode) {
-          debugPrint(
-              '[WatchSessionService] Method call received: ${call.method}, arguments: ${call.arguments}');
-        }
-        if (call.method == 'onWatchNavigation') {
-          final action = call.arguments['action'] as String;
-          if (kDebugMode) {
-            debugPrint('[WatchSessionService] Action: $action');
-          }
-          if (action == 'next') {
-            if (kDebugMode) {
-              debugPrint('[WatchSessionService] Calling _onNextCallback');
-            }
-            _onNextCallback?.call();
-          } else if (action == 'prev') {
-            if (kDebugMode) {
-              debugPrint('[WatchSessionService] Calling _onPrevCallback');
-            }
-            _onPrevCallback?.call();
-          }
-        }
-      });
-    }
+    _ensureHandlerRegistered();
   }
 
   void stopListeningToWatchNavigation() {
     _onNextCallback = null;
     _onPrevCallback = null;
+  }
+
+  /// Listens for connectivity changes to a paired Apple Watch. No-op on
+  /// Android since no native side ever invokes 'onReachabilityChanged' there.
+  void startListeningToReachability({
+    required void Function(bool isReachable) onChanged,
+  }) {
+    _onReachabilityChanged = onChanged;
+    _ensureHandlerRegistered();
+  }
+
+  void stopListeningToReachability() {
+    _onReachabilityChanged = null;
+  }
+
+  void _ensureHandlerRegistered() {
+    if (_handlerRegistered) return;
+    _handlerRegistered = true;
+    if (kDebugMode) {
+      debugPrint('[WatchSessionService] Registering MethodChannel handler');
+    }
+    _channel.setMethodCallHandler((call) async {
+      if (kDebugMode) {
+        debugPrint(
+            '[WatchSessionService] Method call received: ${call.method}, arguments: ${call.arguments}');
+      }
+      if (call.method == 'onWatchNavigation') {
+        final action = call.arguments['action'] as String;
+        if (kDebugMode) {
+          debugPrint('[WatchSessionService] Action: $action');
+        }
+        if (action == 'next') {
+          if (kDebugMode) {
+            debugPrint('[WatchSessionService] Calling _onNextCallback');
+          }
+          _onNextCallback?.call();
+        } else if (action == 'prev') {
+          if (kDebugMode) {
+            debugPrint('[WatchSessionService] Calling _onPrevCallback');
+          }
+          _onPrevCallback?.call();
+        }
+      } else if (call.method == 'onReachabilityChanged') {
+        final isReachable = call.arguments['isReachable'] as bool? ?? false;
+        if (kDebugMode) {
+          debugPrint(
+              '[WatchSessionService] Reachability changed: $isReachable');
+        }
+        _onReachabilityChanged?.call(isReachable);
+      }
+    });
   }
 
   void startListeningToFirestoreIndexChanges({

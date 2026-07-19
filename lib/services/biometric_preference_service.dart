@@ -1,6 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class BiometricPreferenceService {
+  // Key stays 'face_id_enabled' for backward compatibility,
+  // but now represents "any biometric enabled"
   static const String _faceIdEnabledKey = 'face_id_enabled';
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _biometricTypeKey = 'biometric_type';

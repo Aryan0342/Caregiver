@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = result.errorMessage;
       });
-      
+
       // Show error message
       final localizations = LanguageProvider.localizationsOf(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Mark that user has logged in (for PIN auth on next app open)
       // This must be called before navigation to ensure it's saved
       await _authStateService.markLoggedIn();
-      
+
       if (kDebugMode) {
         debugPrint('LoginScreen: Marked user as logged in');
       }
@@ -87,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
@@ -104,35 +104,46 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Logo (bigger)
-                  Image.asset(
-                    'assets/images/app_logo.png',
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.contain,
-                  ),
                   const SizedBox(height: 48),
-                  
-                  // Email field - Large input field
+                  // App Logo
+                  Center(
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Email field
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    style: const TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       labelText: localizations.emailAddress,
                       hintText: localizations.enterEmail,
-                      prefixIcon: const Icon(Icons.email_outlined, size: 28),
-                      errorText: _errorMessage?.contains('e-mail') == true 
-                          ? _errorMessage 
+                      prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      errorText: _errorMessage?.contains('e-mail') == true
+                          ? _errorMessage
                           : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.surfaceWhite,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -145,23 +156,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  
-                  // Password field - Large input field
+
+                  // Password field
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
-                    style: const TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       labelText: localizations.password,
                       hintText: localizations.enterPassword,
-                      prefixIcon: const Icon(Icons.lock_outlined, size: 28),
+                      prefixIcon: const Icon(Icons.lock_outlined, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          size: 28,
+                          size: 20,
                         ),
                         onPressed: () {
                           setState(() {
@@ -169,9 +182,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           });
                         },
                       ),
-                      errorText: _errorMessage?.contains('wachtwoord') == true 
-                          ? _errorMessage 
+                      errorText: _errorMessage?.contains('wachtwoord') == true
+                          ? _errorMessage
                           : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.surfaceWhite,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -184,72 +202,80 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     onFieldSubmitted: (_) => _handleLogin(),
                   ),
-                  const SizedBox(height: 32),
-                  
-                  // Login button - Large button
+                  const SizedBox(height: 24),
+
+                  // Login button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      minimumSize: const Size(double.infinity, 64),
+                      backgroundColor: AppTheme.primaryBlue,
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                            height: 24,
-                            width: 24,
+                            height: 20,
+                            width: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : Text(
                             localizations.login,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                            ),
                           ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Forgot Password button
                   Center(
                     child: TextButton(
                       onPressed: _isLoading
                           ? null
                           : () {
-                              Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                              Navigator.pushNamed(
+                                  context, AppRoutes.forgotPassword);
                             },
                       child: Text(
                         localizations.forgotPassword,
                         style: TextStyle(
-                          fontSize: 16,
-                          color: AppTheme.primaryBlue,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  
+                  const SizedBox(height: 8),
+
                   // Register button
                   OutlinedButton(
                     onPressed: _isLoading
                         ? null
                         : () {
-                            Navigator.pushNamed(context, AppRoutes.caregiverRegistration);
+                            Navigator.pushNamed(
+                                context, AppRoutes.caregiverRegistration);
                           },
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      minimumSize: const Size(double.infinity, 56),
-                      side: BorderSide(color: AppTheme.primaryBlue, width: 2),
+                      minimumSize: const Size(double.infinity, 52),
+                      side: BorderSide(color: AppTheme.textSecondary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: Text(
                       localizations.createAccount,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppTheme.primaryBlue,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ],

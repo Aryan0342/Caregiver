@@ -22,9 +22,10 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   final BiometricPreferenceService _biometricPreferenceService =
       BiometricPreferenceService();
 
-  bool _faceIdEnabled = false;
+  bool _biometricEnabled = false;
   bool _isBusy = false;
-  bool _isFaceIdAvailable = false;
+  bool _isBiometricAvailable = false;
+  List<BiometricType> _availableBiometrics = <BiometricType>[];
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     final enabled = await _biometricPreferenceService.isFaceIdEnabled();
     if (!mounted) return;
     setState(() {
-      _faceIdEnabled = enabled;
+      _biometricEnabled = enabled;
     });
   }
 
@@ -45,41 +46,45 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     final isSupported = await _biometricAuthService.isDeviceSupported();
     if (!isSupported) return;
     final types = await _biometricAuthService.getAvailableBiometrics();
+    final canCheck = await _biometricAuthService.canCheckBiometrics();
+    print('Available biometrics: $types');
+    print('isSupported: $isSupported, canCheck: $canCheck');
     if (!mounted) return;
     setState(() {
-      _isFaceIdAvailable = _isFaceIdCapable(types);
+      _availableBiometrics = types;
+      _isBiometricAvailable = _isBiometricCapable(types);
     });
   }
 
   Future<void> _handleToggle(bool value) async {
     if (_isBusy) return;
-    if (value && !_isFaceIdAvailable) {
+    if (value && !_isBiometricAvailable) {
       _showSnack(
-          'Face ID not supported on this device.', AppTheme.accentOrange);
+          'Biometrics not supported on this device.', AppTheme.accentOrange);
       return;
     }
     if (!value) {
       await _biometricPreferenceService.setFaceIdEnabled(false);
       if (!mounted) return;
       setState(() {
-        _faceIdEnabled = false;
+        _biometricEnabled = false;
       });
       _showSnack(
         LanguageProvider.localizationsOf(context).currentLanguage ==
                 AppLanguage.dutch
-            ? 'Face ID is uitgeschakeld'
-            : 'Face ID disabled',
+            ? 'Biometrie is uitgeschakeld'
+            : 'Biometrics disabled',
         AppTheme.accentOrange,
       );
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _enableFaceId();
+      await _enableBiometric();
     });
   }
 
-  Future<void> _enableFaceId() async {
+  Future<void> _enableBiometric() async {
     setState(() {
       _isBusy = true;
     });
@@ -107,8 +112,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     if (!canCheck) {
       _showSnack(
         localizations.currentLanguage == AppLanguage.dutch
-            ? 'Geen Face ID ingesteld op dit apparaat'
-            : 'No Face ID enrolled on this device',
+            ? 'Geen biometrie ingesteld op dit apparaat'
+            : 'No biometrics enrolled on this device',
         AppTheme.accentOrange,
       );
       setState(() {
@@ -120,8 +125,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     if (types.isEmpty) {
       _showSnack(
         localizations.currentLanguage == AppLanguage.dutch
-            ? 'Geen Face ID ingesteld op dit apparaat'
-            : 'No Face ID enrolled on this device',
+            ? 'Geen biometrie ingesteld op dit apparaat'
+            : 'No biometrics enrolled on this device',
         AppTheme.accentOrange,
       );
       setState(() {
@@ -130,9 +135,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
       return;
     }
 
-    if (!_isFaceIdCapable(types)) {
+    if (!_isBiometricCapable(types)) {
       _showSnack(
-          'Face ID not supported on this device.', AppTheme.accentOrange);
+          'Biometrics not supported on this device.', AppTheme.accentOrange);
       setState(() {
         _isBusy = false;
       });
@@ -147,8 +152,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     if (result.status == BiometricAuthStatus.notEnrolled) {
       _showSnack(
         localizations.currentLanguage == AppLanguage.dutch
-            ? 'Geen Face ID gevonden. Voeg Face ID toe in de instellingen van uw telefoon.'
-            : 'No Face ID found on this device. Please add Face ID in Phone Settings.',
+            ? 'Geen biometrie gevonden. Voeg biometrie toe in de instellingen van uw telefoon.'
+            : 'No biometrics found on this device. Please add biometrics in Phone Settings.',
         AppTheme.accentOrange,
       );
       setState(() {
@@ -187,8 +192,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     if (!result.isSuccess) {
       _showSnack(
         localizations.currentLanguage == AppLanguage.dutch
-            ? 'Face ID verificatie mislukt'
-            : 'Face ID verification failed',
+            ? 'Biometrie verificatie mislukt'
+            : 'Biometrics verification failed',
         Colors.red,
       );
       setState(() {
@@ -201,11 +206,11 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
 
     if (!mounted) return;
     setState(() {
-      _faceIdEnabled = true;
+      _biometricEnabled = true;
       _isBusy = false;
     });
     _showSnack(
-      'Face ID Enabled',
+      'Biometrics Enabled',
       AppTheme.accentGreen,
     );
   }
@@ -230,31 +235,41 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     return 'Enable biometric lock';
   }
 
-  IconData _biometricToggleIcon() {
-    return Icons.face;
+  IconData _biometricToggleIcon(List<BiometricType> types) {
+    if (types.contains(BiometricType.face)) {
+      return Icons.face;
+    }
+    return Icons.fingerprint;
   }
 
-  bool _isFaceIdCapable(List<BiometricType> types) {
+  bool _isBiometricCapable(List<BiometricType> types) {
+    return types.contains(BiometricType.face) ||
+        types.contains(BiometricType.fingerprint) ||
+        types.contains(BiometricType.strong) ||
+        types.contains(BiometricType.weak) ||
+        types.contains(BiometricType.iris);
+  }
+
+  String _biometricLabel(List<BiometricType> types, AppLanguage lang) {
+    final isDutch = lang == AppLanguage.dutch;
     if (types.contains(BiometricType.face)) {
-      return true;
+      return isDutch ? 'Face ID inschakelen' : 'Enable Face ID';
     }
-    if (kIsWeb) {
-      return false;
+    if (types.contains(BiometricType.fingerprint)) {
+      return isDutch ? 'Vingerafdruk inschakelen' : 'Enable fingerprint';
     }
-    if (Platform.isAndroid) {
-      final hasFingerprint = types.contains(BiometricType.fingerprint);
-      final hasFaceLike = types.contains(BiometricType.strong) ||
-          types.contains(BiometricType.weak);
-      return hasFaceLike && !hasFingerprint;
-    }
-    return false;
+    return isDutch ? 'Biometrie inschakelen' : 'Enable biometrics';
   }
 
   String _reasonForBiometric(AppLocalizations localizations) {
-    if (localizations.currentLanguage == AppLanguage.dutch) {
-      return 'Bevestig met Face ID';
+    final isDutch = localizations.currentLanguage == AppLanguage.dutch;
+    if (_availableBiometrics.contains(BiometricType.fingerprint)) {
+      return isDutch ? 'Bevestig met vingerafdruk' : 'Confirm with fingerprint';
     }
-    return 'Confirm with Face ID';
+    if (_availableBiometrics.contains(BiometricType.face)) {
+      return isDutch ? 'Bevestig met Face ID' : 'Confirm with Face ID';
+    }
+    return isDutch ? 'Bevestig met biometrie' : 'Confirm with biometrics';
   }
 
   @override
@@ -314,7 +329,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: _isFaceIdAvailable
+              child: _isBiometricAvailable
                   ? SwitchListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -328,22 +343,23 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          _biometricToggleIcon(),
+                          _biometricToggleIcon(_availableBiometrics),
                           color: AppTheme.primaryBlue,
                         ),
                       ),
                       title: Text(
-                        _biometricToggleLabel(
+                        _biometricLabel(
+                          _availableBiometrics,
                           languageService.currentLanguage,
                         ),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(
                         languageService.currentLanguage == AppLanguage.dutch
-                            ? 'Open de app met Face ID of pincode'
-                            : 'Unlock the app with Face ID or PIN',
+                            ? 'Open de app met biometrie of pincode'
+                            : 'Unlock the app with biometrics or PIN',
                       ),
-                      value: _faceIdEnabled,
+                      value: _biometricEnabled,
                       onChanged: _isBusy ? null : _handleToggle,
                     )
                   : ListTile(
@@ -359,14 +375,14 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          Icons.face,
+                          Icons.fingerprint,
                           color: AppTheme.primaryBlue,
                         ),
                       ),
                       title: Text(
                         languageService.currentLanguage == AppLanguage.dutch
-                            ? 'Face ID niet ondersteund op dit apparaat.'
-                            : 'Face ID not supported on this device.',
+                            ? 'Biometrie niet ondersteund op dit apparaat.'
+                            : 'Biometrics not supported on this device.',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
