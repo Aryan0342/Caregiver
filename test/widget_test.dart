@@ -3,8 +3,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:caregiver/main.dart';
 
 void main() {
+  test('Real application root can be constructed', () {
+    expect(const MyApp(), isA<StatefulWidget>());
+  });
+
   testWidgets('Smoke test: app shell builds', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(

@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
@@ -38,6 +39,14 @@ android {
     // Load keystore properties from key.properties file
     val keystorePropertiesFile = rootProject.file("key.properties")
     val keystoreProperties = Properties()
+    val releaseBuildRequested = gradle.startParameter.taskNames.any {
+        it.contains("release", ignoreCase = true)
+    }
+    if (releaseBuildRequested && !keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "Release signing is not configured. Copy key.properties.template to key.properties and provide a valid keystore."
+        )
+    }
     if (keystorePropertiesFile.exists()) {
         keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
     }
@@ -60,12 +69,8 @@ android {
             isShrinkResources = false
         }
         getByName("release") {
-            // Use release signing config if keystore exists, otherwise fall back to debug
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
-            } else {
-                // Fallback to debug signing if keystore not configured
-                signingConfig = signingConfigs.getByName("debug")
             }
             ndk {
                 debugSymbolLevel = "SYMBOL_TABLE"
@@ -81,6 +86,10 @@ android {
             // )
         }
     }
+}
+
+dependencies {
+    implementation("com.google.android.gms:play-services-wearable:18.2.0")
 }
 
 flutter {
