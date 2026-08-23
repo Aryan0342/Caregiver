@@ -69,8 +69,7 @@ workflows:
           if ! echo "$EXISTING_PROFILE" | grep -Fq "$WATCH_PROFILE_NAME"; then
             CERTIFICATE_IDS=$(
               app-store-connect certificates list \
-                --type DISTRIBUTION \
-                --type IOS_DISTRIBUTION \
+                --type DISTRIBUTION IOS_DISTRIBUTION \
                 --json | jq -r '.[].id' | tr '\n' ' '
             )
 
