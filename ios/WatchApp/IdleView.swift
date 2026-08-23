@@ -1,13 +1,23 @@
-
 import SwiftUI
 
 struct IdleView: View {
+    let message: String
+
     var body: some View {
-        Text("Start a session on your phone")
-            .font(.system(size: 15, weight: .semibold))
-            .multilineTextAlignment(.center)
-            .foregroundColor(.primary)
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: 10) {
+            Image(systemName: "iphone.and.arrow.forward")
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundStyle(.blue)
+
+            Text("Je Dag in Beeld")
+                .font(.headline)
+
+            Text(message)
+                .font(.footnote)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

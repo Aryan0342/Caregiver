@@ -87,6 +87,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       },
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Watch sync should not wait for a Firestore client-progress query.
+      _startWatchSession();
       _loadSidebarClients();
     });
   }
@@ -126,12 +128,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
           setState(() {
             _currentStepIndex = restoredIndex.clamp(0, maxIndex);
           });
-          _watchService.startSession(
-            setName: _activeSet.name,
-            currentIndex: _currentStepIndex,
-            totalSteps: pictograms.length,
-            pictograms: pictograms,
-          );
+          if (_currentStepIndex != 0) {
+            unawaited(_watchService.updateIndex(_currentStepIndex));
+          }
         }
       }
     } catch (_) {
@@ -141,6 +140,16 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         _isLoadingClients = false;
       });
     }
+  }
+
+  void _startWatchSession() {
+    final pictograms = _modifiedSequence ?? _activeSet.pictograms;
+    unawaited(_watchService.startSession(
+      setName: _activeSet.name,
+      currentIndex: _currentStepIndex,
+      totalSteps: pictograms.length,
+      pictograms: pictograms,
+    ));
   }
 
   @override
@@ -1175,6 +1184,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         currentIndex: _currentStepIndex,
       ),
     );
+
+    if (!mounted) return;
 
     if (result != null) {
       setState(() {

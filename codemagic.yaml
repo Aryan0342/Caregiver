@@ -1,171 +1,156 @@
 workflows:
   ios-production:
-    name: iOS Production Build
+    name: iOS + Apple Watch Production Build
     max_build_duration: 120
     instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Steph van Hoffe
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
       ios_signing:
-        provisioning_profiles:
-          - jedaginbeeld-release-profile
-        certificates:
-          - je-dag-in-beeld-distribution
+        # Codemagic fetches profiles for both the iPhone bundle and matching
+        # child bundles such as com.je-dag-in-beeld.caregiver.watchkitapp.
+        distribution_type: app_store
+        bundle_identifier: com.je-dag-in-beeld.caregiver
       vars:
         APP_ID: com.je-dag-in-beeld.caregiver
         BUNDLE_ID: com.je-dag-in-beeld.caregiver
+        WATCH_BUNDLE_ID: com.je-dag-in-beeld.caregiver.watchkitapp
     scripts:
       - name: Get Flutter dependencies
-        script: |
-          flutter pub get
+        script: flutter pub get
+
       - name: Install CocoaPods dependencies
         script: |
           cd ios
-          pod repo update
           pod install --repo-update
-          cd ..
-      - name: Set up code signing
+
+      - name: Ensure Apple Watch signing assets
         script: |
-          echo "Setting up code signing..."
-          # List available certificates
-          security find-identity -v -p codesigning
-          # List provisioning profiles
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles directory found"
-          # Get provisioning profile UUID
-          PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -1)
-          if [ -f "$PROVISIONING_PROFILE" ]; then
-            echo "Found provisioning profile: $PROVISIONING_PROFILE"
-            # Extract UUID from provisioning profile
-            UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i "$PROVISIONING_PROFILE" 2>/dev/null) 2>/dev/null)
-            echo "Provisioning profile UUID: $UUID"
-          else
-            echo "⚠️ No provisioning profile found"
-            UUID=""
+          set -e
+
+          WATCH_BUNDLE_RESOURCE_ID=$(
+            app-store-connect bundle-ids list \
+              --bundle-id-identifier "$WATCH_BUNDLE_ID" \
+              --strict-match-identifier \
+              --json | jq -r '.[0].id // empty'
+          )
+
+          if [ -z "$WATCH_BUNDLE_RESOURCE_ID" ]; then
+            app-store-connect bundle-ids create \
+              "$WATCH_BUNDLE_ID" \
+              --name "Caregiver Apple Watch" \
+              --platform IOS
+
+            WATCH_BUNDLE_RESOURCE_ID=$(
+              app-store-connect bundle-ids list \
+                --bundle-id-identifier "$WATCH_BUNDLE_ID" \
+                --strict-match-identifier \
+                --json | jq -r '.[0].id // empty'
+            )
           fi
-          # Configure Xcode project for manual signing with App Store profile
-          cd ios
-          python3 << PYTHON_SCRIPT
-          import re
-          
-          with open('Runner.xcodeproj/project.pbxproj', 'r') as f:
-              content = f.read()
-          
-          # Find Release configuration (97C147071CF9000F007C117D)
-          release_pattern = r'(97C147071CF9000F007C117D /\* Release \*/ = \{[^}]*buildSettings = \{)([^}]*)(\};)'
-          
-          def update_release_config(match):
-              header = match.group(1)
-              settings = match.group(2)
-              footer = match.group(3)
-              
-              # Set CODE_SIGN_STYLE to Manual for App Store builds
-              if re.search(r'CODE_SIGN_STYLE\s*=', settings):
-                  settings = re.sub(r'CODE_SIGN_STYLE\s*=\s*[^;]+;', 'CODE_SIGN_STYLE = Manual;', settings)
-              else:
-                  settings = settings.rstrip() + '\n\t\t\t\tCODE_SIGN_STYLE = Manual;'
-              
-              # Set DEVELOPMENT_TEAM
-              if re.search(r'DEVELOPMENT_TEAM\s*=', settings):
-                  settings = re.sub(r'DEVELOPMENT_TEAM\s*=\s*[^;]+;', 'DEVELOPMENT_TEAM = 2633XR9X9L;', settings)
-              else:
-                  settings = settings.rstrip() + '\n\t\t\t\tDEVELOPMENT_TEAM = 2633XR9X9L;'
-              
-              # Set CODE_SIGN_IDENTITY to Apple Distribution
-              if re.search(r'CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]', settings):
-                  settings = re.sub(r'"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]"\s*=\s*[^;]+;', '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";', settings)
-              else:
-                  settings = settings.rstrip() + '\n\t\t\t\t"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";'
-              
-              # Set provisioning profile UUID if available
-              uuid = "${UUID}"
-              if uuid and uuid.strip():
-                  if re.search(r'PROVISIONING_PROFILE_SPECIFIER\s*=', settings):
-                      settings = re.sub(r'PROVISIONING_PROFILE_SPECIFIER\s*=\s*[^;]+;', f'PROVISIONING_PROFILE_SPECIFIER = {uuid};', settings)
-                  else:
-                      settings = settings.rstrip() + f'\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = {uuid};'
-              
-              return header + settings + footer
-          
-          new_content = re.sub(release_pattern, update_release_config, content, flags=re.DOTALL)
-          
-          with open('Runner.xcodeproj/project.pbxproj', 'w') as f:
-              f.write(new_content)
-          
-          print("✅ Configured Release for manual signing:")
-          print("   - CODE_SIGN_STYLE = Manual")
-          print("   - DEVELOPMENT_TEAM = 2633XR9X9L")
-          print("   - CODE_SIGN_IDENTITY = Apple Distribution")
-          if uuid and uuid.strip():
-              print(f"   - PROVISIONING_PROFILE_SPECIFIER = {uuid}")
-          PYTHON_SCRIPT
-          cd ..
-      - name: Create export options plist
-        script: |
-          # Get provisioning profile UUID
-          PROVISIONING_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | head -1)
-          if [ -f "$PROVISIONING_PROFILE" ]; then
-            UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i "$PROVISIONING_PROFILE" 2>/dev/null) 2>/dev/null)
-            echo "Provisioning profile UUID: $UUID"
-            # Create export_options.plist
-            cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>uploadSymbols</key>
-              <true/>
-              <key>compileBitcode</key>
-              <false/>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.je-dag-in-beeld.caregiver</key>
-                  <string>$UUID</string>
-              </dict>
-          </dict>
-          </plist>
-          EOF
-            echo "✅ Created export_options.plist with provisioning profile UUID: $UUID"
-          else
-            echo "⚠️ No provisioning profile found, creating default export_options.plist"
-            cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>uploadSymbols</key>
-              <true/>
-              <key>compileBitcode</key>
-              <false/>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
-          </dict>
-          </plist>
-          EOF
+
+          if [ -z "$WATCH_BUNDLE_RESOURCE_ID" ]; then
+            echo "Unable to resolve the Apple Watch bundle identifier in Apple Developer Portal"
+            exit 1
           fi
-      - name: Flutter build ipa
+
+          WATCH_PROFILE_NAME="Caregiver Apple Watch App Store"
+          EXISTING_PROFILE=$(
+            app-store-connect profiles list \
+              --type IOS_APP_STORE \
+              --state ACTIVE \
+              --name "$WATCH_PROFILE_NAME" \
+              --save
+          )
+
+          if ! echo "$EXISTING_PROFILE" | grep -Fq "$WATCH_PROFILE_NAME"; then
+            CERTIFICATE_IDS=$(
+              app-store-connect certificates list \
+                --type DISTRIBUTION \
+                --type IOS_DISTRIBUTION \
+                --json | jq -r '.[].id' | tr '\n' ' '
+            )
+
+            if [ -z "$CERTIFICATE_IDS" ]; then
+              echo "No active Apple Distribution certificate is available"
+              exit 1
+            fi
+
+            app-store-connect profiles create \
+              "$WATCH_BUNDLE_RESOURCE_ID" \
+              --certificate-ids $CERTIFICATE_IDS \
+              --type IOS_APP_STORE \
+              --name "$WATCH_PROFILE_NAME" \
+              --save
+          fi
+
+      - name: Verify Apple Watch target
         script: |
-          flutter build ipa --release --export-options-plist=export_options.plist
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme CaregiverWatch \
+            -configuration Release \
+            -sdk watchos \
+            -showBuildSettings > /tmp/caregiver-watch-build-settings.txt
+          grep -q "PRODUCT_BUNDLE_IDENTIFIER = $WATCH_BUNDLE_ID" /tmp/caregiver-watch-build-settings.txt
+
+      - name: Compile Apple Watch for simulator
+        script: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme CaregiverWatch \
+            -configuration Debug \
+            -sdk watchsimulator \
+            -destination "generic/platform=watchOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee /tmp/caregiver-watch-simulator-build.log
+
+      - name: Apply iPhone and Watch provisioning profiles
+        script: xcode-project use-profiles
+
+      - name: Analyze Flutter application
+        script: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Strictly analyze Watch integration
+        script: |
+          flutter analyze \
+            lib/models/watch_session_snapshot.dart \
+            lib/services/watch_session_service.dart \
+            lib/screens/client_mode_session_screen.dart \
+            test/watch_session_snapshot_test.dart
+
+      - name: Run Flutter tests
+        script: flutter test
+
+      - name: Build signed iPhone and Apple Watch archive
+        script: |
+          flutter build ipa \
+            --release \
+            --export-options-plist="$HOME/export_options.plist"
+
+      - name: Verify Watch app is embedded in archive
+        script: |
+          WATCH_APP=$(find build/ios/archive -type d -path "*/Products/Applications/*.app/Watch/CaregiverWatch.app" -print -quit)
+          if [ -z "$WATCH_APP" ]; then
+            echo "CaregiverWatch.app is missing from the iPhone archive"
+            exit 1
+          fi
+          echo "Embedded watch app: $WATCH_APP"
+
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
+      - /tmp/caregiver-watch-build-settings.txt
+      - /tmp/caregiver-watch-simulator-build.log
+
     publishing:
       email:
         recipients:
-          - syedasadullahkazmik@gmail.com  # Replace with your email
+          - syedasadullahkazmik@gmail.com
         notify:
           success: true
           failure: true

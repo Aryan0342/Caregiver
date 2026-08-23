@@ -1,23 +1,23 @@
-
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var sessionStore: SessionStore
+    @EnvironmentObject private var sessionStore: SessionStore
 
     var body: some View {
         Group {
-            if sessionStore.isActive &amp;&amp; sessionStore.totalSteps &gt; 0 {
+            if sessionStore.isActive && sessionStore.totalSteps > 0 {
                 SessionView(
                     setName: sessionStore.setName,
                     currentIndex: sessionStore.currentIndex,
                     totalSteps: sessionStore.totalSteps,
                     steps: sessionStore.steps,
-                    onSwipeNext: { sessionStore.sendNavigation(action: "next") },
-                    onSwipePrevious: { sessionStore.sendNavigation(action: "prev") }
+                    onNext: { sessionStore.navigate(by: 1) },
+                    onPrevious: { sessionStore.navigate(by: -1) }
                 )
             } else {
-                IdleView()
+                IdleView(message: sessionStore.connectionMessage)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: sessionStore.isActive)
     }
 }

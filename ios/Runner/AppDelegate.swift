@@ -1,30 +1,32 @@
-
 import Flutter
 import UIKit
 import WatchConnectivity
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate, WCSessionDelegate {
+  private static let channelName = "com.jedaginbeeld.wear"
+  private static let pendingNavigationKey = "pendingWatchNavigation"
+  private static let pendingContextKey = "pendingWatchContext"
 
   private var watchChannel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -&gt; Bool {
+  ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
 
     if let controller = window?.rootViewController as? FlutterViewController {
       let channel = FlutterMethodChannel(
-        name: "com.jedaginbeeld.wear",
+        name: Self.channelName,
         binaryMessenger: controller.binaryMessenger
       )
-      channel.setMethodCallHandler { [weak self] (call, result) in
+      channel.setMethodCallHandler { [weak self] call, result in
         self?.handleWatchChannel(call, result: result)
       }
-      self.watchChannel = channel
+      watchChannel = channel
     } else {
-      NSLog("[AppDelegate] Could not find FlutterViewController to attach watch channel")
+      NSLog("[AppDelegate] Could not find FlutterViewController for watch channel")
     }
 
     if WCSession.isSupported() {
@@ -43,15 +45,27 @@ import WatchConnectivity
         result(FlutterError(code: "INVALID_ARGUMENT", message: "data is required", details: nil))
         return
       }
-      guard WCSession.isSupported(), WCSession.default.activationState == .activated else {
-        result(FlutterError(code: "WEAR_ERROR", message: "WCSession not activated", details: nil))
+      guard WCSession.isSupported() else {
+        result(FlutterError(code: "WATCH_UNSUPPORTED", message: "WatchConnectivity is unavailable", details: nil))
         return
       }
+
+      let session = WCSession.default
+      guard session.activationState == .activated else {
+        UserDefaults.standard.set(data, forKey: Self.pendingContextKey)
+        result(nil)
+        return
+      }
+
       do {
-        try WCSession.default.updateApplicationContext(data)
+        // Application context is a latest-state channel. Flutter always sends a
+        // complete session snapshot, so delayed delivery remains self-contained.
+        try session.updateApplicationContext(data)
+        UserDefaults.standard.removeObject(forKey: Self.pendingContextKey)
         result(nil)
       } catch {
-        result(FlutterError(code: "WEAR_ERROR", message: error.localizedDescription, details: nil))
+        UserDefaults.standard.set(data, forKey: Self.pendingContextKey)
+        result(nil)
       }
 
     case "isWatchAppInstalled":
@@ -59,7 +73,20 @@ import WatchConnectivity
         result(false)
         return
       }
-      result(WCSession.default.isCompanionAppInstalled)
+      let session = WCSession.default
+      result(
+        session.activationState == .activated &&
+        session.isPaired &&
+        session.isWatchAppInstalled
+      )
+
+    case "getPendingWatchNavigation":
+      let defaults = UserDefaults.standard
+      let pending = defaults.dictionary(forKey: Self.pendingNavigationKey)
+      if pending != nil {
+        defaults.removeObject(forKey: Self.pendingNavigationKey)
+      }
+      result(pending)
 
     default:
       result(FlutterMethodNotImplemented)
@@ -74,7 +101,8 @@ import WatchConnectivity
     if let error = error {
       NSLog("[AppDelegate] WCSession activation failed: \(error.localizedDescription)")
     } else {
-      NSLog("[AppDelegate] WCSession activated, state=\(activationState.rawValue)")
+      NSLog("[AppDelegate] WCSession activated: \(activationState.rawValue)")
+      flushPendingContext(to: session)
     }
   }
 
@@ -83,31 +111,68 @@ import WatchConnectivity
   }
 
   func sessionDidDeactivate(_ session: WCSession) {
-    NSLog("[AppDelegate] WCSession deactivated, reactivating")
     WCSession.default.activate()
   }
 
+  func sessionWatchStateDidChange(_ session: WCSession) {
+    publishReachability(session)
+  }
+
   func sessionReachabilityDidChange(_ session: WCSession) {
+    publishReachability(session)
+  }
+
+  func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+    receiveNavigation(message)
+  }
+
+  func session(
+    _ session: WCSession,
+    didReceiveMessage message: [String: Any],
+    replyHandler: @escaping ([String: Any]) -> Void
+  ) {
+    receiveNavigation(message)
+    replyHandler(["accepted": true])
+  }
+
+  func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+    receiveNavigation(userInfo)
+  }
+
+  private func publishReachability(_ session: WCSession) {
+    let available = session.activationState == .activated &&
+      session.isPaired &&
+      session.isWatchAppInstalled
     DispatchQueue.main.async { [weak self] in
       self?.watchChannel?.invokeMethod(
         "onReachabilityChanged",
-        arguments: ["isReachable": session.isReachable]
+        arguments: ["isReachable": session.isReachable, "isAvailable": available]
       )
     }
   }
 
-  func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-    forwardNavigation(message)
+  private func flushPendingContext(to session: WCSession) {
+    guard session.activationState == .activated,
+          let pending = UserDefaults.standard.dictionary(forKey: Self.pendingContextKey) else {
+      return
+    }
+    do {
+      try session.updateApplicationContext(pending)
+      UserDefaults.standard.removeObject(forKey: Self.pendingContextKey)
+    } catch {
+      NSLog("[AppDelegate] Pending watch context failed: \(error.localizedDescription)")
+    }
   }
 
-  func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-    forwardNavigation(userInfo)
-  }
+  private func receiveNavigation(_ payload: [String: Any]) {
+    guard payload["action"] is String else { return }
 
-  private func forwardNavigation(_ payload: [String: Any]) {
-    guard let action = payload["action"] as? String else { return }
+    // Keep the most recent command until Dart explicitly consumes it. This
+    // covers commands delivered before the Flutter screen installs its handler.
+    UserDefaults.standard.set(payload, forKey: Self.pendingNavigationKey)
+
     DispatchQueue.main.async { [weak self] in
-      self?.watchChannel?.invokeMethod("onWatchNavigation", arguments: ["action": action])
+      self?.watchChannel?.invokeMethod("onWatchNavigation", arguments: payload)
     }
   }
 }

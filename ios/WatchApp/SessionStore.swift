@@ -1,36 +1,60 @@
-
+import Combine
 import Foundation
 import WatchConnectivity
-import Combine
+import WatchKit
 
-struct WatchPictogramStep: Identifiable {
+struct WatchPictogramStep: Identifiable, Equatable {
     let id: Int
     let keyword: String
-    let imageUrl: String
+    let imageURL: URL?
 }
 
 final class SessionStore: NSObject, ObservableObject, WCSessionDelegate {
+    @Published private(set) var isActive = false
+    @Published private(set) var sessionID = ""
+    @Published private(set) var setName = ""
+    @Published private(set) var currentIndex = 0
+    @Published private(set) var totalSteps = 0
+    @Published private(set) var steps: [WatchPictogramStep] = []
+    @Published private(set) var connectionMessage = "Connecting to iPhone…"
 
-    @Published var isActive: Bool = false
-    @Published var setName: String = ""
-    @Published var currentIndex: Int = 0
-    @Published var totalSteps: Int = 0
-    @Published var steps: [WatchPictogramStep] = []
+    private var revision = 0
 
     override init() {
         super.init()
-        if WCSession.isSupported() {
-            WCSession.default.delegate = self
-            WCSession.default.activate()
+        guard WCSession.isSupported() else {
+            connectionMessage = "This watch does not support phone sync."
+            return
         }
+        WCSession.default.delegate = self
+        WCSession.default.activate()
     }
 
-    func sendNavigation(action: String) {
-        let payload: [String: Any] = ["action": action]
+    func navigate(by offset: Int) {
+        guard isActive, totalSteps > 0 else { return }
+        let target = min(max(currentIndex + offset, 0), totalSteps - 1)
+        guard target != currentIndex else { return }
+
+        currentIndex = target
+        WKInterfaceDevice.current().play(.click)
+
+        let payload: [String: Any] = [
+            "commandId": UUID().uuidString,
+            "action": offset > 0 ? "next" : "prev",
+            "targetIndex": target,
+            "sessionId": sessionID,
+            "revision": revision
+        ]
+        sendNavigation(payload)
+    }
+
+    private func sendNavigation(_ payload: [String: Any]) {
         let session = WCSession.default
+        guard session.activationState == .activated else { return }
+
         if session.isReachable {
             session.sendMessage(payload, replyHandler: nil) { error in
-                NSLog("[SessionStore] sendMessage failed (\(error.localizedDescription)), falling back to transferUserInfo")
+                NSLog("[SessionStore] Immediate navigation failed: \(error.localizedDescription)")
                 session.transferUserInfo(payload)
             }
         } else {
@@ -44,7 +68,22 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate {
         error: Error?
     ) {
         if let error = error {
+            DispatchQueue.main.async {
+                self.connectionMessage = "Could not connect to iPhone."
+            }
             NSLog("[SessionStore] Activation failed: \(error.localizedDescription)")
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.connectionMessage = session.isCompanionAppInstalled
+                ? "Start a session on your iPhone."
+                : "Install Je Dag in Beeld on your iPhone."
+        }
+
+        let initialContext = session.receivedApplicationContext
+        if !initialContext.isEmpty {
+            apply(initialContext)
         }
     }
 
@@ -52,43 +91,55 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate {
         apply(applicationContext)
     }
 
-    // Mirrors android/wear/.../SessionRepository.kt's updateSession(action, data)
-    // exactly. INDEX_CHANGE payloads only ever carry "action" and "currentIndex"
-    // — they do NOT include setName/totalSteps/pictograms. Do not overwrite the
-    // whole state on every payload or every swipe will wipe the pictogram list.
     private func apply(_ payload: [String: Any]) {
-        let action = payload["action"] as? String ?? ""
+        guard Self.number(payload["schemaVersion"]) == 1 else {
+            NSLog("[SessionStore] Ignoring unsupported session payload")
+            return
+        }
+
+        let incomingRevision = Self.number(payload["revision"]) ?? 0
+        let incomingSessionID = payload["sessionId"] as? String ?? ""
 
         DispatchQueue.main.async {
-            switch action {
-            case "START":
-                self.setName = payload["setName"] as? String ?? self.setName
-                self.currentIndex = payload["currentIndex"] as? Int ?? 0
-                self.totalSteps = payload["totalSteps"] as? Int ?? 0
-                self.steps = Self.parseSteps(payload["pictograms"])
-                self.isActive = true
+            if incomingSessionID == self.sessionID && incomingRevision < self.revision {
+                return
+            }
 
-            case "INDEX_CHANGE":
-                if let index = payload["currentIndex"] as? Int {
-                    self.currentIndex = index
-                }
+            self.sessionID = incomingSessionID
+            self.revision = incomingRevision
+            self.isActive = payload["isActive"] as? Bool ?? false
+            self.setName = payload["setName"] as? String ?? ""
+            self.totalSteps = max(Self.number(payload["totalSteps"]) ?? 0, 0)
+            self.steps = Self.parseSteps(payload["pictograms"])
 
-            case "END":
-                self.isActive = false
+            let requestedIndex = Self.number(payload["currentIndex"]) ?? 0
+            let upperBound = max(min(self.totalSteps, self.steps.count) - 1, 0)
+            self.currentIndex = min(max(requestedIndex, 0), upperBound)
 
-            default:
-                break
+            if !self.isActive {
+                self.connectionMessage = "Start a session on your iPhone."
             }
         }
     }
 
-    private static func parseSteps(_ raw: Any?) -&gt; [WatchPictogramStep] {
+    private static func parseSteps(_ raw: Any?) -> [WatchPictogramStep] {
         guard let list = raw as? [[String: Any]] else { return [] }
         return list.compactMap { item in
-            guard let index = item["index"] as? Int,
-                  let keyword = item["keyword"] as? String,
-                  let imageUrl = item["imageUrl"] as? String else { return nil }
-            return WatchPictogramStep(id: index, keyword: keyword, imageUrl: imageUrl)
+            guard let index = number(item["index"]),
+                  let keyword = item["keyword"] as? String else { return nil }
+            let urlString = item["imageUrl"] as? String ?? ""
+            return WatchPictogramStep(
+                id: index,
+                keyword: keyword,
+                imageURL: URL(string: urlString)
+            )
         }
+        .sorted { $0.id < $1.id }
+    }
+
+    private static func number(_ value: Any?) -> Int? {
+        if let value = value as? Int { return value }
+        if let value = value as? NSNumber { return value.intValue }
+        return nil
     }
 }

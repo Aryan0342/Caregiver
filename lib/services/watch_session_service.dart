@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/pictogram_model.dart';
+import '../models/watch_session_snapshot.dart';
 
 /// Service for managing watch sessions in Firestore
 class WatchSessionService {
@@ -17,10 +18,24 @@ class WatchSessionService {
   bool _handlerRegistered = false;
   StreamSubscription? _firestoreSubscription;
 
+  WatchSessionSnapshot? _watchState;
+  String? _lastNavigationCommandId;
+
   static const String _cloudinaryTransform = '/upload/w_200,h_200,c_fit/';
   static const String _collectionName = 'watch_sessions';
 
   String? get _currentUserId => _auth.currentUser?.uid;
+
+  Map<String, dynamic>? _watchSnapshot(String userId, String action) {
+    return _watchState?.toMap(userId: userId, action: action);
+  }
+
+  void _sendWatchSnapshot(String userId, String action) {
+    final snapshot = _watchSnapshot(userId, action);
+    if (snapshot != null) {
+      unawaited(_sendViaDataLayer(snapshot));
+    }
+  }
 
   bool _isOfflineError(dynamic error) {
     final errorString = error.toString().toLowerCase();
@@ -100,6 +115,20 @@ class WatchSessionService {
         });
       }
 
+      _watchState = WatchSessionSnapshot(
+        sessionId: '${userId}_${DateTime.now().microsecondsSinceEpoch}',
+        revision: 1,
+        isActive: true,
+        setName: setName,
+        currentIndex: currentIndex,
+        totalSteps: totalSteps,
+        pictograms: transformedPictograms,
+      );
+
+      // Phone-to-watch sync is local and should still work if Firestore is
+      // temporarily unavailable.
+      _sendWatchSnapshot(userId, 'START');
+
       await _firestore.collection(_collectionName).doc(userId).set({
         'isActive': true,
         'setName': setName,
@@ -114,15 +143,6 @@ class WatchSessionService {
         debugPrint(
             '[WatchSessionService] Session started: $setName (index: $currentIndex, total: $totalSteps)');
       }
-
-      _sendViaDataLayer({
-        'action': 'START',
-        'userId': userId,
-        'currentIndex': currentIndex,
-        'totalSteps': totalSteps,
-        'setName': setName,
-        'pictograms': transformedPictograms,
-      });
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -146,6 +166,16 @@ class WatchSessionService {
     }
 
     try {
+      final watchState = _watchState;
+      if (watchState != null) {
+        _watchState = watchState.copyWith(
+          currentIndex: index,
+          revision: watchState.revision + 1,
+        );
+      }
+
+      _sendWatchSnapshot(userId, 'INDEX_CHANGE');
+
       await _firestore.collection(_collectionName).doc(userId).update({
         'currentIndex': index,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -154,11 +184,6 @@ class WatchSessionService {
       if (kDebugMode) {
         debugPrint('[WatchSessionService] Session updated: index=$index');
       }
-
-      _sendViaDataLayer({
-        'action': 'INDEX_CHANGE',
-        'currentIndex': index,
-      });
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[WatchSessionService] Firestore error updating index: $e');
@@ -181,6 +206,16 @@ class WatchSessionService {
     }
 
     try {
+      final watchState = _watchState;
+      if (watchState != null) {
+        _watchState = watchState.copyWith(
+          isActive: false,
+          revision: watchState.revision + 1,
+        );
+      }
+
+      _sendWatchSnapshot(userId, 'END');
+
       await _firestore.collection(_collectionName).doc(userId).update({
         'isActive': false,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -189,10 +224,6 @@ class WatchSessionService {
       if (kDebugMode) {
         debugPrint('[WatchSessionService] Session ended');
       }
-
-      _sendViaDataLayer({
-        'action': 'END',
-      });
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[WatchSessionService] Firestore error ending session: $e');
@@ -216,6 +247,7 @@ class WatchSessionService {
     _onPrevCallback = onPrev;
 
     _ensureHandlerRegistered();
+    unawaited(_consumePendingNavigation());
   }
 
   void stopListeningToWatchNavigation() {
@@ -248,21 +280,10 @@ class WatchSessionService {
             '[WatchSessionService] Method call received: ${call.method}, arguments: ${call.arguments}');
       }
       if (call.method == 'onWatchNavigation') {
-        final action = call.arguments['action'] as String;
-        if (kDebugMode) {
-          debugPrint('[WatchSessionService] Action: $action');
-        }
-        if (action == 'next') {
-          if (kDebugMode) {
-            debugPrint('[WatchSessionService] Calling _onNextCallback');
-          }
-          _onNextCallback?.call();
-        } else if (action == 'prev') {
-          if (kDebugMode) {
-            debugPrint('[WatchSessionService] Calling _onPrevCallback');
-          }
-          _onPrevCallback?.call();
-        }
+        final arguments = Map<String, dynamic>.from(call.arguments as Map);
+        _handleWatchNavigation(arguments);
+        // Clear the native durable copy after the live command was handled.
+        unawaited(_clearPendingNavigation());
       } else if (call.method == 'onReachabilityChanged') {
         final isReachable = call.arguments['isReachable'] as bool? ?? false;
         if (kDebugMode) {
@@ -272,6 +293,60 @@ class WatchSessionService {
         _onReachabilityChanged?.call(isReachable);
       }
     });
+  }
+
+  Future<void> _consumePendingNavigation() async {
+    try {
+      final pending = await _channel.invokeMapMethod<String, dynamic>(
+        'getPendingWatchNavigation',
+      );
+      if (pending != null) {
+        _handleWatchNavigation(pending);
+      }
+    } catch (_) {
+      // Android has no pending-navigation method; its Data Layer handles this.
+    }
+  }
+
+  Future<void> _clearPendingNavigation() async {
+    try {
+      await _channel.invokeMethod('getPendingWatchNavigation');
+    } catch (_) {
+      // Android does not implement this iOS-only durability method.
+    }
+  }
+
+  void _handleWatchNavigation(Map<String, dynamic> arguments) {
+    final commandId = arguments['commandId'] as String?;
+    if (commandId != null && commandId == _lastNavigationCommandId) {
+      return;
+    }
+    _lastNavigationCommandId = commandId;
+
+    final incomingSessionId = arguments['sessionId'] as String?;
+    if (incomingSessionId != null &&
+        incomingSessionId != _watchState?.sessionId) {
+      if (kDebugMode) {
+        debugPrint('[WatchSessionService] Ignoring command for old session');
+      }
+      return;
+    }
+
+    final action = arguments['action'] as String? ?? '';
+    if (kDebugMode) {
+      debugPrint('[WatchSessionService] Action: $action');
+    }
+    if (action == 'next') {
+      if (kDebugMode) {
+        debugPrint('[WatchSessionService] Calling _onNextCallback');
+      }
+      _onNextCallback?.call();
+    } else if (action == 'prev') {
+      if (kDebugMode) {
+        debugPrint('[WatchSessionService] Calling _onPrevCallback');
+      }
+      _onPrevCallback?.call();
+    }
   }
 
   void startListeningToFirestoreIndexChanges({
