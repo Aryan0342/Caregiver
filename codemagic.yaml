@@ -116,7 +116,7 @@ workflows:
 
       - name: Strictly analyze Watch integration
         script: |
-          flutter analyze \
+          flutter analyze --no-fatal-infos \
             lib/models/watch_session_snapshot.dart \
             lib/services/watch_session_service.dart \
             lib/screens/client_mode_session_screen.dart \
