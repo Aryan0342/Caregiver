@@ -20,6 +20,9 @@
                                 <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                                 <color key="backgroundColor" red="0.941" green="0.898" blue="0.835" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                             </view>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="app_logo" translatesAutoresizingMaskIntoConstraints="NO" id="brand-logo">
+                                <rect key="frame" x="56.5" y="286" width="280" height="280"/>
+                            </imageView>
                         </subviews>
                         <color key="backgroundColor" red="0.941" green="0.898" blue="0.835" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -27,6 +30,10 @@
                             <constraint firstItem="gradient-view" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="gradient-trailing"/>
                             <constraint firstItem="gradient-view" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="gradient-top"/>
                             <constraint firstItem="gradient-view" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="gradient-bottom"/>
+                            <constraint firstItem="brand-logo" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="brand-center-x"/>
+                            <constraint firstItem="brand-logo" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="brand-center-y"/>
+                            <constraint firstItem="brand-logo" firstAttribute="width" constant="280" id="brand-width"/>
+                            <constraint firstItem="brand-logo" firstAttribute="height" constant="280" id="brand-height"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -36,6 +43,7 @@
         </scene>
     </scenes>
     <resources>
+        <image name="app_logo" width="280" height="280"/>
         <!-- Colors matching app theme: Cream Beige #F0E5D5 (240, 229, 213) -->
         <!-- RGB values: 240/255 = 0.941, 229/255 = 0.898, 213/255 = 0.835 -->
     </resources>

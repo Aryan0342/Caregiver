@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   // Logo on left top
                   Image.asset(
-                    'assets/images/app_logo.png',
+                    'assets/images/in_app_logo.png',
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,

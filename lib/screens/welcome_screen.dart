@@ -82,7 +82,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 children: [
                   // App logo
                   Image.asset(
-                    'assets/images/app_logo.png',
+                    'assets/images/in_app_logo.png',
                     width: 120,
                     height: 120,
                     fit: BoxFit.contain,

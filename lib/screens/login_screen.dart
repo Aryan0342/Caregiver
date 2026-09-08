@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // App Logo
                   Center(
                     child: Image.asset(
-                      'assets/images/app_logo.png',
+                      'assets/images/in_app_logo.png',
                       width: 150,
                       height: 150,
                       fit: BoxFit.contain,
