@@ -528,56 +528,61 @@ class _MySetsScreenState extends State<MySetsScreen> {
                     ],
                   ),
                 ),
-                PopupMenuButton<_SetMenuAction>(
-                  icon: const Icon(Icons.menu_rounded),
-                  tooltip: LanguageProvider.localizationsOf(context).shareSet,
-                  onSelected: (action) => _handleSetMenuAction(
-                    context,
-                    set,
-                    action,
-                    pdfService,
-                    shareService,
+                // Builder gives the menu button its own context, used as the
+                // anchor of the iOS share sheet.
+                Builder(
+                  builder: (buttonContext) => PopupMenuButton<_SetMenuAction>(
+                    icon: const Icon(Icons.menu_rounded),
+                    tooltip: LanguageProvider.localizationsOf(context).shareSet,
+                    onSelected: (action) => _handleSetMenuAction(
+                      context,
+                      set,
+                      action,
+                      pdfService,
+                      shareService,
+                      shareOrigin: _shareOriginOf(buttonContext),
+                    ),
+                    itemBuilder: (context) {
+                      final localizations =
+                          LanguageProvider.localizationsOf(context);
+                      return [
+                        PopupMenuItem(
+                          value: _SetMenuAction.exportPdf,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.picture_as_pdf, size: 18),
+                              const SizedBox(width: 8),
+                              Text(localizations.exportPdf),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: _SetMenuAction.shareLink,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.share, size: 18),
+                              const SizedBox(width: 8),
+                              Text(localizations.shareSet),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: _SetMenuAction.delete,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.delete,
+                                  size: 18, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Text(
+                                localizations.delete,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ];
+                    },
                   ),
-                  itemBuilder: (context) {
-                    final localizations =
-                        LanguageProvider.localizationsOf(context);
-                    return [
-                      PopupMenuItem(
-                        value: _SetMenuAction.exportPdf,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.picture_as_pdf, size: 18),
-                            const SizedBox(width: 8),
-                            Text(localizations.exportPdf),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: _SetMenuAction.shareLink,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.share, size: 18),
-                            const SizedBox(width: 8),
-                            Text(localizations.shareSet),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: _SetMenuAction.delete,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete,
-                                size: 18, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Text(
-                              localizations.delete,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ];
-                  },
                 ),
               ],
             ),
@@ -756,13 +761,22 @@ class _MySetsScreenState extends State<MySetsScreen> {
     );
   }
 
+  /// Screen rectangle of the widget for [context], used to anchor the iOS
+  /// share sheet. Null when it is not laid out.
+  Rect? _shareOriginOf(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
   Future<void> _handleSetMenuAction(
     BuildContext context,
     PictogramSet set,
     _SetMenuAction action,
     PictogramPdfService pdfService,
-    SetShareService shareService,
-  ) async {
+    SetShareService shareService, {
+    Rect? shareOrigin,
+  }) async {
     final localizations = LanguageProvider.localizationsOf(context);
 
     try {
@@ -805,6 +819,9 @@ class _MySetsScreenState extends State<MySetsScreen> {
           final result = await Share.share(
             '${set.name}\n$link',
             subject: localizations.shareSet,
+            // Required on iOS (iPad and newer iPhones): where the share sheet
+            // is anchored on screen.
+            sharePositionOrigin: shareOrigin,
           );
           if (result.status == ShareResultStatus.dismissed) {
             // User dismissed the share sheet, no error
