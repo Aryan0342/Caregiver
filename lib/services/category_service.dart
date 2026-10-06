@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'custom_pictogram_service.dart';
 
 /// Service for managing pictogram categories in Firestore.
 ///
@@ -53,69 +54,23 @@ class CategoryService {
 
       final categories = <Category>[];
 
-      // Check each category to see if it has pictograms
+      // Keep only categories with at least one active pictogram. This uses
+      // the shared pictogram catalog (one query) instead of one query per
+      // category.
+      final categoryIdsWithPictograms =
+          await CustomPictogramService().getCategoryIdsWithPictograms();
       for (final doc in categoriesSnapshot.docs) {
+        if (!categoryIdsWithPictograms.contains(doc.id)) continue;
         final data = doc.data() as Map<String, dynamic>;
-        final categoryId = doc.id;
-
-        debugPrint(
-            'CategoryService: Checking category: $categoryId (name: ${data['name'] ?? 'N/A'})');
-
-        // Check if category has at least one active pictogram
-        try {
-          final pictogramsSnapshot = await _firestore
-              .collection('custom_pictograms')
-              .where('category', isEqualTo: categoryId)
-              .where('isActive', isEqualTo: true)
-              .limit(1)
-              .get();
-
-          debugPrint(
-              'CategoryService: Category $categoryId has ${pictogramsSnapshot.docs.length} active pictograms');
-
-          // Only include categories that have at least one pictogram
-          if (pictogramsSnapshot.docs.isNotEmpty) {
-            categories.add(Category(
-              id: categoryId,
-              name: data['name'] as String? ?? '',
-              nameEn: data['nameEn'] as String? ?? '',
-              nameNl: data['nameNl'] as String? ?? '',
-              description: data['description'] as String?,
-              createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-              updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
-            ));
-            debugPrint('CategoryService: Added category $categoryId to list');
-          } else {
-            // Try without isActive filter for pictograms
-            debugPrint(
-                'CategoryService: No active pictograms found, trying without isActive filter...');
-            final allPictogramsSnapshot = await _firestore
-                .collection('custom_pictograms')
-                .where('category', isEqualTo: categoryId)
-                .limit(1)
-                .get();
-
-            if (allPictogramsSnapshot.docs.isNotEmpty) {
-              debugPrint(
-                  'CategoryService: Found ${allPictogramsSnapshot.docs.length} pictograms (without isActive filter)');
-              categories.add(Category(
-                id: categoryId,
-                name: data['name'] as String? ?? '',
-                nameEn: data['nameEn'] as String? ?? '',
-                nameNl: data['nameNl'] as String? ?? '',
-                description: data['description'] as String?,
-                createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-                updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
-              ));
-              debugPrint(
-                  'CategoryService: Added category $categoryId to list (without isActive filter)');
-            }
-          }
-        } catch (e) {
-          debugPrint(
-              'CategoryService: Error checking pictograms for category $categoryId: $e');
-          // Continue to next category
-        }
+        categories.add(Category(
+          id: doc.id,
+          name: data['name'] as String? ?? '',
+          nameEn: data['nameEn'] as String? ?? '',
+          nameNl: data['nameNl'] as String? ?? '',
+          description: data['description'] as String?,
+          createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+          updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+        ));
       }
 
       debugPrint(

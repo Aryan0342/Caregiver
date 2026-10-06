@@ -15,6 +15,7 @@ import '../providers/language_provider.dart';
 import '../services/language_service.dart';
 import '../l10n/app_localizations.dart';
 import '../models/client_profile_model.dart';
+import '../utils/pictogram_image.dart';
 
 class CreateSetScreen extends StatefulWidget {
   final List<Pictogram>? initialPictograms;
@@ -910,8 +911,9 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(11),
                         child: pictogram.imageUrl.isNotEmpty
-                            ? Image.network(
-                                pictogram.imageUrl, // Cloudinary URL
+                            ? Image(
+                                image: pictogramImage(pictogram.imageUrl,
+                                    PictogramImageSize.small),
                                 fit: BoxFit.contain,
                                 loadingBuilder:
                                     (context, child, loadingProgress) {

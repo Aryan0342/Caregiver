@@ -5,6 +5,7 @@ import '../models/pictogram_model.dart';
 import '../providers/language_provider.dart';
 import '../routes/app_routes.dart';
 import '../services/watch_session_service.dart';
+import '../utils/pictogram_image.dart';
 
 class ClientSessionScreen extends StatefulWidget {
   final PictogramSet set;
@@ -257,8 +258,8 @@ class _ClientSessionScreenState extends State<ClientSessionScreen> {
       return _buildFallbackIcon(pictogram);
     }
 
-    return Image.network(
-      pictogram.imageUrl, // Cloudinary URL
+    return Image(
+      image: pictogramImage(pictogram.imageUrl, PictogramImageSize.large),
       fit: BoxFit.contain,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;

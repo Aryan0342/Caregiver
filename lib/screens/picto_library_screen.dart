@@ -6,6 +6,7 @@ import '../services/custom_pictogram_service.dart';
 import '../services/category_service.dart';
 import '../providers/language_provider.dart';
 import '../services/language_service.dart';
+import '../utils/pictogram_image.dart';
 
 class PictoLibraryScreen extends StatefulWidget {
   const PictoLibraryScreen({super.key});
@@ -488,8 +489,9 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
               SizedBox(
                 height: 64,
                 width: 64,
-                child: Image.network(
-                  pictogram.imageUrl,
+                child: Image(
+                  image: pictogramImage(
+                      pictogram.imageUrl, PictogramImageSize.small),
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(Icons.image_not_supported, size: 40);
@@ -569,8 +571,9 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       padding: const EdgeInsets.all(16),
-                      child: Image.network(
-                        pictogram.imageUrl,
+                      child: Image(
+                        image: pictogramImage(
+                            pictogram.imageUrl, PictogramImageSize.large),
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return const Icon(

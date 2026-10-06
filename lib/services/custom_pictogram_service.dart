@@ -13,50 +13,85 @@ class CustomPictogramService {
   /// Collection name for custom pictograms
   static const String _collectionName = 'custom_pictograms';
 
+  /// How long the pictogram catalog is reused before it is fetched again.
+  static const Duration _catalogMaxAge = Duration(minutes: 30);
+
+  // All active pictograms, fetched with a single query and shared by every
+  // screen (categories, category lists, search, library) to save data.
+  static List<_CatalogEntry>? _catalog;
+  static DateTime? _catalogLoadedAt;
+  static Future<List<_CatalogEntry>>? _catalogRequest;
+
+  /// Forgets the cached catalog so the next call fetches it again.
+  static void clearCache() {
+    _catalog = null;
+    _catalogLoadedAt = null;
+  }
+
+  Future<List<_CatalogEntry>> _getCatalog() {
+    final loadedAt = _catalogLoadedAt;
+    if (_catalog != null &&
+        loadedAt != null &&
+        DateTime.now().difference(loadedAt) < _catalogMaxAge) {
+      return Future.value(_catalog);
+    }
+    // Share one request between callers that ask at the same time.
+    return _catalogRequest ??= _fetchCatalog().whenComplete(() {
+      _catalogRequest = null;
+    });
+  }
+
+  Future<List<_CatalogEntry>> _fetchCatalog() async {
+    final querySnapshot = await _firestore
+        .collection(_collectionName)
+        .where('isActive', isEqualTo: true)
+        .get();
+    debugPrint(
+        'Fetched pictogram catalog: ${querySnapshot.docs.length} pictograms');
+
+    final catalog = querySnapshot.docs.map((doc) {
+      final data = doc.data();
+      final categoryId = data['category'] as String? ?? '';
+      return _CatalogEntry(
+        docId: doc.id,
+        categoryId: categoryId,
+        pictogram: Pictogram(
+          id: _parsePictogramId(doc.id), // Negative ID for custom pictograms
+          keyword: data['keyword'] as String? ?? 'Onbekend',
+          category: categoryId,
+          imageUrl: data['imageUrl'] as String? ?? '', // Cloudinary URL
+          description: data['description'] as String?,
+        ),
+      );
+    }).toList();
+
+    _catalog = catalog;
+    _catalogLoadedAt = DateTime.now();
+    return catalog;
+  }
+
+  /// IDs of the categories that have at least one active pictogram.
+  Future<Set<String>> getCategoryIdsWithPictograms() async {
+    final catalog = await _getCatalog();
+    return catalog.map((entry) => entry.categoryId).toSet();
+  }
+
   /// Fetch pictograms by category, ordered alphabetically by keyword.
   ///
   /// [categoryId] - The category ID to fetch pictograms for
   /// Returns a list of Pictogram objects sorted alphabetically by keyword
   Future<List<Pictogram>> getPictogramsByCategory(String categoryId) async {
     try {
-      debugPrint('Fetching pictograms for category ID: $categoryId');
-
-      // Fetch all pictograms for the category
-      final querySnapshot = await _firestore
-          .collection(_collectionName)
-          .where('category', isEqualTo: categoryId)
-          .where('isActive', isEqualTo: true)
-          .get();
-
-      debugPrint('Query returned ${querySnapshot.docs.length} documents');
-
-      // Map to Pictogram objects
-      final pictograms = querySnapshot.docs.map((doc) {
-        final data = doc.data();
-
-        debugPrint(
-            'Pictogram: id=${doc.id}, keyword=${data['keyword']}, category=${data['category']}');
-
-        return Pictogram(
-          id: _parsePictogramId(doc.id), // Negative ID for custom pictograms
-          keyword: data['keyword'] as String? ?? 'Onbekend',
-          category: data['category'] as String? ?? categoryId,
-          imageUrl: data['imageUrl'] as String? ?? '', // Cloudinary URL
-          description: data['description'] as String?,
-        );
-      }).toList();
-
-      // Sort alphabetically by keyword (ascending)
-      pictograms.sort((a, b) => a.keyword.compareTo(b.keyword));
-      final uniquePictograms = removeDuplicates(pictograms);
-
-      debugPrint(
-          'Returning ${uniquePictograms.length} pictograms for category $categoryId (sorted alphabetically)');
-      return uniquePictograms;
+      final catalog = await _getCatalog();
+      final pictograms = catalog
+          .where((entry) => entry.categoryId == categoryId)
+          .map((entry) => entry.pictogram)
+          .toList()
+        ..sort((a, b) => a.keyword.compareTo(b.keyword));
+      return removeDuplicates(pictograms);
     } catch (e) {
       // Return empty list on error, but log detailed error
       debugPrint('Error fetching pictograms by category ($categoryId): $e');
-      debugPrint('Error type: ${e.runtimeType}');
       if (e is FirebaseException) {
         debugPrint('Firebase error code: ${e.code}, message: ${e.message}');
       }
@@ -117,22 +152,10 @@ class CustomPictogramService {
   /// Returns a list of all active pictograms
   Future<List<Pictogram>> getAllPictograms() async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_collectionName)
-          .where('isActive', isEqualTo: true)
-          .orderBy('keyword')
-          .get();
-
-      return removeDuplicates(querySnapshot.docs.map((doc) {
-        final data = doc.data();
-        return Pictogram(
-          id: -int.parse(doc.id), // Negative ID for custom pictograms
-          keyword: data['keyword'] as String? ?? 'Onbekend',
-          category: data['category'] as String? ?? '',
-          imageUrl: data['imageUrl'] as String? ?? '', // Cloudinary URL
-          description: data['description'] as String?,
-        );
-      }).toList());
+      final catalog = await _getCatalog();
+      final pictograms = catalog.map((entry) => entry.pictogram).toList()
+        ..sort((a, b) => a.keyword.compareTo(b.keyword));
+      return removeDuplicates(pictograms);
     } catch (e) {
       return [];
     }
@@ -140,8 +163,8 @@ class CustomPictogramService {
 
   /// Search pictograms by keyword across the entire library (all categories).
   ///
-  /// Fetches from the whole custom_pictograms collection — not limited by any
-  /// selected category. Searches keyword and description (case- and accent-insensitive).
+  /// Searches keyword and description (case- and accent-insensitive) in the
+  /// cached catalog, so typing a search does not download the collection.
   /// [query] - The search query (any language)
   /// Returns matching Pictogram objects from all categories, sorted by keyword.
   Future<List<Pictogram>> searchPictograms(String query) async {
@@ -151,31 +174,11 @@ class CustomPictogramService {
         return [];
       }
 
-      debugPrint('Searching pictograms (whole DB) for: "$trimmedQuery"');
-
-      // Fetch ALL active pictograms from the entire collection (no category filter).
-      // Query without orderBy to avoid requiring a composite index; we sort in memory.
-      final querySnapshot = await _firestore
-          .collection(_collectionName)
-          .where('isActive', isEqualTo: true)
-          .get();
-
-      debugPrint(
-          'Fetched ${querySnapshot.docs.length} active pictograms from database');
-
+      final catalog = await _getCatalog();
       final normalizedQuery = _normalizeString(trimmedQuery.toLowerCase());
 
-      final results = querySnapshot.docs.map((doc) {
-        final data = doc.data();
-        final keyword = data['keyword'] as String? ?? 'Onbekend';
-        return Pictogram(
-          id: _parsePictogramId(doc.id),
-          keyword: keyword,
-          category: data['category'] as String? ?? '',
-          imageUrl: data['imageUrl'] as String? ?? '',
-          description: data['description'] as String?,
-        );
-      }).where((pictogram) {
+      final results =
+          catalog.map((entry) => entry.pictogram).where((pictogram) {
         final normalizedKeyword =
             _normalizeString(pictogram.keyword.toLowerCase());
         final normalizedDescription = pictogram.description != null
@@ -188,10 +191,7 @@ class CustomPictogramService {
       }).toList();
 
       results.sort((a, b) => a.keyword.compareTo(b.keyword));
-      final uniqueResults = removeDuplicates(results);
-      debugPrint(
-          'Search returned ${uniqueResults.length} matching pictograms (from whole DB)');
-      return uniqueResults;
+      return removeDuplicates(results);
     } catch (e) {
       debugPrint('Error searching pictograms: $e');
       return [];
@@ -249,7 +249,7 @@ class CustomPictogramService {
     return unique;
   }
 
-  int _parsePictogramId(String docId) {
+  static int _parsePictogramId(String docId) {
     try {
       return -int.parse(docId);
     } catch (e) {
@@ -266,6 +266,9 @@ class CustomPictogramService {
   /// Returns the Firestore document ID, or null if not found
   Future<String?> getPictogramDocumentId(Pictogram pictogram) async {
     try {
+      final cached = _catalogDocumentId(pictogram);
+      if (cached != null) return cached;
+
       // If the ID is negative, try to reverse it
       if (pictogram.id < 0) {
         final positiveId = -pictogram.id;
@@ -329,6 +332,19 @@ class CustomPictogramService {
     if (pictograms.isEmpty) return result;
 
     try {
+      // Resolve from the cached catalog first; only query the rest.
+      final remaining = <Pictogram>[];
+      for (final pictogram in pictograms) {
+        final cached = _catalogDocumentId(pictogram);
+        if (cached != null) {
+          result[pictogram.id] = cached;
+        } else {
+          remaining.add(pictogram);
+        }
+      }
+      pictograms = remaining;
+      if (pictograms.isEmpty) return result;
+
       // Group by imageUrl for efficient querying
       final imageUrlMap = <String, List<Pictogram>>{};
       final keywordCategoryMap = <String, List<Pictogram>>{};
@@ -388,10 +404,37 @@ class CustomPictogramService {
     }
   }
 
+  /// Document ID of [pictogram] from the cached catalog, if loaded.
+  static String? _catalogDocumentId(Pictogram pictogram) {
+    final catalog = _catalog;
+    if (catalog == null) return null;
+    for (final entry in catalog) {
+      if (entry.pictogram.id == pictogram.id ||
+          (pictogram.imageUrl.isNotEmpty &&
+              entry.pictogram.imageUrl == pictogram.imageUrl)) {
+        return entry.docId;
+      }
+    }
+    return null;
+  }
+
   /// Check if a pictogram ID is a custom pictogram.
   ///
   /// All pictograms are now custom pictograms (negative IDs).
   static bool isCustomPictogram(int id) {
     return id < 0;
   }
+}
+
+/// A pictogram in the cached catalog with its Firestore document and category.
+class _CatalogEntry {
+  final String docId;
+  final String categoryId;
+  final Pictogram pictogram;
+
+  const _CatalogEntry({
+    required this.docId,
+    required this.categoryId,
+    required this.pictogram,
+  });
 }

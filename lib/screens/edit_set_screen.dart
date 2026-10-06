@@ -9,6 +9,7 @@ import '../services/set_service.dart';
 import '../providers/language_provider.dart';
 import '../utils/pin_guard.dart';
 import 'pictogram_picker_screen.dart';
+import '../utils/pictogram_image.dart';
 
 class EditSetScreen extends StatefulWidget {
   final PictogramSet set;
@@ -418,8 +419,9 @@ class _EditSetScreenState extends State<EditSetScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(11),
                         child: pictogram.imageUrl.isNotEmpty
-                            ? Image.network(
-                                pictogram.imageUrl, // Cloudinary URL
+                            ? Image(
+                                image: pictogramImage(pictogram.imageUrl,
+                                    PictogramImageSize.small),
                                 fit: BoxFit.contain,
                                 loadingBuilder:
                                     (context, child, loadingProgress) {

@@ -13,6 +13,7 @@ import '../services/language_service.dart';
 import '../models/client_profile_model.dart';
 import 'pictogram_picker_screen.dart';
 import 'clients_screen.dart';
+import '../utils/pictogram_image.dart';
 
 enum _SetMenuAction { exportPdf, shareLink, delete }
 
@@ -1013,8 +1014,9 @@ class _MySetsScreenState extends State<MySetsScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
               child: pictogram.imageUrl.isNotEmpty
-                  ? Image.network(
-                      pictogram.imageUrl,
+                  ? Image(
+                      image: pictogramImage(
+                          pictogram.imageUrl, PictogramImageSize.small),
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;

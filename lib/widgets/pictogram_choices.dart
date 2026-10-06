@@ -3,6 +3,7 @@ import '../models/pictogram_model.dart';
 import '../providers/language_provider.dart';
 import '../screens/pictogram_picker_screen.dart';
 import '../theme.dart';
+import '../utils/pictogram_image.dart';
 
 /// Opens the pictogram picker to choose the options of a choice pictogram.
 Future<List<Pictogram>?> pickPictogramChoices(
@@ -153,8 +154,9 @@ class _ChoiceTile extends StatelessWidget {
                 width: 96,
                 height: 96,
                 child: pictogram.imageUrl.isNotEmpty
-                    ? Image.network(
-                        pictogram.imageUrl,
+                    ? Image(
+                        image: pictogramImage(
+                            pictogram.imageUrl, PictogramImageSize.small),
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Icon(
                           Icons.image_outlined,

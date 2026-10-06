@@ -10,6 +10,7 @@ import '../providers/language_provider.dart';
 import '../models/client_profile_model.dart';
 import 'request_picto_screen.dart';
 import 'create_set_screen.dart';
+import '../utils/pictogram_image.dart';
 
 class PictogramPickerScreen extends StatefulWidget {
   final List<Pictogram>? initialSelection;
@@ -595,8 +596,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
       return _buildFallbackIcon(_getIconForKeyword(pictogram.keyword));
     }
 
-    return Image.network(
-      pictogram.imageUrl, // Cloudinary URL
+    return Image(
+      image: pictogramImage(pictogram.imageUrl, PictogramImageSize.small),
       fit: BoxFit.contain,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;

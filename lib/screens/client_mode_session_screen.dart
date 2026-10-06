@@ -20,6 +20,7 @@ import 'pictogram_picker_screen.dart';
 import '../widgets/not_cross_overlay.dart';
 import '../widgets/pictogram_choices.dart';
 import '../widgets/step_time_controls.dart';
+import '../utils/pictogram_image.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
 ///
@@ -1584,8 +1585,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       return _buildFallbackIcon(_getIconForKeyword(pictogram.keyword));
     }
 
-    return Image.network(
-      pictogram.imageUrl, // Cloudinary URL
+    return Image(
+      image: pictogramImage(pictogram.imageUrl, PictogramImageSize.large),
       fit: BoxFit.contain,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
@@ -1658,8 +1659,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
             Opacity(
               opacity: isPrevious ? 0.6 : 1.0, // Dim previous items
               child: pictogram.imageUrl.isNotEmpty
-                  ? Image.network(
-                      pictogram.imageUrl, // Cloudinary URL
+                  ? Image(
+                      image: pictogramImage(
+                          pictogram.imageUrl, PictogramImageSize.small),
                       fit: BoxFit.contain,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -1911,8 +1913,9 @@ class _ModifySequenceDialogState extends State<_ModifySequenceDialog> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(7),
               child: pictogram.imageUrl.isNotEmpty
-                  ? Image.network(
-                      pictogram.imageUrl, // Cloudinary URL
+                  ? Image(
+                      image: pictogramImage(
+                          pictogram.imageUrl, PictogramImageSize.small),
                       fit: BoxFit.contain,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
