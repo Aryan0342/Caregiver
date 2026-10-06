@@ -70,9 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Logo on left top
+                  // Logo (with "Je Dag in Beeld" text) on left top
                   Image.asset(
-                    'assets/images/in_app_logo.png',
+                    'assets/images/app_logo.png',
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,

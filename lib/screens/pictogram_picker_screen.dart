@@ -16,11 +16,16 @@ class PictogramPickerScreen extends StatefulWidget {
   final int maxSelection;
   final ClientProfile? selectedClient;
 
+  /// When true, "Done" pops with the selection instead of opening
+  /// [CreateSetScreen]. Used for picking choice options of a pictogram.
+  final bool returnSelection;
+
   const PictogramPickerScreen({
     super.key,
     this.initialSelection,
     this.maxSelection = 10,
     this.selectedClient,
+    this.returnSelection = false,
   });
 
   @override
@@ -203,6 +208,10 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
   }
 
   void _confirmSelection() {
+    if (widget.returnSelection) {
+      Navigator.pop(context, _selectedPictograms.toList());
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -291,44 +300,34 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                         ),
                       ),
                     ),
-                    // Category tabs
-                    Container(
-                      height: 60,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: ListView(
+                    // Category tabs: two rows (first and second half of the
+                    // categories) that scroll horizontally together
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        children: _categories.map((category) {
-                          final isSelected =
-                              _selectedCategory?.id == category.id;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: FilterChip(
-                              label:
-                                  Text(category.getLocalizedName(languageCode)),
-                              selected: isSelected,
-                              onSelected: (_) => _onCategoryChanged(category),
-                              selectedColor: AppTheme.primaryBlue,
-                              backgroundColor: AppTheme.primaryBlueLight,
-                              checkmarkColor: Colors.white,
-                              side: BorderSide(
-                                color: isSelected
-                                    ? Colors.transparent
-                                    : AppTheme.primaryBlue
-                                        .withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                              labelStyle: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppTheme.textPrimary,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Builder(
+                          builder: (context) {
+                            final half = (_categories.length + 1) ~/ 2;
+                            Widget buildRow(List<Category> categories) => Row(
+                                  children: categories
+                                      .map((category) => _buildCategoryChip(
+                                          category, languageCode))
+                                      .toList(),
+                                );
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                buildRow(_categories.sublist(0, half)),
+                                if (_categories.length > 1) ...[
+                                  const SizedBox(height: 8),
+                                  buildRow(_categories.sublist(half)),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
 
@@ -490,6 +489,31 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                     ),
                   ],
                 ),
+    );
+  }
+
+  Widget _buildCategoryChip(Category category, String languageCode) {
+    final isSelected = _selectedCategory?.id == category.id;
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: FilterChip(
+        label: Text(category.getLocalizedName(languageCode)),
+        selected: isSelected,
+        onSelected: (_) => _onCategoryChanged(category),
+        selectedColor: AppTheme.primaryBlue,
+        backgroundColor: AppTheme.primaryBlueLight,
+        checkmarkColor: Colors.white,
+        side: BorderSide(
+          color: isSelected
+              ? Colors.transparent
+              : AppTheme.primaryBlue.withValues(alpha: 0.5),
+          width: 1,
+        ),
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : AppTheme.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
     );
   }
 

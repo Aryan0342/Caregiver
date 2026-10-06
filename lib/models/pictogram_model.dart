@@ -7,6 +7,20 @@ class Pictogram {
   final String? description;
   final bool isSelected;
 
+  /// Options shown in a selection pop-up during a session (e.g. an outdoor
+  /// activity pictogram offering walking/cycling/scooting). Empty for a
+  /// regular pictogram.
+  final List<Pictogram> choices;
+
+  /// Marks a step that is not going to happen; shown with a red cross.
+  final bool isNegated;
+
+  /// Planned clock time for this step as "HH:mm" (24h), or null.
+  final String? scheduledTime;
+
+  /// Whether a notification is shown at [scheduledTime] during a session.
+  final bool notify;
+
   const Pictogram({
     required this.id,
     required this.keyword,
@@ -14,7 +28,23 @@ class Pictogram {
     required this.imageUrl,
     this.description,
     this.isSelected = false,
+    this.choices = const [],
+    this.isNegated = false,
+    this.scheduledTime,
+    this.notify = false,
   });
+
+  bool get hasChoices => choices.isNotEmpty;
+
+  /// [scheduledTime] as minutes since midnight, or null when not set/invalid.
+  int? get scheduledMinutes {
+    final parts = scheduledTime?.split(':');
+    if (parts == null || parts.length != 2) return null;
+    final hours = int.tryParse(parts[0]);
+    final minutes = int.tryParse(parts[1]);
+    if (hours == null || minutes == null) return null;
+    return hours * 60 + minutes;
+  }
 
   /// Create a copy with updated selection state
   Pictogram copyWith({
@@ -24,6 +54,11 @@ class Pictogram {
     String? imageUrl,
     String? description,
     bool? isSelected,
+    List<Pictogram>? choices,
+    bool? isNegated,
+    String? scheduledTime,
+    bool clearScheduledTime = false,
+    bool? notify,
   }) {
     return Pictogram(
       id: id ?? this.id,
@@ -32,6 +67,11 @@ class Pictogram {
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
       isSelected: isSelected ?? this.isSelected,
+      choices: choices ?? this.choices,
+      isNegated: isNegated ?? this.isNegated,
+      scheduledTime:
+          clearScheduledTime ? null : (scheduledTime ?? this.scheduledTime),
+      notify: notify ?? this.notify,
     );
   }
 
@@ -44,6 +84,11 @@ class Pictogram {
       'imageUrl': imageUrl,
       'description': description,
       'isSelected': isSelected,
+      if (choices.isNotEmpty)
+        'choices': choices.map((c) => c.toJson()).toList(),
+      if (isNegated) 'isNegated': true,
+      if (scheduledTime != null) 'scheduledTime': scheduledTime,
+      if (notify) 'notify': true,
     };
   }
 
@@ -56,6 +101,14 @@ class Pictogram {
       imageUrl: json['imageUrl'] as String,
       description: json['description'] as String?,
       isSelected: json['isSelected'] as bool? ?? false,
+      choices: (json['choices'] as List<dynamic>?)
+              ?.map((c) =>
+                  Pictogram.fromJson(Map<String, dynamic>.from(c as Map)))
+              .toList() ??
+          const [],
+      isNegated: json['isNegated'] as bool? ?? false,
+      scheduledTime: json['scheduledTime'] as String?,
+      notify: json['notify'] as bool? ?? false,
     );
   }
 
@@ -96,7 +149,7 @@ enum PictogramCategory {
   final String searchKeywords; // Dutch keywords for better search results
 
   const PictogramCategory(this.key, this.searchTerm, this.searchKeywords);
-  
+
   // Keep displayName for backward compatibility, but it should use translations
   @Deprecated('Use getCategoryDisplayName with AppLocalizations instead')
   String get displayName {

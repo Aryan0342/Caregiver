@@ -6,6 +6,7 @@ import '../services/language_service.dart';
 import '../providers/language_provider.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_state_service.dart';
+import '../services/session_preference_service.dart';
 import 'verify_pin_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -25,6 +26,43 @@ class _SettingsScreenContent extends StatefulWidget {
 }
 
 class _SettingsScreenContentState extends State<_SettingsScreenContent> {
+  final SessionPreferenceService _sessionPreferenceService =
+      SessionPreferenceService();
+  bool _completionCheckmarkEnabled = true;
+  bool _completionSoundEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessionPreferences();
+  }
+
+  Future<void> _loadSessionPreferences() async {
+    final checkmarkEnabled =
+        await _sessionPreferenceService.isCompletionCheckmarkEnabled();
+    final soundEnabled =
+        await _sessionPreferenceService.isCompletionSoundEnabled();
+    if (!mounted) return;
+    setState(() {
+      _completionCheckmarkEnabled = checkmarkEnabled;
+      _completionSoundEnabled = soundEnabled;
+    });
+  }
+
+  Future<void> _setCompletionCheckmarkEnabled(bool enabled) async {
+    setState(() {
+      _completionCheckmarkEnabled = enabled;
+    });
+    await _sessionPreferenceService.setCompletionCheckmarkEnabled(enabled);
+  }
+
+  Future<void> _setCompletionSoundEnabled(bool enabled) async {
+    setState(() {
+      _completionSoundEnabled = enabled;
+    });
+    await _sessionPreferenceService.setCompletionSoundEnabled(enabled);
+  }
+
   /// Open donate link in browser
   Future<void> _openDonateLink(BuildContext context) async {
     final url = Uri.parse('https://www.jedaginbeeld.nl/doneren/');
@@ -532,6 +570,83 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                         color: AppTheme.textSecondary,
                       ),
                       onTap: () => _showLanguageSelector(context),
+                    ),
+                  ),
+
+                  // Completion check mark in client session
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(
+                            alpha: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.check_circle_outline,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.completionCheckmark,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle:
+                          Text(localizations.completionCheckmarkDescription),
+                      trailing: Switch(
+                        value: _completionCheckmarkEnabled,
+                        onChanged: _setCompletionCheckmarkEnabled,
+                      ),
+                      onTap: () => _setCompletionCheckmarkEnabled(
+                        !_completionCheckmarkEnabled,
+                      ),
+                    ),
+                  ),
+
+                  // Completion sound in client session
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlueLight.withValues(
+                            alpha: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.volume_up_outlined,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      title: Text(
+                        localizations.completionSound,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(localizations.completionSoundDescription),
+                      trailing: Switch(
+                        value: _completionSoundEnabled,
+                        onChanged: _setCompletionSoundEnabled,
+                      ),
+                      onTap: () => _setCompletionSoundEnabled(
+                        !_completionSoundEnabled,
+                      ),
                     ),
                   ),
 

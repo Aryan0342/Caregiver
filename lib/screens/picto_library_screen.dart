@@ -5,6 +5,7 @@ import '../models/pictogram_model.dart';
 import '../services/custom_pictogram_service.dart';
 import '../services/category_service.dart';
 import '../providers/language_provider.dart';
+import '../services/language_service.dart';
 
 class PictoLibraryScreen extends StatefulWidget {
   const PictoLibraryScreen({super.key});
@@ -21,6 +22,11 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
 
   List<Pictogram> _allPictograms = [];
   List<Pictogram> _filteredPictograms = [];
+  List<Category> _categories = [];
+  // Pictograms per category ID, kept separately because duplicates are
+  // merged across categories in [_allPictograms].
+  final Map<String, List<Pictogram>> _pictogramsByCategory = {};
+  Category? _selectedCategory; // null = all categories
   bool _isLoading = true;
   String? _errorMessage;
   String? _selectedLetter;
@@ -131,17 +137,29 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
+    setState(_applyFilters);
+  }
+
+  void _onCategorySelected(Category? category) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredPictograms = List.from(_allPictograms);
-      } else {
-        _filteredPictograms = _allPictograms
-            .where((p) => p.keyword.toLowerCase().contains(query))
-            .toList();
-      }
-      _buildLetterIndexMap();
+      _selectedCategory = category;
+      _applyFilters();
     });
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  /// Applies the selected category and the search query to the pictograms.
+  void _applyFilters() {
+    final query = _searchController.text.toLowerCase();
+    final base = _selectedCategory == null
+        ? _allPictograms
+        : (_pictogramsByCategory[_selectedCategory!.id] ?? const []);
+    _filteredPictograms = query.isEmpty
+        ? List.from(base)
+        : base.where((p) => p.keyword.toLowerCase().contains(query)).toList();
+    _buildLetterIndexMap();
   }
 
   Future<void> _loadAllPictograms() async {
@@ -160,23 +178,23 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
           final pictos =
               await _pictogramService.getPictogramsByCategory(category.id);
           allPictos.addAll(pictos);
+          _pictogramsByCategory[category.id] = List.of(pictos)
+            ..sort((a, b) =>
+                a.keyword.toLowerCase().compareTo(b.keyword.toLowerCase()));
         } catch (e) {
           debugPrint('Error loading category ${category.id}: $e');
         }
       }
 
-      // Remove duplicates based on ID and sort alphabetically
-      final uniquePictos = <int, Pictogram>{};
-      for (final picto in allPictos) {
-        uniquePictos[picto.id] = picto;
-      }
+      // Sort alphabetically and remove duplicates (also across categories)
+      allPictos.sort(
+          (a, b) => a.keyword.toLowerCase().compareTo(b.keyword.toLowerCase()));
+      _allPictograms = CustomPictogramService.removeDuplicates(allPictos);
+      _categories = categories
+          .where((c) => _pictogramsByCategory[c.id]?.isNotEmpty ?? false)
+          .toList();
 
-      _allPictograms = uniquePictos.values.toList()
-        ..sort((a, b) =>
-            a.keyword.toLowerCase().compareTo(b.keyword.toLowerCase()));
-
-      _filteredPictograms = List.from(_allPictograms);
-      _buildLetterIndexMap();
+      _applyFilters();
 
       setState(() {
         _isLoading = false;
@@ -328,15 +346,20 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
                 ),
               ),
 
-              // Content
+              // Category filter
+              if (_categories.isNotEmpty) _buildCategoryFilter(),
+
+              // Content, with the letter index sidebar next to the grid
               Expanded(
-                child: _buildContent(),
+                child: Stack(
+                  children: [
+                    _buildContent(),
+                    _buildLetterIndex(),
+                  ],
+                ),
               ),
             ],
           ),
-
-          // Letter index sidebar
-          _buildLetterIndex(),
 
           // Scroll indicator tooltip
           if (_showScrollIndicator && _currentScrollLetter != null)
@@ -569,10 +592,81 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
     );
   }
 
+  /// Category chips in two rows (first and second half, with "All" first)
+  /// that scroll horizontally together.
+  Widget _buildCategoryFilter() {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final languageCode =
+        LanguageProvider.languageServiceOf(context).currentLanguage ==
+                AppLanguage.dutch
+            ? 'nl'
+            : 'en';
+    final chips = <Widget>[
+      _buildCategoryChip(
+        label: localizations.allCategories,
+        isSelected: _selectedCategory == null,
+        onSelected: () => _onCategorySelected(null),
+      ),
+      for (final category in _categories)
+        _buildCategoryChip(
+          label: category.getLocalizedName(languageCode),
+          isSelected: _selectedCategory?.id == category.id,
+          onSelected: () => _onCategorySelected(category),
+        ),
+    ];
+    final half = (chips.length + 1) ~/ 2;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: chips.sublist(0, half)),
+            if (chips.length > 1) ...[
+              const SizedBox(height: 8),
+              Row(children: chips.sublist(half)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (_) => onSelected(),
+        selectedColor: AppTheme.primaryBlue,
+        backgroundColor: AppTheme.primaryBlueLight,
+        checkmarkColor: Colors.white,
+        side: BorderSide(
+          color: isSelected
+              ? Colors.transparent
+              : AppTheme.primaryBlue.withValues(alpha: 0.5),
+          width: 1,
+        ),
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : AppTheme.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
   Widget _buildLetterIndex() {
     return Positioned(
       right: 0,
-      top: 80,
+      top: 0,
       bottom: 0,
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,

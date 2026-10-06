@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
+import 'package:audioplayers/audioplayers.dart';
 import 'package:caregiver/services/language_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
@@ -7,12 +8,18 @@ import '../theme.dart';
 import '../models/client_profile_model.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/language_provider.dart';
 import '../providers/client_session_provider.dart';
 import '../services/client_service.dart';
+import '../services/session_preference_service.dart';
+import '../services/step_notification_service.dart';
 import '../services/set_service.dart';
 import '../services/watch_session_service.dart';
 import 'pictogram_picker_screen.dart';
+import '../widgets/not_cross_overlay.dart';
+import '../widgets/pictogram_choices.dart';
+import '../widgets/step_time_controls.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
 ///
@@ -40,9 +47,23 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   int _currentStepIndex = 0;
   DateTime? _lastExitAttempt;
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
+  // Option chosen in the selection pop-up, per step index (not saved).
+  final Map<int, Pictogram> _chosenOptions = {};
   final ClientService _clientService = ClientService();
   final SetService _setService = SetService();
   final WatchSessionService _watchService = WatchSessionService();
+  final SessionPreferenceService _sessionPreferenceService =
+      SessionPreferenceService();
+  bool _completionCheckmarkEnabled = true;
+  bool _completionSoundEnabled = true;
+  final AudioPlayer _completionSoundPlayer = AudioPlayer();
+  bool _isShowingCheckmark = false;
+  Timer? _checkmarkTimer;
+  // Refreshes the time progress bar of steps with a planned time.
+  Timer? _clockTimer;
+  DateTime _now = DateTime.now();
+  // Sequence and step the step notifications were last scheduled for.
+  String? _notificationScheduleKey;
   late PictogramSet _activeSet;
   List<ClientProfile> _sidebarClients = <ClientProfile>[];
   bool _isLoadingClients = true;
@@ -53,6 +74,13 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   void initState() {
     super.initState();
     _activeSet = widget.set;
+    _loadSessionPreferences();
+    _clockTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
     if (kDebugMode) {
       debugPrint(
           '[ClientModeSessionScreen] initState called, starting watch navigation listener');
@@ -91,6 +119,36 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       _startWatchSession();
       _loadSidebarClients();
     });
+  }
+
+  Future<void> _loadSessionPreferences() async {
+    final checkmarkEnabled =
+        await _sessionPreferenceService.isCompletionCheckmarkEnabled();
+    final soundEnabled =
+        await _sessionPreferenceService.isCompletionSoundEnabled();
+    if (!mounted) return;
+    setState(() {
+      _completionCheckmarkEnabled = checkmarkEnabled;
+      _completionSoundEnabled = soundEnabled;
+    });
+  }
+
+  Future<void> _playCompletionSound() async {
+    if (!_completionSoundEnabled) return;
+    try {
+      // Mix with other audio so music playing on the device is not paused.
+      await _completionSoundPlayer.setAudioContext(
+        AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers)
+            .build(),
+      );
+      await _completionSoundPlayer.stop();
+      await _completionSoundPlayer
+          .play(AssetSource('sounds/step_complete.wav'));
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[ClientModeSessionScreen] Could not play sound: $e');
+      }
+    }
   }
 
   Future<void> _loadSidebarClients() async {
@@ -142,8 +200,31 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     }
   }
 
-  void _startWatchSession() {
+  /// The pictogram to show for [index]: the chosen option of a choice
+  /// pictogram, otherwise the pictogram itself.
+  Pictogram _displayedPictogramAt(List<Pictogram> pictograms, int index) {
+    final step = pictograms[index];
+    return _chosenOptions[index]?.copyWith(isNegated: step.isNegated) ?? step;
+  }
+
+  Future<void> _openChoicePopup() async {
     final pictograms = _modifiedSequence ?? _activeSet.pictograms;
+    final step = _currentStepIndex;
+    final choice = await showPictogramChoiceDialog(context, pictograms[step]);
+    if (!mounted || choice == null || step != _currentStepIndex) return;
+    setState(() {
+      _chosenOptions[step] = choice;
+    });
+    // Resend the sequence so the watch shows the chosen option.
+    _startWatchSession();
+  }
+
+  void _startWatchSession() {
+    final sequence = _modifiedSequence ?? _activeSet.pictograms;
+    final pictograms = [
+      for (var i = 0; i < sequence.length; i++)
+        _displayedPictogramAt(sequence, i),
+    ];
     unawaited(_watchService.startSession(
       setName: _activeSet.name,
       currentIndex: _currentStepIndex,
@@ -154,6 +235,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
   @override
   void dispose() {
+    _checkmarkTimer?.cancel();
+    _clockTimer?.cancel();
+    unawaited(StepNotificationService.instance.cancelAll());
+    _completionSoundPlayer.dispose();
     _watchService.stopListeningToWatchNavigation();
     _watchService.stopListeningToFirestoreIndexChanges();
     _watchService.stopListeningToReachability();
@@ -161,9 +246,29 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     super.dispose();
   }
 
+  /// (Re)schedules notifications for the planned times of the upcoming steps
+  /// whenever the sequence or the current step changes.
+  void _scheduleStepNotificationsIfNeeded() {
+    final steps = _modifiedSequence ?? _activeSet.pictograms;
+    final key = '${identityHashCode(steps)}:$_currentStepIndex';
+    if (key == _notificationScheduleKey) return;
+    _notificationScheduleKey = key;
+    final localizations = LanguageProvider.localizationsOf(context);
+    unawaited(StepNotificationService.instance.scheduleForSteps(
+      steps: steps,
+      currentIndex: _currentStepIndex,
+      setName: _activeSet.name,
+      channelName: localizations.pictoReminders,
+      titleFor: (step) => localizations.timeForStep(step.keyword),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scheduleStepNotificationsIfNeeded();
+    });
 
     return PopScope(
       canPop: false,
@@ -260,6 +365,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               _buildHiddenExitAreas(),
               _buildActionButtons(),
               if (!_isWatchReachable) _buildWatchDisconnectedBanner(),
+              if (_isShowingCheckmark) _buildCompletionCheckmark(),
             ],
           ),
         ),
@@ -437,6 +543,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     setState(() {
       _activeSet = selectedSet;
       _modifiedSequence = null;
+      _chosenOptions.clear();
       _currentStepIndex = cloudIndex.clamp(0, maxIndex);
     });
   }
@@ -725,7 +832,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
       );
     }
 
-    final currentPictogram = pictograms[_currentStepIndex];
+    final stepPictogram = pictograms[_currentStepIndex];
+    final currentPictogram =
+        _displayedPictogramAt(pictograms, _currentStepIndex);
     final isLastStep = _currentStepIndex == pictograms.length - 1;
 
     return Column(
@@ -733,12 +842,15 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         // Fullscreen pictogram display
         Expanded(
           child: GestureDetector(
-            // Tap anywhere on pictogram to go to next step
-            onTap: isLastStep
-                ? null
-                : () {
-                    _nextStep();
-                  },
+            // Tap a choice pictogram to open its selection pop-up,
+            // otherwise tap anywhere on the pictogram to go to the next step
+            onTap: stepPictogram.hasChoices
+                ? _openChoicePopup
+                : isLastStep
+                    ? null
+                    : () {
+                        _nextStep();
+                      },
             child: Container(
               width: double.infinity,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -755,16 +867,41 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildPictogramImage(currentPictogram),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: _buildPictogramImage(currentPictogram),
+                      ),
+                    ),
+                    if (currentPictogram.isNegated)
+                      const Positioned.fill(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: NotCrossOverlay(),
+                        ),
+                      ),
+                    if (stepPictogram.hasChoices)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: _buildChoiceHint(localizations),
+                      ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
 
-        const SizedBox(height: 32),
+        // Progress from this step's planned time to the next one
+        if (stepPictogram.scheduledMinutes != null) ...[
+          const SizedBox(height: 4),
+          _buildTimeProgress(pictograms, localizations),
+          const SizedBox(height: 12),
+        ] else
+          const SizedBox(height: 32),
 
         // Large label (Displays localized Dutch keyword from model)
         Padding(
@@ -788,6 +925,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                     color: AppTheme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 36,
+                    decoration: currentPictogram.isNegated
+                        ? TextDecoration.lineThrough
+                        : null,
+                    decorationColor: AppTheme.accentRed,
+                    decorationThickness: 3,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -796,30 +938,44 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
 
         const SizedBox(height: 16),
 
-        // Pictograms preview (tiny, under the title) - shows only next pictograms (not current)
-        // Only show if there are upcoming pictograms, and only show actual pictograms (up to 3)
-        if (!isLastStep)
+        // Pictograms preview (tiny, under the title) - shows completed
+        // pictograms (grayed out with a check mark) followed by up to 3 upcoming.
+        if (pictograms.length > 1)
           Builder(
             builder: (context) {
-              // Calculate how many upcoming pictograms there are (max 3)
               final remainingCount =
                   pictograms.length - (_currentStepIndex + 1);
-              final previewCount = remainingCount > 3
-                  ? 3
-                  : (remainingCount > 0 ? remainingCount : 0);
+              final previewCount = remainingCount > 3 ? 3 : remainingCount;
 
-              // Don't show preview bar if there are no upcoming pictograms
-              if (previewCount == 0) {
-                return const SizedBox.shrink();
-              }
+              final previews = <Widget>[
+                for (var i = 0; i < _currentStepIndex; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _buildTinyPictogramPreview(
+                      _displayedPictogramAt(pictograms, i),
+                      i + 1,
+                      isPrevious: true,
+                    ),
+                  ),
+                for (var i = _currentStepIndex + 1;
+                    i <= _currentStepIndex + previewCount;
+                    i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _buildTinyPictogramPreview(
+                      pictograms[i],
+                      i + 1,
+                      isNext: true,
+                    ),
+                  ),
+              ];
 
               return Column(
                 children: [
-                  // Label for upcoming pictograms preview
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
-                      LanguageProvider.localizationsOf(context).upcomingPictos,
+                      LanguageProvider.localizationsOf(context).pictoOverview,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppTheme.textSecondary,
                             fontWeight: FontWeight.w500,
@@ -828,35 +984,19 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Preview row with only actual pictograms (no empty boxes)
+                  // Scrolls horizontally when there are many completed steps;
+                  // reverse keeps the newest steps and upcoming ones in view.
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: SizedBox(
                       height: 60,
                       child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(
-                            previewCount, // Only show actual pictograms
-                            (previewIndex) {
-                              // Start from next pictogram (skip current)
-                              final actualIndex =
-                                  _currentStepIndex + 1 + previewIndex;
-                              final pictogram = pictograms[actualIndex];
-
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: _buildTinyPictogramPreview(
-                                  pictogram,
-                                  actualIndex + 1,
-                                  isCurrent: false,
-                                  isPrevious: false,
-                                  isNext: true,
-                                ),
-                              );
-                            },
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: previews,
                           ),
                         ),
                       ),
@@ -870,6 +1010,104 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
         // Add spacer for buttons area
         const SizedBox(height: 120),
       ],
+    );
+  }
+
+  Widget _buildTimeProgress(
+    List<Pictogram> pictograms,
+    AppLocalizations localizations,
+  ) {
+    final start = pictograms[_currentStepIndex].scheduledMinutes!;
+    int? end;
+    for (var i = _currentStepIndex + 1; i < pictograms.length; i++) {
+      end = pictograms[i].scheduledMinutes;
+      if (end != null) break;
+    }
+    final nowMinutes = _now.hour * 60 + _now.minute + _now.second / 60;
+    final hasNext = end != null && end > start;
+    final progress =
+        hasNext ? ((nowMinutes - start) / (end - start)).clamp(0.0, 1.0) : 0.0;
+    final minutesLeft = hasNext ? (end - nowMinutes).ceil() : 0;
+    final isOverdue = hasNext && nowMinutes >= end;
+
+    final timeStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: AppTheme.textPrimary,
+          fontWeight: FontWeight.bold,
+        );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.access_time, size: 20, color: AppTheme.textSecondary),
+              const SizedBox(width: 4),
+              Text(formatStepTime(start), style: timeStyle),
+              if (hasNext) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 14,
+                      backgroundColor:
+                          AppTheme.primaryBlueLight.withValues(alpha: 0.35),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isOverdue
+                            ? AppTheme.accentOrange
+                            : AppTheme.accentGreen,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(formatStepTime(end), style: timeStyle),
+              ],
+            ],
+          ),
+          if (hasNext && nowMinutes >= start) ...[
+            const SizedBox(height: 4),
+            Text(
+              isOverdue
+                  ? localizations.timeForNextStep
+                  : localizations.minutesLeft(minutesLeft),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isOverdue
+                        ? AppTheme.accentOrange
+                        : AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChoiceHint(AppLocalizations localizations) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.accentOrange,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.touch_app, color: Colors.white, size: 20),
+          const SizedBox(width: 6),
+          Text(
+            localizations.tapToChoose,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1117,12 +1355,79 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     );
   }
 
+  Widget _buildCompletionCheckmark() {
+    // Absorbs taps so the step cannot be skipped twice during the animation.
+    return Positioned.fill(
+      child: AbsorbPointer(
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.15),
+          alignment: Alignment.center,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.4, end: 1.0),
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutBack,
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                color: AppTheme.accentGreen,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                size: 150,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _nextStep() {
     if (kDebugMode) {
       debugPrint('[ClientModeSessionScreen] _nextStep called');
     }
-    if (!mounted) return;
+    if (!mounted || _isShowingCheckmark) return;
 
+    final pictograms = _modifiedSequence ?? _activeSet.pictograms;
+    if (_currentStepIndex >= pictograms.length - 1) {
+      if (kDebugMode) {
+        debugPrint('[ClientModeSessionScreen] Already at last step');
+      }
+      return;
+    }
+
+    unawaited(_playCompletionSound());
+
+    if (!_completionCheckmarkEnabled) {
+      _advanceStep();
+      return;
+    }
+
+    setState(() {
+      _isShowingCheckmark = true;
+    });
+    _checkmarkTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      setState(() {
+        _isShowingCheckmark = false;
+      });
+      _advanceStep();
+    });
+  }
+
+  void _advanceStep() {
     final pictograms = _modifiedSequence ?? _activeSet.pictograms;
     if (_currentStepIndex < pictograms.length - 1) {
       if (kDebugMode) {
@@ -1149,6 +1454,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   void _previousStep() {
     if (kDebugMode) {
       debugPrint('[ClientModeSessionScreen] _previousStep called');
+    }
+    if (_isShowingCheckmark) {
+      _checkmarkTimer?.cancel();
+      setState(() {
+        _isShowingCheckmark = false;
+      });
     }
     if (_currentStepIndex > 0) {
       if (kDebugMode) {
@@ -1190,6 +1501,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
     if (result != null) {
       setState(() {
         _modifiedSequence = result;
+        _chosenOptions.clear();
         // Reset to first step after modification
         _currentStepIndex = 0;
       });
@@ -1375,6 +1687,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
                       color: AppTheme.primaryBlue,
                     ),
             ),
+            if (pictogram.isNegated)
+              const Positioned.fill(child: NotCrossOverlay()),
             // Step number badge
             Positioned(
               bottom: 2,

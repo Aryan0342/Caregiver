@@ -28,6 +28,18 @@ class AppLocalizations {
   String get next => _language == AppLanguage.dutch ? 'Volgende' : 'Next';
   String get previous => _language == AppLanguage.dutch ? 'Vorige' : 'Previous';
   String get back => _language == AppLanguage.dutch ? 'Terug' : 'Back';
+  String get completionCheckmark => _language == AppLanguage.dutch
+      ? 'Vinkje na voltooien'
+      : 'Completion check mark';
+  String get completionCheckmarkDescription => _language == AppLanguage.dutch
+      ? 'Toon een groot vinkje bij Volgende'
+      : 'Show a large check mark when pressing Next';
+  String get completionSound => _language == AppLanguage.dutch
+      ? 'Geluid na voltooien'
+      : 'Completion sound';
+  String get completionSoundDescription => _language == AppLanguage.dutch
+      ? 'Speel een geluid af bij Volgende'
+      : 'Play a sound when pressing Next';
   String get loading =>
       _language == AppLanguage.dutch ? 'Laden...' : 'Loading...';
   String get error => _language == AppLanguage.dutch ? 'Fout' : 'Error';
@@ -707,6 +719,47 @@ class AppLocalizations {
   String get upcomingPictos => _language == AppLanguage.dutch
       ? 'Aankomende picto\'s'
       : 'Upcoming pictos';
+  String get stepTime => _language == AppLanguage.dutch ? 'Tijd' : 'Time';
+  String get removeTime =>
+      _language == AppLanguage.dutch ? 'Tijd verwijderen' : 'Remove time';
+  String get notificationOn =>
+      _language == AppLanguage.dutch ? 'Melding aan' : 'Notification on';
+  String get notificationOff =>
+      _language == AppLanguage.dutch ? 'Melding uit' : 'Notification off';
+  String get notificationsDenied => _language == AppLanguage.dutch
+      ? 'Meldingen staan uit voor deze app. Zet ze aan in de instellingen van je telefoon.'
+      : 'Notifications are turned off for this app. Turn them on in your phone settings.';
+  String timeForStep(String keyword) => _language == AppLanguage.dutch
+      ? 'Tijd voor: $keyword'
+      : 'Time for: $keyword';
+  String minutesLeft(int minutes) =>
+      _language == AppLanguage.dutch ? 'Nog $minutes min' : '$minutes min left';
+  String get timeForNextStep => _language == AppLanguage.dutch
+      ? 'Tijd voor de volgende stap!'
+      : 'Time for the next step!';
+  String get pictoReminders => _language == AppLanguage.dutch
+      ? 'Picto-herinneringen'
+      : 'Picto reminders';
+  String get notHappening => _language == AppLanguage.dutch ? 'Niet' : 'Not';
+  String get choiceOptions =>
+      _language == AppLanguage.dutch ? 'Keuzeopties' : 'Choice options';
+  String get addChoiceOptions => _language == AppLanguage.dutch
+      ? 'Keuzeopties toevoegen'
+      : 'Add choice options';
+  String get editChoiceOptions =>
+      _language == AppLanguage.dutch ? 'Opties wijzigen' : 'Edit options';
+  String get removeChoiceOptions =>
+      _language == AppLanguage.dutch ? 'Opties verwijderen' : 'Remove options';
+  String choiceCount(int count) =>
+      _language == AppLanguage.dutch ? '$count keuzes' : '$count choices';
+  String get makeAChoice =>
+      _language == AppLanguage.dutch ? 'Maak een keuze' : 'Make a choice';
+  String get tapToChoose =>
+      _language == AppLanguage.dutch ? 'Tik om te kiezen' : 'Tap to choose';
+  String get allCategories => _language == AppLanguage.dutch ? 'Alle' : 'All';
+  String get pictoOverview => _language == AppLanguage.dutch
+      ? 'Gedane en aankomende picto\'s'
+      : 'Done and upcoming pictos';
   String get categories =>
       _language == AppLanguage.dutch ? 'Categorieën' : 'Categories';
   // ARASAAC Category translations

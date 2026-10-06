@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 import WatchConnectivity
 
 @UIApplicationMain
@@ -15,6 +16,9 @@ import WatchConnectivity
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+
+    // Show step reminders (flutter_local_notifications) while the app is open.
+    UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
 
     if let controller = window?.rootViewController as? FlutterViewController {
       let channel = FlutterMethodChannel(

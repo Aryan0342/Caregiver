@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../models/pictogram_model.dart';
+import '../widgets/not_cross_overlay.dart';
+import '../widgets/pictogram_choices.dart';
+import '../widgets/step_time_controls.dart';
 import '../models/set_model.dart';
 import '../services/set_service.dart';
 import '../services/client_service.dart';
@@ -116,6 +119,26 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
     setState(() {
       final item = _selectedPictograms.removeAt(oldIndex);
       _selectedPictograms.insert(newIndex, item);
+    });
+  }
+
+  void _setChoices(int index, List<Pictogram> choices) {
+    setState(() {
+      _selectedPictograms[index] =
+          _selectedPictograms[index].copyWith(choices: choices);
+    });
+  }
+
+  void _updatePictogram(int index, Pictogram updated) {
+    setState(() {
+      _selectedPictograms[index] = updated;
+    });
+  }
+
+  void _setNegated(int index, bool isNegated) {
+    setState(() {
+      _selectedPictograms[index] =
+          _selectedPictograms[index].copyWith(isNegated: isNegated);
     });
   }
 
@@ -881,33 +904,43 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                   color: AppTheme.primaryBlueLight.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: pictogram.imageUrl.isNotEmpty
-                      ? Image.network(
-                          pictogram.imageUrl, // Cloudinary URL
-                          fit: BoxFit.contain,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppTheme.primaryBlue),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(11),
+                        child: pictogram.imageUrl.isNotEmpty
+                            ? Image.network(
+                                pictogram.imageUrl, // Cloudinary URL
+                                fit: BoxFit.contain,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          AppTheme.primaryBlue),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(
+                                  _getIconForKeyword(pictogram.keyword),
+                                  size: 32,
+                                  color: AppTheme.primaryBlue,
+                                ),
+                              )
+                            : Icon(
+                                _getIconForKeyword(pictogram.keyword),
+                                size: 32,
+                                color: AppTheme.primaryBlue,
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            _getIconForKeyword(pictogram.keyword),
-                            size: 32,
-                            color: AppTheme.primaryBlue,
-                          ),
-                        )
-                      : Icon(
-                          _getIconForKeyword(pictogram.keyword),
-                          size: 32,
-                          color: AppTheme.primaryBlue,
-                        ),
+                      ),
+                    ),
+                    if (pictogram.isNegated)
+                      const Positioned.fill(child: NotCrossOverlay()),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -945,10 +978,68 @@ class _CreateSetScreenState extends State<CreateSetScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    // "Not" checkbox: step is not going to happen
+                    InkWell(
+                      onTap: () => _setNegated(index, !pictogram.isNegated),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: Checkbox(
+                              value: pictogram.isNegated,
+                              activeColor: AppTheme.accentRed,
+                              onChanged: (value) =>
+                                  _setNegated(index, value ?? false),
+                            ),
+                          ),
+                          Text(
+                            LanguageProvider.localizationsOf(context)
+                                .notHappening,
+                            style: TextStyle(
+                              color: pictogram.isNegated
+                                  ? AppTheme.accentRed
+                                  : AppTheme.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Planned time and notification for this step
+                    StepTimeControls(
+                      pictogram: pictogram,
+                      onChanged: (updated) => _updatePictogram(index, updated),
+                    ),
+                    if (pictogram.hasChoices) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '${LanguageProvider.localizationsOf(context).choiceCount(pictogram.choices.length)}: '
+                        '${pictogram.choices.map((c) => c.keyword).join(', ')}',
+                        style: TextStyle(
+                          color: AppTheme.accentOrange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(width: 8),
+              // Choice options (selection pop-up during a session)
+              ChoiceOptionsButton(
+                pictogram: pictogram,
+                onChanged: (choices) => _setChoices(index, choices),
+              ),
               // Delete button
               IconButton(
                 icon: Icon(

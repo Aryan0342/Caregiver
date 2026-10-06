@@ -48,10 +48,11 @@ class CustomPictogramService {
 
       // Sort alphabetically by keyword (ascending)
       pictograms.sort((a, b) => a.keyword.compareTo(b.keyword));
+      final uniquePictograms = removeDuplicates(pictograms);
 
       debugPrint(
-          'Returning ${pictograms.length} pictograms for category $categoryId (sorted alphabetically)');
-      return pictograms;
+          'Returning ${uniquePictograms.length} pictograms for category $categoryId (sorted alphabetically)');
+      return uniquePictograms;
     } catch (e) {
       // Return empty list on error, but log detailed error
       debugPrint('Error fetching pictograms by category ($categoryId): $e');
@@ -122,7 +123,7 @@ class CustomPictogramService {
           .orderBy('keyword')
           .get();
 
-      return querySnapshot.docs.map((doc) {
+      return removeDuplicates(querySnapshot.docs.map((doc) {
         final data = doc.data();
         return Pictogram(
           id: -int.parse(doc.id), // Negative ID for custom pictograms
@@ -131,7 +132,7 @@ class CustomPictogramService {
           imageUrl: data['imageUrl'] as String? ?? '', // Cloudinary URL
           description: data['description'] as String?,
         );
-      }).toList();
+      }).toList());
     } catch (e) {
       return [];
     }
@@ -187,9 +188,10 @@ class CustomPictogramService {
       }).toList();
 
       results.sort((a, b) => a.keyword.compareTo(b.keyword));
+      final uniqueResults = removeDuplicates(results);
       debugPrint(
-          'Search returned ${results.length} matching pictograms (from whole DB)');
-      return results;
+          'Search returned ${uniqueResults.length} matching pictograms (from whole DB)');
+      return uniqueResults;
     } catch (e) {
       debugPrint('Error searching pictograms: $e');
       return [];
@@ -198,7 +200,7 @@ class CustomPictogramService {
 
   /// Normalize string by removing accents and special characters for better search matching
   /// This helps with searching Dutch keywords that may have accents
-  String _normalizeString(String input) {
+  static String _normalizeString(String input) {
     // Remove common accents and normalize characters
     return input
         .replaceAll('é', 'e')
@@ -224,6 +226,29 @@ class CustomPictogramService {
 
   /// Parse document ID to integer (negative for custom pictograms)
   /// Handles both numeric and non-numeric document IDs
+  /// Removes pictograms that appear more than once, e.g. when the same
+  /// pictogram was uploaded twice. Pictograms with the same keyword (ignoring
+  /// case, accents and extra spaces) count as duplicates; the first one with
+  /// an image is kept. Order is preserved.
+  static List<Pictogram> removeDuplicates(List<Pictogram> pictograms) {
+    final byKey = <String, int>{};
+    final unique = <Pictogram>[];
+    for (final pictogram in pictograms) {
+      final key = _normalizeString(pictogram.keyword.toLowerCase())
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' ');
+      final existingIndex = byKey[key];
+      if (existingIndex == null) {
+        byKey[key] = unique.length;
+        unique.add(pictogram);
+      } else if (unique[existingIndex].imageUrl.isEmpty &&
+          pictogram.imageUrl.isNotEmpty) {
+        unique[existingIndex] = pictogram;
+      }
+    }
+    return unique;
+  }
+
   int _parsePictogramId(String docId) {
     try {
       return -int.parse(docId);
