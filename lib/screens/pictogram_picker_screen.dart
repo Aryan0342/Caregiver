@@ -11,6 +11,7 @@ import '../models/client_profile_model.dart';
 import 'request_picto_screen.dart';
 import 'create_set_screen.dart';
 import '../utils/pictogram_image.dart';
+import '../widgets/import_set_dialog.dart';
 
 class PictogramPickerScreen extends StatefulWidget {
   final List<Pictogram>? initialSelection;
@@ -405,7 +406,8 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                       },
                                     ),
                     ),
-                    // Bottom bar with Done and Request picto buttons
+                    // Bottom bar: Done (once items are selected) above the
+                    // Request picto (75%) and Import set (25%) buttons
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -421,47 +423,12 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                         ],
                       ),
                       child: SafeArea(
-                        child: Row(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Request picto button (moved to left)
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const RequestPictoScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.add_circle_outline,
-                                    color: Colors.white, size: 20),
-                                label: Text(
-                                  localizations.requestPicto,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryBlue,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (_selectedPictograms.isNotEmpty)
-                              const SizedBox(width: 12),
-                            // Done button (moved to right, only show if items are selected)
-                            if (_selectedPictograms.isNotEmpty)
-                              Expanded(
+                            if (_selectedPictograms.isNotEmpty) ...[
+                              SizedBox(
+                                width: double.infinity,
                                 child: ElevatedButton.icon(
                                   onPressed: _confirmSelection,
                                   icon: const Icon(Icons.check,
@@ -484,6 +451,94 @@ class _PictogramPickerScreenState extends State<PictogramPickerScreen> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                            ],
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const RequestPictoScreen(),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.add_circle_outline,
+                                          color: Colors.white, size: 20),
+                                      label: Text(
+                                        localizations.requestPicto,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppTheme.primaryBlue,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Choice pickers return pictograms, not sets
+                                  if (!widget.returnSelection) ...[
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 1,
+                                      child: Tooltip(
+                                        message:
+                                            localizations.importPictogramSet,
+                                        child: ElevatedButton(
+                                          onPressed: () =>
+                                              showImportSetDialog(context),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                AppTheme.primaryBlue,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 4, vertical: 8),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.add_link,
+                                                  size: 20),
+                                              const SizedBox(height: 2),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  localizations.importAction,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),

@@ -14,6 +14,7 @@ import '../models/client_profile_model.dart';
 import 'pictogram_picker_screen.dart';
 import 'clients_screen.dart';
 import '../utils/pictogram_image.dart';
+import '../widgets/import_set_dialog.dart';
 
 enum _SetMenuAction { exportPdf, shareLink, delete }
 
@@ -455,7 +456,7 @@ class _MySetsScreenState extends State<MySetsScreen> {
                         icon: const Icon(Icons.add_link),
                         label: Text(localizations.importPictogramSet),
                         onPressed: () =>
-                            _showImportDialog(context, shareService),
+                            showImportSetDialog(context, shareService),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
                           foregroundColor: Colors.white,
@@ -908,69 +909,6 @@ class _MySetsScreenState extends State<MySetsScreen> {
         }
         return;
       }
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${localizations.importFailed}: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _showImportDialog(
-    BuildContext context,
-    SetShareService shareService,
-  ) async {
-    final localizations = LanguageProvider.localizationsOf(context);
-    final controller = TextEditingController();
-
-    final token = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.importSet),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: localizations.pasteShareLink,
-            prefixIcon: const Icon(Icons.link_rounded),
-          ),
-          textInputAction: TextInputAction.done,
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(localizations.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(localizations.importAction),
-          ),
-        ],
-      ),
-    );
-
-    if (token == null || token.isEmpty) return;
-
-    try {
-      await shareService.importSharedSet(token);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localizations.importSuccess),
-          backgroundColor: AppTheme.accentGreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
