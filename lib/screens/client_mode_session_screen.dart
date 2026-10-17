@@ -44,7 +44,8 @@ class ClientModeSessionScreen extends StatefulWidget {
       _ClientModeSessionScreenState();
 }
 
-class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
+class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
+    with WidgetsBindingObserver {
   int _currentStepIndex = 0;
   DateTime? _lastExitAttempt;
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
@@ -65,6 +66,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   DateTime _now = DateTime.now();
   // Sequence and step the step notifications were last scheduled for.
   String? _notificationScheduleKey;
+  // Step notifications are only scheduled while the app is in the
+  // background; in the app the session screen itself shows the step.
+  bool _isAppInForeground = true;
   late PictogramSet _activeSet;
   List<ClientProfile> _sidebarClients = <ClientProfile>[];
   bool _isLoadingClients = true;
@@ -74,6 +78,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _activeSet = widget.set;
     _loadSessionPreferences();
     _clockTimer = Timer.periodic(const Duration(seconds: 20), (_) {
@@ -235,7 +240,22 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _isAppInForeground = true;
+      _notificationScheduleKey = null;
+      unawaited(StepNotificationService.instance.cancelAll());
+    } else if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
+      if (!_isAppInForeground) return;
+      _isAppInForeground = false;
+      _scheduleStepNotificationsIfNeeded();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _checkmarkTimer?.cancel();
     _clockTimer?.cancel();
     unawaited(StepNotificationService.instance.cancelAll());
@@ -268,7 +288,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen> {
   Widget build(BuildContext context) {
     final localizations = LanguageProvider.localizationsOf(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _scheduleStepNotificationsIfNeeded();
+      if (mounted && !_isAppInForeground) {
+        _scheduleStepNotificationsIfNeeded();
+      }
     });
 
     return PopScope(

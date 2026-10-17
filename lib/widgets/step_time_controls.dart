@@ -39,9 +39,15 @@ class StepTimeControls extends StatelessWidget {
       ),
     );
     if (picked == null) return;
-    onChanged(pictogram.copyWith(
+    final timed = pictogram.copyWith(
       scheduledTime: formatStepTime(picked.hour * 60 + picked.minute),
-    ));
+    );
+    // A newly planned time notifies by default; the bell turns it off.
+    if (minutes == null && !pictogram.notify && context.mounted) {
+      await _enableNotify(context, timed);
+    } else {
+      onChanged(timed);
+    }
   }
 
   Future<void> _toggleNotify(BuildContext context) async {
@@ -49,10 +55,14 @@ class StepTimeControls extends StatelessWidget {
       onChanged(pictogram.copyWith(notify: false));
       return;
     }
+    await _enableNotify(context, pictogram);
+  }
+
+  Future<void> _enableNotify(BuildContext context, Pictogram step) async {
     final localizations = LanguageProvider.localizationsOf(context);
     final messenger = ScaffoldMessenger.of(context);
     final allowed = await StepNotificationService.instance.requestPermission();
-    onChanged(pictogram.copyWith(notify: true));
+    onChanged(step.copyWith(notify: true));
     if (!allowed) {
       messenger.showSnackBar(
         SnackBar(

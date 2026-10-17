@@ -77,8 +77,8 @@ class StepNotificationService {
     return false;
   }
 
-  /// Replaces any scheduled step notifications with one for each step after
-  /// [currentIndex] that has a planned time later today and notifications
+  /// Replaces any scheduled step notifications with one for each step from
+  /// [currentIndex] on that has a planned time later today and notifications
   /// enabled. [titleFor] builds the (localized) notification title.
   Future<void> scheduleForSteps({
     required List<Pictogram> steps,
@@ -111,7 +111,7 @@ class StepNotificationService {
       );
 
       final now = tz.TZDateTime.now(tz.local);
-      for (var i = currentIndex + 1; i < steps.length; i++) {
+      for (var i = currentIndex; i < steps.length; i++) {
         final step = steps[i];
         final minutes = step.scheduledMinutes;
         if (!step.notify || minutes == null) continue;
