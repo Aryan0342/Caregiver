@@ -70,5 +70,7 @@
 	<string>Face ID is nodig om de app te ontgrendelen.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera toegang is nodig voor Face ID verificatie.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Toegang is nodig om picto's in je foto's op te slaan.</string>
 </dict>
 </plist>

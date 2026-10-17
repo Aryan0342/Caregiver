@@ -491,6 +491,14 @@ class AppLocalizations {
       : 'Pictogram set imported';
   String get importFailed =>
       _language == AppLanguage.dutch ? 'Importeren mislukt' : 'Import failed';
+  String get downloadPicto =>
+      _language == AppLanguage.dutch ? 'Downloaden' : 'Download';
+  String get pictoDownloaded => _language == AppLanguage.dutch
+      ? "Opgeslagen in je foto's"
+      : 'Saved to your photos';
+  String get pictoDownloadFailed => _language == AppLanguage.dutch
+      ? 'Downloaden mislukt, probeer opnieuw'
+      : 'Download failed, try again';
   String get singleUsePictoreeks => _language == AppLanguage.dutch
       ? 'Eenmalige pictoreeks'
       : 'Single-use pictoreeks';

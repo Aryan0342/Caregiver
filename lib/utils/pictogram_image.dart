@@ -27,6 +27,18 @@ ImageProvider pictogramImage(String imageUrl, PictogramImageSize size) {
 /// Adds a Cloudinary transformation (resize + WebP + automatic quality) to
 /// [imageUrl]. Non-Cloudinary URLs are returned unchanged.
 String optimizedPictogramUrl(String imageUrl, PictogramImageSize size) {
+  return _cloudinaryUrl(
+      imageUrl, 'w_${size.maxWidth},c_limit,f_webp,q_auto');
+}
+
+/// URL for saving [imageUrl] to the photo library: a PNG, which every
+/// gallery app can show, at the size of [PictogramImageSize.large].
+String downloadPictogramUrl(String imageUrl) {
+  return _cloudinaryUrl(
+      imageUrl, 'w_${PictogramImageSize.large.maxWidth},c_limit,f_png');
+}
+
+String _cloudinaryUrl(String imageUrl, String transformation) {
   const uploadSegment = '/image/upload/';
   if (!imageUrl.contains('res.cloudinary.com') ||
       !imageUrl.contains(uploadSegment)) {
@@ -34,6 +46,6 @@ String optimizedPictogramUrl(String imageUrl, PictogramImageSize size) {
   }
   return imageUrl.replaceFirst(
     uploadSegment,
-    '${uploadSegment}w_${size.maxWidth},c_limit,f_webp,q_auto/',
+    '$uploadSegment$transformation/',
   );
 }

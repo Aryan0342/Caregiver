@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
 import '../theme.dart';
 import '../models/pictogram_model.dart';
 import '../services/custom_pictogram_service.dart';
@@ -584,7 +586,8 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+                    _PictogramDownloadButton(pictogram: pictogram),
                   ],
                 ),
               ),
@@ -710,6 +713,95 @@ class _PictoLibraryScreenState extends State<PictoLibraryScreen> {
               );
             }).toList(),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _DownloadState { idle, busy, done, failed }
+
+/// Saves a pictogram as a PNG to the device's photo library.
+class _PictogramDownloadButton extends StatefulWidget {
+  final Pictogram pictogram;
+
+  const _PictogramDownloadButton({required this.pictogram});
+
+  @override
+  State<_PictogramDownloadButton> createState() =>
+      _PictogramDownloadButtonState();
+}
+
+class _PictogramDownloadButtonState extends State<_PictogramDownloadButton> {
+  _DownloadState _state = _DownloadState.idle;
+
+  Future<void> _download() async {
+    setState(() => _state = _DownloadState.busy);
+    try {
+      if (!await Gal.hasAccess() && !await Gal.requestAccess()) {
+        throw Exception('No photo library access');
+      }
+      final response = await http
+          .get(Uri.parse(downloadPictogramUrl(widget.pictogram.imageUrl)))
+          .timeout(const Duration(seconds: 20));
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+      await Gal.putImageBytes(
+        response.bodyBytes,
+        name: widget.pictogram.keyword.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'),
+      );
+      if (mounted) setState(() => _state = _DownloadState.done);
+    } catch (e) {
+      debugPrint('Picto download failed: $e');
+      if (mounted) setState(() => _state = _DownloadState.failed);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = LanguageProvider.localizationsOf(context);
+    final (icon, label, color) = switch (_state) {
+      _DownloadState.done => (
+          Icons.check_circle,
+          localizations.pictoDownloaded,
+          AppTheme.accentGreen,
+        ),
+      _DownloadState.failed => (
+          Icons.error_outline,
+          localizations.pictoDownloadFailed,
+          Colors.red,
+        ),
+      _ => (Icons.download_rounded, localizations.downloadPicto,
+          AppTheme.primaryBlue),
+    };
+
+    return ElevatedButton.icon(
+      onPressed: _state == _DownloadState.busy || _state == _DownloadState.done
+          ? null
+          : _download,
+      icon: _state == _DownloadState.busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
+            )
+          : Icon(icon, color: Colors.white),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        disabledBackgroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
