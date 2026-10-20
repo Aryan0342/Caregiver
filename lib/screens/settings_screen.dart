@@ -30,6 +30,10 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
       SessionPreferenceService();
   bool _completionCheckmarkEnabled = true;
   bool _completionSoundEnabled = true;
+  int _previousPreviewCount =
+      SessionPreferenceService.defaultPreviousPreviewCount;
+  int _upcomingPreviewCount =
+      SessionPreferenceService.defaultUpcomingPreviewCount;
 
   @override
   void initState() {
@@ -42,11 +46,63 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
         await _sessionPreferenceService.isCompletionCheckmarkEnabled();
     final soundEnabled =
         await _sessionPreferenceService.isCompletionSoundEnabled();
+    final previousPreviewCount =
+        await _sessionPreferenceService.getPreviousPreviewCount();
+    final upcomingPreviewCount =
+        await _sessionPreferenceService.getUpcomingPreviewCount();
     if (!mounted) return;
     setState(() {
       _completionCheckmarkEnabled = checkmarkEnabled;
       _completionSoundEnabled = soundEnabled;
+      _previousPreviewCount = previousPreviewCount;
+      _upcomingPreviewCount = upcomingPreviewCount;
     });
+  }
+
+  Future<void> _setPreviousPreviewCount(int count) async {
+    setState(() {
+      _previousPreviewCount = count;
+    });
+    await _sessionPreferenceService.setPreviousPreviewCount(count);
+  }
+
+  Future<void> _setUpcomingPreviewCount(int count) async {
+    setState(() {
+      _upcomingPreviewCount = count;
+    });
+    await _sessionPreferenceService.setUpcomingPreviewCount(count);
+  }
+
+  Widget _buildPreviewCountRow({
+    required String label,
+    required int value,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Row(
+      children: [
+        Expanded(child: Text(label)),
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          color: AppTheme.primaryBlue,
+          onPressed: value > 0 ? () => onChanged(value - 1) : null,
+        ),
+        SizedBox(
+          width: 28,
+          child: Text(
+            '$value',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          color: AppTheme.primaryBlue,
+          onPressed: value < SessionPreferenceService.maxPreviewCount
+              ? () => onChanged(value + 1)
+              : null,
+        ),
+      ],
+    );
   }
 
   Future<void> _setCompletionCheckmarkEnabled(bool enabled) async {
@@ -646,6 +702,63 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                       ),
                       onTap: () => _setCompletionSoundEnabled(
                         !_completionSoundEnabled,
+                      ),
+                    ),
+                  ),
+
+                  // Number of done and upcoming pictos in client session
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 8),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlueLight.withValues(
+                                  alpha: 0.3,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.view_carousel_outlined,
+                                color: AppTheme.primaryBlue,
+                              ),
+                            ),
+                            title: Text(
+                              localizations.pictoOverview,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle:
+                                Text(localizations.pictoOverviewDescription),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 72, right: 8),
+                            child: Column(
+                              children: [
+                                _buildPreviewCountRow(
+                                  label: localizations.previousPictosCount,
+                                  value: _previousPreviewCount,
+                                  onChanged: _setPreviousPreviewCount,
+                                ),
+                                _buildPreviewCountRow(
+                                  label: localizations.upcomingPictosCount,
+                                  value: _upcomingPreviewCount,
+                                  onChanged: _setUpcomingPreviewCount,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

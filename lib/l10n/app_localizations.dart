@@ -40,6 +40,13 @@ class AppLocalizations {
   String get completionSoundDescription => _language == AppLanguage.dutch
       ? 'Speel een geluid af bij Volgende'
       : 'Play a sound when pressing Next';
+  String get pictoOverviewDescription => _language == AppLanguage.dutch
+      ? 'Hoeveel picto\'s je onder de huidige picto ziet'
+      : 'How many pictos are shown below the current picto';
+  String get previousPictosCount =>
+      _language == AppLanguage.dutch ? 'Gedane picto\'s' : 'Done pictos';
+  String get upcomingPictosCount =>
+      _language == AppLanguage.dutch ? 'Aankomende picto\'s' : 'Upcoming pictos';
   String get loading =>
       _language == AppLanguage.dutch ? 'Laden...' : 'Loading...';
   String get error => _language == AppLanguage.dutch ? 'Fout' : 'Error';

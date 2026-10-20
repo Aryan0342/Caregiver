@@ -58,6 +58,10 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       SessionPreferenceService();
   bool _completionCheckmarkEnabled = true;
   bool _completionSoundEnabled = true;
+  int _previousPreviewCount =
+      SessionPreferenceService.defaultPreviousPreviewCount;
+  int _upcomingPreviewCount =
+      SessionPreferenceService.defaultUpcomingPreviewCount;
   final AudioPlayer _completionSoundPlayer = AudioPlayer();
   bool _isShowingCheckmark = false;
   Timer? _checkmarkTimer;
@@ -132,10 +136,16 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
         await _sessionPreferenceService.isCompletionCheckmarkEnabled();
     final soundEnabled =
         await _sessionPreferenceService.isCompletionSoundEnabled();
+    final previousPreviewCount =
+        await _sessionPreferenceService.getPreviousPreviewCount();
+    final upcomingPreviewCount =
+        await _sessionPreferenceService.getUpcomingPreviewCount();
     if (!mounted) return;
     setState(() {
       _completionCheckmarkEnabled = checkmarkEnabled;
       _completionSoundEnabled = soundEnabled;
+      _previousPreviewCount = previousPreviewCount;
+      _upcomingPreviewCount = upcomingPreviewCount;
     });
   }
 
@@ -962,16 +972,20 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
         const SizedBox(height: 16),
 
         // Pictograms preview (tiny, under the title) - shows completed
-        // pictograms (grayed out with a check mark) followed by up to 3 upcoming.
+        // pictograms (grayed out with a check mark) followed by upcoming ones;
+        // how many of each is set in the settings.
         if (pictograms.length > 1)
           Builder(
             builder: (context) {
               final remainingCount =
                   pictograms.length - (_currentStepIndex + 1);
-              final previewCount = remainingCount > 3 ? 3 : remainingCount;
+              final previewCount =
+                  remainingCount.clamp(0, _upcomingPreviewCount);
+              final firstPrevious = (_currentStepIndex - _previousPreviewCount)
+                  .clamp(0, _currentStepIndex);
 
               final previews = <Widget>[
-                for (var i = 0; i < _currentStepIndex; i++)
+                for (var i = firstPrevious; i < _currentStepIndex; i++)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: _buildTinyPictogramPreview(
@@ -992,6 +1006,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
                     ),
                   ),
               ];
+              if (previews.isEmpty) return const SizedBox.shrink();
 
               return Column(
                 children: [
