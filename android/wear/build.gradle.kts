@@ -16,7 +16,7 @@ android {
         applicationId = "com.je_dag_in_beeld.caregiver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 100007
+        versionCode = 100008
         versionName = "1.1.9"
     }
 

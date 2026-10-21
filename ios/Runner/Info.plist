@@ -72,5 +72,7 @@
 	<string>Camera toegang is nodig voor Face ID verificatie.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Toegang is nodig om picto's in je foto's op te slaan.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Toegang is nodig om picto's in je foto's op te slaan.</string>
 </dict>
 </plist>
