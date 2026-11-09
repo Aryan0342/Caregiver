@@ -21,6 +21,10 @@ class Pictogram {
   /// Whether a notification is shown at [scheduledTime] during a session.
   final bool notify;
 
+  /// Optional countdown length, independent of the planned clock time.
+  final int? durationSeconds;
+  final bool autoAdvanceAfterTimer;
+
   const Pictogram({
     required this.id,
     required this.keyword,
@@ -32,6 +36,8 @@ class Pictogram {
     this.isNegated = false,
     this.scheduledTime,
     this.notify = false,
+    this.durationSeconds,
+    this.autoAdvanceAfterTimer = true,
   });
 
   bool get hasChoices => choices.isNotEmpty;
@@ -59,6 +65,9 @@ class Pictogram {
     String? scheduledTime,
     bool clearScheduledTime = false,
     bool? notify,
+    int? durationSeconds,
+    bool clearDuration = false,
+    bool? autoAdvanceAfterTimer,
   }) {
     return Pictogram(
       id: id ?? this.id,
@@ -72,6 +81,10 @@ class Pictogram {
       scheduledTime:
           clearScheduledTime ? null : (scheduledTime ?? this.scheduledTime),
       notify: notify ?? this.notify,
+      durationSeconds:
+          clearDuration ? null : (durationSeconds ?? this.durationSeconds),
+      autoAdvanceAfterTimer:
+          autoAdvanceAfterTimer ?? this.autoAdvanceAfterTimer,
     );
   }
 
@@ -89,6 +102,9 @@ class Pictogram {
       if (isNegated) 'isNegated': true,
       if (scheduledTime != null) 'scheduledTime': scheduledTime,
       if (notify) 'notify': true,
+      if (durationSeconds != null) 'durationSeconds': durationSeconds,
+      if (durationSeconds != null)
+        'autoAdvanceAfterTimer': autoAdvanceAfterTimer,
     };
   }
 
@@ -109,6 +125,12 @@ class Pictogram {
       isNegated: json['isNegated'] as bool? ?? false,
       scheduledTime: json['scheduledTime'] as String?,
       notify: json['notify'] as bool? ?? false,
+      autoAdvanceAfterTimer: json['autoAdvanceAfterTimer'] as bool? ?? true,
+      durationSeconds: json['durationSeconds'] is num &&
+              (json['durationSeconds'] as num) >= 1 &&
+              (json['durationSeconds'] as num) <= 86400
+          ? (json['durationSeconds'] as num).toInt()
+          : null,
     );
   }
 
