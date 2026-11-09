@@ -9,6 +9,63 @@ class AppLocalizations {
   // Expose the current language for comparison in LanguageProvider
   AppLanguage get currentLanguage => _language;
 
+  String get routineReminder => _language == AppLanguage.dutch
+      ? 'Routineherinnering'
+      : 'Routine reminder';
+  String get routineReminderDescription => _language == AppLanguage.dutch
+      ? 'Ontvang een melding met de vraag of u deze hele pictoreeks wilt starten.'
+      : 'Receive a notification asking if you would like to start this entire sequence.';
+  String get enableRoutineReminder => _language == AppLanguage.dutch
+      ? 'Herinnering inschakelen'
+      : 'Enable reminder';
+  String get reminderTime => _language == AppLanguage.dutch ? 'Tijd' : 'Time';
+  String get reminderDays =>
+      _language == AppLanguage.dutch ? 'Herhalen op' : 'Repeat on';
+  String get reminderEveryDay =>
+      _language == AppLanguage.dutch ? 'Elke dag' : 'Every day';
+  String get reminderSelectDays => _language == AppLanguage.dutch
+      ? 'Selecteer minstens één dag.'
+      : 'Select at least one day.';
+  String get reminderSaved => _language == AppLanguage.dutch
+      ? 'Herinnering opgeslagen'
+      : 'Reminder saved';
+  String get reminderPermissionNeeded => _language == AppLanguage.dutch
+      ? 'Sta meldingen toe in de apparaatinstellingen om herinneringen te ontvangen.'
+      : 'Allow notifications in your device settings to receive reminders.';
+  String get reminderSaveFailed => _language == AppLanguage.dutch
+      ? 'De herinnering kon niet worden opgeslagen. Probeer het opnieuw.'
+      : 'Could not save the reminder. Please try again.';
+  String get reminderUnavailable => _language == AppLanguage.dutch
+      ? 'Deze pictoreeks is niet meer beschikbaar.'
+      : 'This sequence is no longer available.';
+  String get reminderNotNow =>
+      _language == AppLanguage.dutch ? 'Niet nu' : 'Not now';
+  String routineStartPrompt(String name) => _language == AppLanguage.dutch
+      ? 'Wilt u "$name" starten?'
+      : 'Would you like to start "$name"?';
+  List<String> get reminderWeekdays => _language == AppLanguage.dutch
+      ? const [
+          'Maandag',
+          'Dinsdag',
+          'Woensdag',
+          'Donderdag',
+          'Vrijdag',
+          'Zaterdag',
+          'Zondag'
+        ]
+      : const [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday'
+        ];
+  String get reminderDeviceNote => _language == AppLanguage.dutch
+      ? 'Herinneringen herhalen elke week op dit apparaat, ook wanneer de app gesloten is. Zonder toestemming voor exacte alarmen kan Android meldingen later bezorgen.'
+      : 'Reminders repeat weekly on this device, even when the app is closed. Without exact alarm permission, Android may deliver reminders later.';
+
   // App name
   String get appName =>
       _language == AppLanguage.dutch ? 'Je Dag in Beeld' : 'Your Day in View';
@@ -31,6 +88,49 @@ class AppLocalizations {
   String get completionCheckmark => _language == AppLanguage.dutch
       ? 'Vinkje na voltooien'
       : 'Completion check mark';
+  String get autoAdvance => _language == AppLanguage.dutch
+      ? 'Automatisch naar de volgende picto'
+      : 'Automatically advance after timer';
+  String get autoAdvanceDescription => _language == AppLanguage.dutch
+      ? 'Ga naar de volgende picto wanneer deze timer afloopt.'
+      : 'Go to the next pictogram when this timer ends.';
+  String get pictogramTimer => 'Timer';
+  String get pictogramTimerSetting =>
+      _language == AppLanguage.dutch ? 'Pictogramtimer' : 'Pictogram timer';
+  String get pictogramTimerSettingDescription => _language == AppLanguage.dutch
+      ? 'Toon timers tijdens routines. Uitschakelen stopt timers en automatisch doorgaan; opgeslagen tijden blijven behouden.'
+      : 'Show timers during routines. Turning this off stops timers and timer-based auto-next; saved durations are kept.';
+  String get settingSaveFailed => _language == AppLanguage.dutch
+      ? 'Instelling kon niet worden opgeslagen. Probeer het opnieuw.'
+      : 'Could not save this setting. Please try again.';
+  String get startPictogramTimer =>
+      _language == AppLanguage.dutch ? 'Timer starten' : 'Start timer';
+  String get pausePictogramTimer =>
+      _language == AppLanguage.dutch ? 'Timer pauzeren' : 'Pause timer';
+  String get resumePictogramTimer =>
+      _language == AppLanguage.dutch ? 'Timer hervatten' : 'Resume timer';
+  String get restartPictogramTimer =>
+      _language == AppLanguage.dutch ? 'Timer herstarten' : 'Restart timer';
+  String get timerPaused =>
+      _language == AppLanguage.dutch ? 'Gepauzeerd' : 'Paused';
+  String get sessionTimerHint => _language == AppLanguage.dutch
+      ? 'Stel een timer in voor deze picto in de huidige sessie.'
+      : 'Set a timer for this pictogram in the current session.';
+  String get stepDuration =>
+      _language == AppLanguage.dutch ? 'Duur' : 'Duration';
+  String get durationMinutes =>
+      _language == AppLanguage.dutch ? 'Minuten' : 'Minutes';
+  String get durationSeconds =>
+      _language == AppLanguage.dutch ? 'Seconden' : 'Seconds';
+  String get removeDuration =>
+      _language == AppLanguage.dutch ? 'Duur verwijderen' : 'Remove duration';
+  String get invalidDuration => _language == AppLanguage.dutch
+      ? 'Kies een duur van 1 seconde tot 24 uur.'
+      : 'Choose a duration from 1 second to 24 hours.';
+  String get timerFinished =>
+      _language == AppLanguage.dutch ? 'Tijd is om' : 'Time is up';
+  String timeRemaining(String time) =>
+      _language == AppLanguage.dutch ? 'Nog $time' : '$time remaining';
   String get completionCheckmarkDescription => _language == AppLanguage.dutch
       ? 'Toon een groot vinkje bij Volgende'
       : 'Show a large check mark when pressing Next';
@@ -45,8 +145,9 @@ class AppLocalizations {
       : 'How many pictos are shown below the current picto';
   String get previousPictosCount =>
       _language == AppLanguage.dutch ? 'Gedane picto\'s' : 'Done pictos';
-  String get upcomingPictosCount =>
-      _language == AppLanguage.dutch ? 'Aankomende picto\'s' : 'Upcoming pictos';
+  String get upcomingPictosCount => _language == AppLanguage.dutch
+      ? 'Aankomende picto\'s'
+      : 'Upcoming pictos';
   String get loading =>
       _language == AppLanguage.dutch ? 'Laden...' : 'Loading...';
   String get error => _language == AppLanguage.dutch ? 'Fout' : 'Error';
