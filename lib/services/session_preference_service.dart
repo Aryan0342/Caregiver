@@ -5,6 +5,20 @@ class SessionPreferenceService {
   static const String _completionCheckmarkKey =
       'session_completion_checkmark_enabled';
   static const String _completionSoundKey = 'session_completion_sound_enabled';
+  static const String _pictogramTimerKey = 'pictogram_timer_enabled';
+
+  Future<bool> isPictogramTimerEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_pictogramTimerKey) ?? true;
+  }
+
+  Future<void> setPictogramTimerEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setBool(_pictogramTimerKey, enabled)) {
+      throw StateError('Could not save timer preference');
+    }
+  }
+
   static const String _previousPreviewCountKey =
       'session_previous_preview_count';
   static const String _upcomingPreviewCountKey =
