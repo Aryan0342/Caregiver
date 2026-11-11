@@ -30,6 +30,7 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
       SessionPreferenceService();
   bool _completionCheckmarkEnabled = true;
   bool _completionSoundEnabled = true;
+  bool _pictogramTimerEnabled = true;
   int _previousPreviewCount =
       SessionPreferenceService.defaultPreviousPreviewCount;
   int _upcomingPreviewCount =
@@ -46,6 +47,8 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
         await _sessionPreferenceService.isCompletionCheckmarkEnabled();
     final soundEnabled =
         await _sessionPreferenceService.isCompletionSoundEnabled();
+    final timerEnabled =
+        await _sessionPreferenceService.isPictogramTimerEnabled();
     final previousPreviewCount =
         await _sessionPreferenceService.getPreviousPreviewCount();
     final upcomingPreviewCount =
@@ -54,6 +57,7 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
     setState(() {
       _completionCheckmarkEnabled = checkmarkEnabled;
       _completionSoundEnabled = soundEnabled;
+      _pictogramTimerEnabled = timerEnabled;
       _previousPreviewCount = previousPreviewCount;
       _upcomingPreviewCount = upcomingPreviewCount;
     });
@@ -117,6 +121,19 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
       _completionSoundEnabled = enabled;
     });
     await _sessionPreferenceService.setCompletionSoundEnabled(enabled);
+  }
+
+  Future<void> _setPictogramTimerEnabled(bool enabled) async {
+    try {
+      await _sessionPreferenceService.setPictogramTimerEnabled(enabled);
+      if (mounted) setState(() => _pictogramTimerEnabled = enabled);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(LanguageProvider.localizationsOf(context).settingSaveFailed),
+      ));
+    }
   }
 
   /// Open donate link in browser
@@ -630,6 +647,22 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
                   ),
 
                   // Completion check mark in client session
+                  Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    child: SwitchListTile.adaptive(
+                      secondary: Icon(Icons.timer_outlined,
+                          color: AppTheme.primaryBlue),
+                      title: Text(localizations.pictogramTimerSetting,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle:
+                          Text(localizations.pictogramTimerSettingDescription),
+                      value: _pictogramTimerEnabled,
+                      onChanged: _setPictogramTimerEnabled,
+                    ),
+                  ),
                   Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 16,
