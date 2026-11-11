@@ -4,6 +4,7 @@ import '../models/pictogram_model.dart';
 import '../widgets/not_cross_overlay.dart';
 import '../widgets/pictogram_choices.dart';
 import '../widgets/step_time_controls.dart';
+import '../widgets/step_duration_control.dart';
 import '../models/set_model.dart';
 import '../services/set_service.dart';
 import '../providers/language_provider.dart';
@@ -524,6 +525,10 @@ class _EditSetScreenState extends State<EditSetScreen> {
                     const SizedBox(height: 4),
                     // Planned time and notification for this step
                     StepTimeControls(
+                      pictogram: pictogram,
+                      onChanged: (updated) => _updatePictogram(index, updated),
+                    ),
+                    StepDurationControl(
                       pictogram: pictogram,
                       onChanged: (updated) => _updatePictogram(index, updated),
                     ),
