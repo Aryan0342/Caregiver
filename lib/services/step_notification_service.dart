@@ -18,14 +18,39 @@ class StepNotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  Future<bool>? _initializing;
   bool _hasScheduled = false;
+
+  /// Shared notification plugin: initializing a second instance would replace
+  /// the response callback used for sequence reminders.
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+  final ValueNotifier<String?> pendingSequenceReminder = ValueNotifier(null);
+
+  void _receivePayload(String? payload) {
+    if (payload?.startsWith('sequence:') ?? false) {
+      pendingSequenceReminder.value = payload;
+    }
+  }
+
+  Future<bool> ensureInitialized() async {
+    if (_initialized) return true;
+    final existing = _initializing;
+    if (existing != null) return existing;
+    final initialization = _initialize();
+    _initializing = initialization;
+    try {
+      return await initialization;
+    } finally {
+      _initializing = null;
+    }
+  }
 
   bool get _isSupported =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
-  Future<bool> _ensureInitialized() async {
+  Future<bool> _initialize() async {
     if (_initialized) return true;
     if (!_isSupported) return false;
     try {
@@ -33,6 +58,8 @@ class StepNotificationService {
       final timezone = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(timezone.identifier));
       await _plugin.initialize(
+        onDidReceiveNotificationResponse: (response) =>
+            _receivePayload(response.payload),
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(
@@ -43,6 +70,10 @@ class StepNotificationService {
         ),
       );
       _initialized = true;
+      final launch = await _plugin.getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp ?? false) {
+        _receivePayload(launch?.notificationResponse?.payload);
+      }
     } catch (e) {
       debugPrint('[StepNotificationService] Initialization failed: $e');
     }
@@ -52,7 +83,7 @@ class StepNotificationService {
   /// Asks the user for permission to show notifications. Returns whether
   /// notifications are allowed.
   Future<bool> requestPermission() async {
-    if (!await _ensureInitialized()) return false;
+    if (!await ensureInitialized()) return false;
     try {
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -90,7 +121,7 @@ class StepNotificationService {
     final hasNotifyingStep =
         steps.any((step) => step.notify && step.scheduledMinutes != null);
     if (!hasNotifyingStep && !_hasScheduled) return;
-    if (!await _ensureInitialized()) return;
+    if (!await ensureInitialized()) return;
 
     try {
       await _cancelUpcoming();
@@ -145,7 +176,7 @@ class StepNotificationService {
   /// time has passed are kept: Android may still be about to deliver them.
   Future<void> cancelAll() async {
     if (!_hasScheduled && !_initialized) return;
-    if (!await _ensureInitialized()) return;
+    if (!await ensureInitialized()) return;
     await _cancelUpcoming();
   }
 
@@ -155,6 +186,7 @@ class StepNotificationService {
       final pending = await _plugin.pendingNotificationRequests();
       for (final request in pending) {
         if (request.id < _idBase) continue;
+        if (request.payload?.startsWith('sequence:') ?? false) continue;
         final dueAt = DateTime.tryParse(request.payload ?? '');
         if (dueAt == null || dueAt.isAfter(now)) {
           await _plugin.cancel(id: request.id);
