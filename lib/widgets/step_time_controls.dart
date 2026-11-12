@@ -3,6 +3,7 @@ import '../models/pictogram_model.dart';
 import '../providers/language_provider.dart';
 import '../services/step_notification_service.dart';
 import '../theme.dart';
+import 'app_time_picker.dart';
 
 /// Formats minutes since midnight as "HH:mm".
 String formatStepTime(int minutes) {
@@ -25,18 +26,11 @@ class StepTimeControls extends StatelessWidget {
 
   Future<void> _pickTime(BuildContext context) async {
     final minutes = pictogram.scheduledMinutes;
-    final picked = await showTimePicker(
+    final picked = await showAppTimePicker(
       context: context,
-      // The keyboard entry mode overflows with the app's large button style,
-      // so only the dial is offered.
-      initialEntryMode: TimePickerEntryMode.dialOnly,
       initialTime: minutes != null
           ? TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60)
           : TimeOfDay.now(),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
     );
     if (picked == null) return;
     final timed = pictogram.copyWith(
