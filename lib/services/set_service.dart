@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/set_model.dart';
 import '../models/pictogram_model.dart';
 import 'custom_pictogram_service.dart';
+import 'sequence_reminder_service.dart';
 
 /// Service for managing pictogram sets in Firestore
 class SetService {
@@ -118,6 +119,7 @@ class SetService {
 
     try {
       await _firestore.collection(_collectionName).doc(setId).delete();
+      await SequenceReminderService.instance.remove(_currentUserId!, setId);
     } catch (e) {
       if (_isOfflineError(e)) {
         throw Exception(
@@ -139,6 +141,7 @@ class SetService {
           .get();
       for (final doc in snapshot.docs) {
         await doc.reference.delete();
+        await SequenceReminderService.instance.remove(_currentUserId!, doc.id);
       }
     } catch (e) {
       throw Exception('Failed to delete user sets: $e');
