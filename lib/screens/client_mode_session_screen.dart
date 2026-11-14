@@ -20,6 +20,10 @@ import 'pictogram_picker_screen.dart';
 import '../widgets/not_cross_overlay.dart';
 import '../widgets/pictogram_choices.dart';
 import '../widgets/step_time_controls.dart';
+import '../widgets/step_duration_control.dart';
+import '../widgets/visual_step_timer.dart';
+import '../services/step_countdown.dart';
+import '../routes/session_route_observer.dart';
 import '../utils/pictogram_image.dart';
 
 /// Client Mode Session Screen - Locked down AAC mode.
@@ -33,10 +37,12 @@ import '../utils/pictogram_image.dart';
 /// - Hidden exit mechanism (long-press corner or caregiver icon)
 class ClientModeSessionScreen extends StatefulWidget {
   final PictogramSet set;
+  final bool startFromBeginning;
 
   const ClientModeSessionScreen({
     super.key,
     required this.set,
+    this.startFromBeginning = false,
   });
 
   @override
@@ -45,7 +51,7 @@ class ClientModeSessionScreen extends StatefulWidget {
 }
 
 class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, RouteAware {
   int _currentStepIndex = 0;
   DateTime? _lastExitAttempt;
   List<Pictogram>? _modifiedSequence; // Temporary modified sequence (not saved)
@@ -58,6 +64,13 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       SessionPreferenceService();
   bool _completionCheckmarkEnabled = true;
   bool _completionSoundEnabled = true;
+  late final StepCountdown _stepCountdown;
+  ModalRoute<dynamic>? _observedRoute;
+  bool _preferencesLoaded = false;
+  bool _pictogramTimerEnabled = true;
+  bool _initialProgressReady = false;
+  bool _isFinishing = false;
+  bool _isChangingClient = false;
   int _previousPreviewCount =
       SessionPreferenceService.defaultPreviousPreviewCount;
   int _upcomingPreviewCount =
@@ -84,6 +97,9 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _activeSet = widget.set;
+    _stepCountdown = StepCountdown(
+      onElapsed: () => _completeCurrentStep(allowLast: true),
+    );
     _loadSessionPreferences();
     _clockTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted) return;
@@ -106,9 +122,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
         final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
         final clamped = index.clamp(0, maxIndex);
         if (clamped != _currentStepIndex) {
+          _checkmarkTimer?.cancel();
           setState(() {
+            _isShowingCheckmark = false;
             _currentStepIndex = clamped;
           });
+          _resetStepDuration();
           if (kDebugMode) {
             debugPrint(
                 '[ClientModeSessionScreen] Index updated from Firestore: $clamped');
@@ -136,17 +155,110 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
         await _sessionPreferenceService.isCompletionCheckmarkEnabled();
     final soundEnabled =
         await _sessionPreferenceService.isCompletionSoundEnabled();
+    bool timerEnabled;
+    try {
+      timerEnabled = await _sessionPreferenceService.isPictogramTimerEnabled();
+    } catch (_) {
+      timerEnabled = false;
+    }
     final previousPreviewCount =
         await _sessionPreferenceService.getPreviousPreviewCount();
     final upcomingPreviewCount =
         await _sessionPreferenceService.getUpcomingPreviewCount();
     if (!mounted) return;
+    final firstLoad = !_preferencesLoaded;
+    final timerSettingChanged = _pictogramTimerEnabled != timerEnabled;
     setState(() {
       _completionCheckmarkEnabled = checkmarkEnabled;
       _completionSoundEnabled = soundEnabled;
+      _pictogramTimerEnabled = timerEnabled;
       _previousPreviewCount = previousPreviewCount;
       _upcomingPreviewCount = upcomingPreviewCount;
+      _preferencesLoaded = true;
     });
+    if (firstLoad || timerSettingChanged) _resetStepDuration();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != _observedRoute) {
+      sessionRouteObserver.unsubscribe(this);
+      _observedRoute = route;
+      if (route != null) sessionRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPushNext() => _stepCountdown.pause();
+
+  @override
+  void didPopNext() {
+    _loadSessionPreferences().then((_) {
+      if (mounted &&
+          !_isChangingClient &&
+          ModalRoute.of(context)?.isCurrent == true) {
+        _stepCountdown.resume();
+      }
+    });
+  }
+
+  void _resetStepDuration() {
+    if (!_preferencesLoaded || !_initialProgressReady || _isFinishing) return;
+    if (!_pictogramTimerEnabled) {
+      _stepCountdown.stop();
+      return;
+    }
+    final steps = _modifiedSequence ?? _activeSet.pictograms;
+    if (steps.isEmpty || _currentStepIndex >= steps.length) {
+      _stepCountdown.stop();
+      return;
+    }
+    final step = steps[_currentStepIndex];
+    final choice = _chosenOptions[_currentStepIndex];
+    final seconds = step.durationSeconds ?? choice?.durationSeconds;
+    final autoAdvance = step.durationSeconds != null
+        ? step.autoAdvanceAfterTimer
+        : choice?.autoAdvanceAfterTimer ?? step.autoAdvanceAfterTimer;
+    _stepCountdown.start(seconds == null ? null : Duration(seconds: seconds),
+        autoAdvance: autoAdvance);
+  }
+
+  Future<void> _configureCurrentTimer() async {
+    if (!_pictogramTimerEnabled ||
+        _isShowingCheckmark ||
+        _isFinishing ||
+        _isChangingClient) return;
+    final steps = _modifiedSequence ?? _activeSet.pictograms;
+    if (steps.isEmpty) return;
+    final index = _currentStepIndex;
+    final step = steps[index];
+    final choice = _chosenOptions[index];
+    final seconds = step.durationSeconds ?? choice?.durationSeconds;
+    final result = await showStepTimerDialog(
+      context: context,
+      seconds: seconds ?? 600,
+      autoAdvance: step.durationSeconds != null
+          ? step.autoAdvanceAfterTimer
+          : choice?.autoAdvanceAfterTimer ?? step.autoAdvanceAfterTimer,
+      forSession: true,
+      canRemove: seconds != null,
+    );
+    if (!mounted || result == null || index != _currentStepIndex) return;
+    final modified =
+        List<Pictogram>.from(_modifiedSequence ?? _activeSet.pictograms);
+    modified[index] = step.copyWith(
+        durationSeconds: result.seconds,
+        clearDuration: result.seconds == null,
+        autoAdvanceAfterTimer: result.autoAdvance);
+    setState(() {
+      _modifiedSequence = modified;
+      if (result.seconds == null && choice != null) {
+        _chosenOptions[index] = choice.copyWith(clearDuration: true);
+      }
+    });
+    _resetStepDuration();
   }
 
   Future<void> _playCompletionSound() async {
@@ -190,11 +302,16 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       });
 
       if (initialClientId != null) {
-        final cloudIndex = await _clientService.getClientProgress(
-          clientId: initialClientId,
-          setId: _activeSet.id,
-        );
+        final cloudIndex = widget.startFromBeginning
+            ? 0
+            : await _clientService.getClientProgress(
+                clientId: initialClientId,
+                setId: _activeSet.id,
+              );
         controller.activateClient(initialClientId, index: cloudIndex);
+        if (widget.startFromBeginning) {
+          unawaited(_persistClientProgress(initialClientId, 0));
+        }
         final restoredIndex = controller.progressFor(initialClientId);
         final pictograms = _modifiedSequence ?? _activeSet.pictograms;
         final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
@@ -213,6 +330,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
         _sidebarClients = <ClientProfile>[];
         _isLoadingClients = false;
       });
+    } finally {
+      if (mounted) {
+        _initialProgressReady = true;
+        _resetStepDuration();
+      }
     }
   }
 
@@ -231,6 +353,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
     setState(() {
       _chosenOptions[step] = choice;
     });
+    _resetStepDuration();
     // Resend the sequence so the watch shows the chosen option.
     _startWatchSession();
   }
@@ -251,6 +374,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _stepCountdown.setForeground(state == AppLifecycleState.resumed);
     if (state == AppLifecycleState.resumed) {
       _isAppInForeground = true;
       _notificationScheduleKey = null;
@@ -266,6 +390,8 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    sessionRouteObserver.unsubscribe(this);
+    _stepCountdown.dispose();
     _checkmarkTimer?.cancel();
     _clockTimer?.cancel();
     unawaited(StepNotificationService.instance.cancelAll());
@@ -552,33 +678,45 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
   }
 
   Future<void> _switchClient(String nextClientId) async {
-    final controller = ClientSessionProvider.of(context);
-    final currentClientId = controller.activeClientId;
-    final selectedSet = await _chooseSetForClient(nextClientId);
-    if (selectedSet == null) return;
+    if (_isChangingClient || _isFinishing || _isShowingCheckmark) return;
+    _isChangingClient = true;
+    _stepCountdown.pause();
+    try {
+      final controller = ClientSessionProvider.of(context);
+      final currentClientId = controller.activeClientId;
+      final selectedSet = await _chooseSetForClient(nextClientId);
+      if (selectedSet == null) return;
 
-    if (currentClientId != null) {
-      unawaited(_persistClientProgress(currentClientId, _currentStepIndex));
+      if (currentClientId != null) {
+        unawaited(_persistClientProgress(currentClientId, _currentStepIndex));
+      }
+
+      controller.switchClient(nextClientId, currentIndex: _currentStepIndex);
+
+      final cloudIndex = await _clientService.getClientProgress(
+        clientId: nextClientId,
+        setId: selectedSet.id,
+      );
+      controller.activateClient(nextClientId, index: cloudIndex);
+
+      final pictograms = selectedSet.pictograms;
+      final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
+
+      if (!mounted) return;
+      setState(() {
+        _activeSet = selectedSet;
+        _modifiedSequence = null;
+        _chosenOptions.clear();
+        _currentStepIndex = cloudIndex.clamp(0, maxIndex);
+      });
+      _resetStepDuration();
+      _startWatchSession();
+    } finally {
+      _isChangingClient = false;
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        _stepCountdown.resume();
+      }
     }
-
-    controller.switchClient(nextClientId, currentIndex: _currentStepIndex);
-
-    final cloudIndex = await _clientService.getClientProgress(
-      clientId: nextClientId,
-      setId: selectedSet.id,
-    );
-    controller.activateClient(nextClientId, index: cloudIndex);
-
-    final pictograms = selectedSet.pictograms;
-    final maxIndex = pictograms.isEmpty ? 0 : pictograms.length - 1;
-
-    if (!mounted) return;
-    setState(() {
-      _activeSet = selectedSet;
-      _modifiedSequence = null;
-      _chosenOptions.clear();
-      _currentStepIndex = cloudIndex.clamp(0, maxIndex);
-    });
   }
 
   Future<PictogramSet?> _chooseSetForClient(String clientId) async {
@@ -928,13 +1066,17 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
           ),
         ),
 
+        if (_pictogramTimerEnabled)
+          VisualStepTimer(
+              countdown: _stepCountdown, onConfigure: _configureCurrentTimer),
+
         // Progress from this step's planned time to the next one
         if (stepPictogram.scheduledMinutes != null) ...[
           const SizedBox(height: 4),
           _buildTimeProgress(pictograms, localizations),
           const SizedBox(height: 12),
         ] else
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
 
         // Large label (Displays localized Dutch keyword from model)
         Padding(
@@ -1433,23 +1575,34 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
   }
 
   void _nextStep() {
+    _completeCurrentStep();
+  }
+
+  void _completeCurrentStep({bool allowLast = false}) {
     if (kDebugMode) {
       debugPrint('[ClientModeSessionScreen] _nextStep called');
     }
-    if (!mounted || _isShowingCheckmark) return;
+    if (!mounted || _isShowingCheckmark || _isFinishing || _isChangingClient) {
+      return;
+    }
 
     final pictograms = _modifiedSequence ?? _activeSet.pictograms;
-    if (_currentStepIndex >= pictograms.length - 1) {
+    if (pictograms.isEmpty) return;
+    final isLast = _currentStepIndex >= pictograms.length - 1;
+    if (isLast && !allowLast) {
       if (kDebugMode) {
         debugPrint('[ClientModeSessionScreen] Already at last step');
       }
       return;
     }
 
+    _stepCountdown.stop();
+    final VoidCallback complete = isLast ? _finishTimedSequence : _advanceStep;
+
     unawaited(_playCompletionSound());
 
     if (!_completionCheckmarkEnabled) {
-      _advanceStep();
+      complete();
       return;
     }
 
@@ -1461,8 +1614,18 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       setState(() {
         _isShowingCheckmark = false;
       });
-      _advanceStep();
+      complete();
     });
+  }
+
+  void _finishTimedSequence() {
+    final controller = ClientSessionProvider.of(context);
+    final activeClientId = controller.activeClientId;
+    if (activeClientId != null) {
+      controller.updateCurrentIndex(0);
+      unawaited(_persistClientProgress(activeClientId, 0));
+    }
+    _exitWithPin();
   }
 
   void _advanceStep() {
@@ -1475,6 +1638,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       setState(() {
         _currentStepIndex++;
       });
+      _resetStepDuration();
       final controller = ClientSessionProvider.of(context);
       controller.updateCurrentIndex(_currentStepIndex);
       final activeClientId = controller.activeClientId;
@@ -1490,6 +1654,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
   }
 
   void _previousStep() {
+    if (_isFinishing) return;
     if (kDebugMode) {
       debugPrint('[ClientModeSessionScreen] _previousStep called');
     }
@@ -1507,6 +1672,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       setState(() {
         _currentStepIndex--;
       });
+      _resetStepDuration();
       final controller = ClientSessionProvider.of(context);
       controller.updateCurrentIndex(_currentStepIndex);
       final activeClientId = controller.activeClientId;
@@ -1518,10 +1684,12 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
       if (kDebugMode) {
         debugPrint('[ClientModeSessionScreen] Already at first step');
       }
+      _resetStepDuration();
     }
   }
 
   void _modifySequence() async {
+    if (_isShowingCheckmark || _isFinishing) return;
     final currentSequence =
         _modifiedSequence ?? List<Pictogram>.from(_activeSet.pictograms);
 
@@ -1543,6 +1711,7 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
         // Reset to first step after modification
         _currentStepIndex = 0;
       });
+      _resetStepDuration();
 
       _watchService.startSession(
         setName: _activeSet.name,
@@ -1591,6 +1760,11 @@ class _ClientModeSessionScreenState extends State<ClientModeSessionScreen>
 
   /// Exit client mode (no PIN required since PIN was verified to enter)
   Future<void> _exitWithPin() async {
+    if (_isFinishing) return;
+    _isFinishing = true;
+    _stepCountdown.stop();
+    _checkmarkTimer?.cancel();
+    unawaited(StepNotificationService.instance.cancelAll());
     final localizations = LanguageProvider.localizationsOf(context);
 
     _watchService.endSession();
