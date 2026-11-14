@@ -15,8 +15,9 @@ import 'pictogram_picker_screen.dart';
 import 'clients_screen.dart';
 import '../utils/pictogram_image.dart';
 import '../widgets/import_set_dialog.dart';
+import 'sequence_reminder_screen.dart';
 
-enum _SetMenuAction { exportPdf, shareLink, delete }
+enum _SetMenuAction { exportPdf, shareLink, reminder, delete }
 
 class MySetsScreen extends StatefulWidget {
   final ClientProfile? selectedClient;
@@ -548,6 +549,16 @@ class _MySetsScreenState extends State<MySetsScreen> {
                       final localizations =
                           LanguageProvider.localizationsOf(context);
                       return [
+                        if (!set.isAutoSaved)
+                          PopupMenuItem(
+                            value: _SetMenuAction.reminder,
+                            child: Row(children: [
+                              const Icon(Icons.notifications_active_outlined,
+                                  size: 18),
+                              const SizedBox(width: 8),
+                              Text(localizations.routineReminder),
+                            ]),
+                          ),
                         PopupMenuItem(
                           value: _SetMenuAction.exportPdf,
                           child: Row(
@@ -782,6 +793,12 @@ class _MySetsScreenState extends State<MySetsScreen> {
     final localizations = LanguageProvider.localizationsOf(context);
 
     try {
+      if (action == _SetMenuAction.reminder) {
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => SequenceReminderScreen(set: set),
+        ));
+        return;
+      }
       if (action == _SetMenuAction.exportPdf) {
         // Show loading indicator
         showDialog(
