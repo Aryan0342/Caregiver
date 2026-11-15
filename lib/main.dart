@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -8,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'firebase_options.dart';
 import 'theme.dart';
 import 'routes/app_routes.dart';
+import 'routes/session_route_observer.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/create_set_screen.dart';
@@ -37,6 +39,8 @@ import 'screens/verify_pin_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/language_provider.dart';
 import 'providers/client_session_provider.dart';
+import 'services/sequence_reminder_service.dart';
+import 'services/sequence_reminder_navigation.dart';
 
 void main() async {
   // Required: Initialize Flutter bindings before any async operations
@@ -83,6 +87,9 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final LanguageService _languageService;
   late final ClientSessionController _clientSessionController;
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  late final SequenceReminderNavigation _reminderNavigation;
+  StreamSubscription<User?>? _reminderAuthSubscription;
 
   @override
   void initState() {
@@ -90,11 +97,20 @@ class _MyAppState extends State<MyApp> {
     _languageService = LanguageService();
     _clientSessionController = ClientSessionController();
     _languageService.addListener(_onLanguageChanged);
+    _reminderNavigation = SequenceReminderNavigation(_navigatorKey);
+    _reminderAuthSubscription =
+        FirebaseAuth.instance.authStateChanges().listen((user) {
+      unawaited(SequenceReminderService.instance
+          .synchronizeAccount(user?.uid)
+          .catchError((Object e) => debugPrint('Reminder sync failed: $e')));
+    });
   }
 
   @override
   void dispose() {
     _languageService.removeListener(_onLanguageChanged);
+    _reminderAuthSubscription?.cancel();
+    _reminderNavigation.dispose();
     _clientSessionController.dispose();
     super.dispose();
   }
@@ -113,6 +129,8 @@ class _MyAppState extends State<MyApp> {
         languageService: _languageService,
         localizations: localizations,
         child: MaterialApp(
+          navigatorKey: _navigatorKey,
+          navigatorObservers: [_reminderNavigation, sessionRouteObserver],
           title: localizations.appName,
           theme: AppTheme.lightTheme,
           darkTheme: null, // No dark mode as requested
