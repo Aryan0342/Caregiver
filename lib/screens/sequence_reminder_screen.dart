@@ -139,6 +139,29 @@ class _SequenceReminderScreenState extends State<SequenceReminderScreen> {
                   FilterChip(
                     label: Text(strings.reminderWeekdays[i]),
                     selected: _days.contains(i + 1),
+                    labelStyle: TextStyle(
+                      color: _days.contains(i + 1) && _enabled && !_saving
+                          ? AppTheme.surfaceWhite
+                          : AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    color: WidgetStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return states.contains(WidgetState.disabled)
+                            ? AppTheme.warmTan
+                            : AppTheme.darkGreyBrown;
+                      }
+                      return AppTheme.surfaceWhite;
+                    }),
+                    checkmarkColor: _enabled && !_saving
+                        ? AppTheme.surfaceWhite
+                        : AppTheme.textPrimary,
+                    side: BorderSide(
+                      color: _days.contains(i + 1)
+                          ? AppTheme.darkGreyBrown
+                          : AppTheme.mutedGreyBrown,
+                    ),
                     onSelected: !_enabled || _saving
                         ? null
                         : (selected) => setState(() {
