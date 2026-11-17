@@ -54,3 +54,9 @@ temp_interactive_push.bat
 .gitignore
 config.bat
 node_modules
+*.jks
+*.keystore
+/key.properties.template
+/keystore.txt
+/key.properties (2).template
+/upload_certificate.pem
